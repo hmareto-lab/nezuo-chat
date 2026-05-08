@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT v20 CORE</title>
+<title>NEZUO CHAT v48 FULL STABLE</title>
 
 <style>
 html,body{
@@ -14,10 +14,8 @@ html,body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 
-*{ box-sizing:border-box; }
-
 /* =====================
-   HEADER（完全固定）
+   HEADER
 ===================== */
 #header{
   position:fixed;
@@ -25,14 +23,44 @@ html,body{
   left:0;
   right:0;
   z-index:9999;
+
   background:#1f2328;
   padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
   display:flex;
   gap:8px;
 }
 
+#nameInput,#msgInput{
+  flex:1;
+  min-width:0;
+  border:none;
+  outline:none;
+  border-radius:10px;
+  padding:10px;
+}
+
 /* =====================
-   FOOTER（完全固定）
+   CHAT
+===================== */
+#chatWrap{
+  position:fixed;
+  top:60px;
+  bottom:60px;
+  left:0;
+  right:0;
+
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* =====================
+   FOOTER
 ===================== */
 #footer{
   position:fixed;
@@ -40,30 +68,22 @@ html,body{
   left:0;
   right:0;
   z-index:9999;
+
   background:#1f2328;
   padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+
   display:grid;
-  grid-template-columns:56px 56px 1fr 56px 56px;
+  grid-template-columns:60px 60px 1fr 60px 60px;
   gap:8px;
+  align-items:center;
 }
 
-/* =====================
-   CHAT（唯一スクロール領域）
-===================== */
-#chatWrap{
-  position:fixed;
-  top:72px;
-  bottom:72px;
-  left:0;
-  right:0;
-
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+button{
+  height:42px;
+  border:none;
+  border-radius:10px;
+  background:#111;
+  color:#fff;
 }
 
 /* =====================
@@ -74,7 +94,6 @@ html,body{
   padding:10px 12px;
   border-radius:16px;
   font-size:14px;
-  line-height:1.5;
   word-break:break-word;
 }
 
@@ -83,57 +102,32 @@ html,body{
 .system{ background:#c9ced6; align-self:center; font-size:12px; }
 
 /* =====================
-   BUTTON
-===================== */
-button{
-  height:42px;
-  min-width:56px;
-  border:none;
-  border-radius:10px;
-  background:#111;
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-button:active{ transform:scale(.96); }
-
-/* =====================
-   INPUT
-===================== */
-input{
-  width:100%;
-  border:none;
-  outline:none;
-  border-radius:10px;
-  padding:11px;
-  font-size:15px;
-}
-
-/* =====================
-   BADGE（既読制御）
+   BADGE
 ===================== */
 #newBadge{
-  position:fixed;
-  bottom:90px;
-  left:50%;
-  transform:translateX(-50%);
-  background:#ff3b30;
+  background:#444;
   color:#fff;
   font-size:12px;
   padding:6px 10px;
-  border-radius:20px;
-  opacity:0;
-  transition:.15s;
-  z-index:10000;
+  border-radius:14px;
+  min-width:34px;
+  text-align:center;
+  user-select:none;
+  cursor:pointer;
+  opacity:0.35;
 }
 
-/* =====================
-   UI
-===================== */
-.hidden{
-  display:none !important;
+#newBadge.active{
+  background:#ff3b30;
+  opacity:1;
+}
+
+.hidden{ display:none !important; }
+
+.title{
+  color:#fff;
+  text-align:center;
+  font-size:13px;
 }
 </style>
 </head>
@@ -142,10 +136,10 @@ input{
 
 <!-- HEADER -->
 <div id="header">
-  <input id="nameInput" placeholder="名前" />
+  <input id="nameInput" placeholder="名前" autocomplete="off" />
   <button id="joinBtn">入室</button>
 
-  <input id="msgInput" placeholder="メッセージ" class="hidden" />
+  <input id="msgInput" placeholder="メッセージ" class="hidden" autocomplete="off" />
   <button id="sendBtn" class="hidden">送信</button>
 </div>
 
@@ -154,14 +148,12 @@ input{
 
 <!-- FOOTER -->
 <div id="footer">
-  <button id="followBtn">追従</button>
+  <div id="newBadge">0</div>
   <button id="upBtn">↑</button>
-  <div style="color:#fff;text-align:center;font-size:13px;font-weight:600;">NEZUO CHAT</div>
+  <div class="title">NEZUO CHAT v48</div>
   <button id="downBtn">↓</button>
-  <button id="exitBtn">退出</button>
+  <button id="exitBtn" class="hidden">退出</button>
 </div>
-
-<div id="newBadge">0</div>
 
 <script type="module">
 
@@ -172,7 +164,6 @@ import {
   push,
   onChildAdded,
   query,
-  orderByChild,
   limitToLast
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
@@ -187,20 +178,20 @@ const app = initializeApp({
 });
 
 const db = getDatabase(app);
-const chatRef = query(ref(db,"chat"), orderByChild("time"), limitToLast(80));
+
+/* ★安定化：limitOnly */
+const chatRef = query(ref(db,"chat"), limitToLast(80));
+
+let uid = localStorage.getItem("uid") || crypto.randomUUID();
+localStorage.setItem("uid", uid);
 
 /* =====================
    STATE
 ===================== */
-let uid = localStorage.getItem("uid") || crypto.randomUUID();
-localStorage.setItem("uid", uid);
-
 const state = {
   userName:"",
-  autoFollow:true,
-  lastSend:0,
   newCount:0,
-  isRead:true
+  lastSend:0
 };
 
 /* =====================
@@ -211,44 +202,47 @@ const nameInput=document.getElementById("nameInput");
 const msgInput=document.getElementById("msgInput");
 const joinBtn=document.getElementById("joinBtn");
 const sendBtn=document.getElementById("sendBtn");
-const followBtn=document.getElementById("followBtn");
 const exitBtn=document.getElementById("exitBtn");
-const newBadge=document.getElementById("newBadge");
+const badge=document.getElementById("newBadge");
+const upBtn=document.getElementById("upBtn");
+const downBtn=document.getElementById("downBtn");
 
 /* =====================
-   SCROLL判定
+   SCROLL
 ===================== */
-function isAtTop(){
-  return chatWrap.scrollTop < 10;
+const isTop = () => chatWrap.scrollTop < 20;
+const goTop = () => chatWrap.scrollTop = 0;
+
+/* =====================
+   SAFE GUARDS（v48）
+===================== */
+function canSend(){
+  const now = Date.now();
+  if(now - state.lastSend < 1200) return false;
+  state.lastSend = now;
+  return true;
 }
 
-/* =====================
-   既読判定（唯一ルール）
-===================== */
-function updateReadState(){
-  state.isRead = state.autoFollow || isAtTop();
-
-  if(state.isRead){
-    state.newCount = 0;
-    newBadge.style.opacity = 0;
-  }
+function safeLength(text){
+  return text.length <= 500;
 }
 
 /* =====================
    BADGE
 ===================== */
 function updateBadge(){
-  if(state.isRead){
-    newBadge.style.opacity = 0;
-    return;
-  }
-
-  newBadge.style.opacity = 1;
-  newBadge.textContent = state.newCount;
+  badge.textContent = state.newCount;
+  badge.classList.toggle("active", state.newCount > 0);
 }
 
+badge.onclick = () => {
+  state.newCount = 0;
+  updateBadge();
+  goTop();
+};
+
 /* =====================
-   UI
+   UI STATE
 ===================== */
 function syncUI(){
   const inRoom = !!state.userName;
@@ -259,43 +253,30 @@ function syncUI(){
   msgInput.classList.toggle("hidden", !inRoom);
   sendBtn.classList.toggle("hidden", !inRoom);
 
-  followBtn.textContent = state.autoFollow ? "追従" : "停止";
+  exitBtn.classList.toggle("hidden", !inRoom);
 }
-
-/* =====================
-   SCROLL
-===================== */
-const goTop=()=>chatWrap.scrollTop=0;
 
 /* =====================
    JOIN
 ===================== */
 function join(){
-  const n=nameInput.value.trim();
+  const n = nameInput.value.trim();
   if(!n) return;
 
-  state.userName=n;
+  state.userName = n;
 
   push(ref(db,"chat"),{
     uid,
     name:"system",
-    text:`${state.userName} 入室`,
+    text:`${n} 入室`,
     time:Date.now()
   });
 
   syncUI();
   goTop();
+  state.newCount = 0;
+  updateBadge();
 }
-
-joinBtn.onclick=join;
-
-/* ENTER */
-document.addEventListener("keydown",(e)=>{
-  if(e.key!=="Enter") return;
-
-  if(document.activeElement===nameInput) join();
-  if(document.activeElement===msgInput) send();
-});
 
 /* =====================
    SEND
@@ -303,8 +284,11 @@ document.addEventListener("keydown",(e)=>{
 function send(){
   if(!state.userName) return;
 
-  const t=msgInput.value.trim();
+  const t = msgInput.value.trim();
   if(!t) return;
+
+  if(!canSend()) return;
+  if(!safeLength(t)) return;
 
   push(ref(db,"chat"),{
     uid,
@@ -316,16 +300,17 @@ function send(){
   msgInput.value="";
 }
 
-sendBtn.onclick=send;
-
 /* =====================
    EXIT
 ===================== */
-exitBtn.onclick=()=>{
+exitBtn.onclick = () => {
+  const name = state.userName;
+  if(!name) return;
+
   push(ref(db,"chat"),{
     uid,
     name:"system",
-    text:`${state.userName} 退出`,
+    text:`${name} 退出`,
     time:Date.now()
   });
 
@@ -334,71 +319,71 @@ exitBtn.onclick=()=>{
 };
 
 /* =====================
-   FOLLOW
-===================== */
-followBtn.onclick=()=>{
-  state.autoFollow=!state.autoFollow;
-  syncUI();
-
-  if(state.autoFollow){
-    state.newCount=0;
-    updateBadge();
-    goTop();
-  }
-};
-
-/* =====================
    RECEIVE
 ===================== */
 onChildAdded(chatRef,(snap)=>{
 
-  const d=snap.val();
-  const mine=d.uid===uid;
+  const d = snap.val();
+  const mine = d.uid === uid;
 
-  const div=document.createElement("div");
+  const div = document.createElement("div");
 
-  if(d.name==="system"){
-    div.className="msg system";
-    div.textContent=d.text;
-  }else if(mine){
-    div.className="msg me";
-    div.textContent=d.text;
-  }else{
-    div.className="msg other";
-    div.innerHTML=`<b>${d.name}</b><br>${d.text}`;
-  }
+  div.className =
+    d.name === "system"
+      ? "msg system"
+      : mine
+        ? "msg me"
+        : "msg other";
+
+  div.innerHTML =
+    d.name === "system"
+      ? d.text
+      : mine
+        ? d.text
+        : `<b>${d.name}</b><br>${d.text}`;
 
   chatWrap.prepend(div);
 
-  updateReadState();
-
-  if(!state.isRead){
+  if(isTop()){
+    state.newCount = 0;
+  }else{
     state.newCount++;
   }
 
   updateBadge();
+});
 
-  if(state.autoFollow){
-    goTop();
+/* =====================
+   SCROLL
+===================== */
+chatWrap.addEventListener("scroll",()=>{
+  if(isTop()){
+    state.newCount = 0;
+    updateBadge();
   }
 });
 
 /* =====================
-   JUMP
+   BUTTONS
 ===================== */
-upBtn.onclick=()=>{
+joinBtn.onclick = join;
+sendBtn.onclick = send;
+
+upBtn.onclick = () => {
   goTop();
-  updateReadState();
-};
-
-downBtn.onclick=()=>{
-  chatWrap.scrollTop = chatWrap.scrollHeight;
-  updateReadState();
-};
-
-chatWrap.addEventListener("scroll",()=>{
-  updateReadState();
+  state.newCount = 0;
   updateBadge();
+};
+
+downBtn.onclick = () => {
+  chatWrap.scrollTop = chatWrap.scrollHeight;
+};
+
+document.addEventListener("keydown",(e)=>{
+  if(e.key !== "Enter") return;
+
+  if(document.activeElement === nameInput) join();
+  if(document.activeElement === msgInput) send();
 });
 
 </script>
