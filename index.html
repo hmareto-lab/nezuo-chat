@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT v48 FULL STABLE</title>
+<title>NEZUO CHAT v52 AUTH ADMIN</title>
 
 <style>
 html,body{
@@ -14,20 +14,18 @@ html,body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 }
 
-/* =====================
-   HEADER
-===================== */
+/* HEADER */
 #header{
   position:fixed;
   top:0;
   left:0;
   right:0;
   z-index:9999;
-
   background:#1f2328;
   padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
   display:flex;
   gap:8px;
+  align-items:center;
 }
 
 #nameInput,#msgInput{
@@ -39,39 +37,38 @@ html,body{
   padding:10px;
 }
 
-/* =====================
-   CHAT
-===================== */
+#loginBtn{
+  height:42px;
+  border:none;
+  border-radius:10px;
+  background:#4285f4;
+  color:#fff;
+}
+
+/* CHAT */
 #chatWrap{
   position:fixed;
   top:60px;
   bottom:60px;
   left:0;
   right:0;
-
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
-
   padding:14px;
   display:flex;
   flex-direction:column;
   gap:10px;
 }
 
-/* =====================
-   FOOTER
-===================== */
+/* FOOTER */
 #footer{
   position:fixed;
   bottom:0;
   left:0;
   right:0;
   z-index:9999;
-
   background:#1f2328;
-  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
-
+  padding:10px;
   display:grid;
   grid-template-columns:60px 60px 1fr 60px 60px;
   gap:8px;
@@ -86,9 +83,7 @@ button{
   color:#fff;
 }
 
-/* =====================
-   MESSAGE
-===================== */
+/* MESSAGE */
 .msg{
   max-width:78%;
   padding:10px 12px;
@@ -101,56 +96,37 @@ button{
 .other{ background:#fff; align-self:flex-start; }
 .system{ background:#c9ced6; align-self:center; font-size:12px; }
 
-/* =====================
-   BADGE
-===================== */
+.hidden{ display:none !important; }
+
 #newBadge{
   background:#444;
   color:#fff;
   font-size:12px;
   padding:6px 10px;
   border-radius:14px;
-  min-width:34px;
   text-align:center;
-  user-select:none;
-  cursor:pointer;
-  opacity:0.35;
 }
 
-#newBadge.active{
-  background:#ff3b30;
-  opacity:1;
-}
-
-.hidden{ display:none !important; }
-
-.title{
-  color:#fff;
-  text-align:center;
-  font-size:13px;
-}
+#newBadge.active{ background:#ff3b30; }
 </style>
 </head>
 
 <body>
 
-<!-- HEADER -->
 <div id="header">
-  <input id="nameInput" placeholder="名前" autocomplete="off" />
-  <button id="joinBtn">入室</button>
+  <input id="nameInput" placeholder="名前（未ログイン時）" />
+  <button id="loginBtn">Googleログイン</button>
 
-  <input id="msgInput" placeholder="メッセージ" class="hidden" autocomplete="off" />
+  <input id="msgInput" class="hidden" placeholder="メッセージ" />
   <button id="sendBtn" class="hidden">送信</button>
 </div>
 
-<!-- CHAT -->
 <div id="chatWrap"></div>
 
-<!-- FOOTER -->
 <div id="footer">
   <div id="newBadge">0</div>
   <button id="upBtn">↑</button>
-  <div class="title">NEZUO CHAT v48</div>
+  <div style="color:#fff;text-align:center;">NEZUO CHAT AUTH</div>
   <button id="downBtn">↓</button>
   <button id="exitBtn" class="hidden">退出</button>
 </div>
@@ -164,12 +140,20 @@ import {
   push,
   onChildAdded,
   query,
-  limitToLast
+  limitToLast,
+  remove
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-/* =====================
-   FIREBASE
-===================== */
+/* AUTH */
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+/* FIREBASE */
 const app = initializeApp({
   apiKey:"AIzaSyApju_6KuGq8EkXqPI0aTOysFmZ22vL5HQ",
   authDomain:"nezubo2.firebaseapp.com",
@@ -178,212 +162,130 @@ const app = initializeApp({
 });
 
 const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
 
-/* ★安定化：limitOnly */
 const chatRef = query(ref(db,"chat"), limitToLast(80));
 
-let uid = localStorage.getItem("uid") || crypto.randomUUID();
-localStorage.setItem("uid", uid);
+/* ADMIN */
+const ADMIN_EMAIL = "h.mareto@gmail.com";
 
-/* =====================
-   STATE
-===================== */
-const state = {
-  userName:"",
+let user = null;
+let isAdmin = false;
+
+let state = {
   newCount:0,
   lastSend:0
 };
 
-/* =====================
-   DOM
-===================== */
+/* DOM */
 const chatWrap=document.getElementById("chatWrap");
 const nameInput=document.getElementById("nameInput");
 const msgInput=document.getElementById("msgInput");
-const joinBtn=document.getElementById("joinBtn");
+const loginBtn=document.getElementById("loginBtn");
 const sendBtn=document.getElementById("sendBtn");
 const exitBtn=document.getElementById("exitBtn");
 const badge=document.getElementById("newBadge");
-const upBtn=document.getElementById("upBtn");
-const downBtn=document.getElementById("downBtn");
 
-/* =====================
-   SCROLL
-===================== */
-const isTop = () => chatWrap.scrollTop < 20;
-const goTop = () => chatWrap.scrollTop = 0;
-
-/* =====================
-   SAFE GUARDS（v48）
-===================== */
-function canSend(){
-  const now = Date.now();
-  if(now - state.lastSend < 1200) return false;
-  state.lastSend = now;
-  return true;
+function isTop(){
+  return chatWrap.scrollTop < 20;
 }
 
-function safeLength(text){
-  return text.length <= 500;
-}
-
-/* =====================
-   BADGE
-===================== */
-function updateBadge(){
-  badge.textContent = state.newCount;
-  badge.classList.toggle("active", state.newCount > 0);
-}
-
-badge.onclick = () => {
-  state.newCount = 0;
-  updateBadge();
-  goTop();
+/* AUTH LOGIN */
+loginBtn.onclick = async ()=>{
+  await signInWithPopup(auth, provider);
 };
 
-/* =====================
-   UI STATE
-===================== */
-function syncUI(){
-  const inRoom = !!state.userName;
+/* AUTH STATE */
+onAuthStateChanged(auth,(u)=>{
+  if(u){
+    user = u;
+    isAdmin = (u.email === ADMIN_EMAIL);
 
-  nameInput.classList.toggle("hidden", inRoom);
-  joinBtn.classList.toggle("hidden", inRoom);
+    push(ref(db,"chat"),{
+      uid:u.uid,
+      name:"system",
+      text:`${u.displayName} ログイン`,
+      time:Date.now()
+    });
 
-  msgInput.classList.toggle("hidden", !inRoom);
-  sendBtn.classList.toggle("hidden", !inRoom);
+    nameInput.classList.add("hidden");
+    loginBtn.classList.add("hidden");
 
-  exitBtn.classList.toggle("hidden", !inRoom);
-}
+    msgInput.classList.remove("hidden");
+    sendBtn.classList.remove("hidden");
 
-/* =====================
-   JOIN
-===================== */
-function join(){
-  const n = nameInput.value.trim();
-  if(!n) return;
+    exitBtn.classList.remove("hidden");
+  }
+});
 
-  state.userName = n;
-
-  push(ref(db,"chat"),{
-    uid,
-    name:"system",
-    text:`${n} 入室`,
-    time:Date.now()
-  });
-
-  syncUI();
-  goTop();
-  state.newCount = 0;
-  updateBadge();
-}
-
-/* =====================
-   SEND
-===================== */
-function send(){
-  if(!state.userName) return;
+/* SEND */
+sendBtn.onclick=()=>{
+  if(!user) return;
 
   const t = msgInput.value.trim();
   if(!t) return;
 
-  if(!canSend()) return;
-  if(!safeLength(t)) return;
+  if(Date.now() - state.lastSend < 1200) return;
+  state.lastSend = Date.now();
 
   push(ref(db,"chat"),{
-    uid,
-    name:state.userName,
+    uid:user.uid,
+    name:user.displayName,
+    email:user.email,
     text:t,
     time:Date.now()
   });
 
   msgInput.value="";
-}
-
-/* =====================
-   EXIT
-===================== */
-exitBtn.onclick = () => {
-  const name = state.userName;
-  if(!name) return;
-
-  push(ref(db,"chat"),{
-    uid,
-    name:"system",
-    text:`${name} 退出`,
-    time:Date.now()
-  });
-
-  state.userName="";
-  syncUI();
 };
 
-/* =====================
-   RECEIVE
-===================== */
+/* LOGOUT */
+exitBtn.onclick=()=>{
+  signOut(auth);
+  location.reload();
+};
+
+/* RECEIVE */
 onChildAdded(chatRef,(snap)=>{
-
-  const d = snap.val();
-  const mine = d.uid === uid;
-
-  const div = document.createElement("div");
+  const d=snap.val();
+  const div=document.createElement("div");
 
   div.className =
-    d.name === "system"
+    d.name==="system"
       ? "msg system"
-      : mine
-        ? "msg me"
-        : "msg other";
+      : (d.uid===user?.uid ? "msg me" : "msg other");
 
   div.innerHTML =
-    d.name === "system"
+    d.name==="system"
       ? d.text
-      : mine
-        ? d.text
-        : `<b>${d.name}</b><br>${d.text}`;
+      : `<b>${d.name}${isAdmin ? " 🛡" : ""}</b><br>${d.text}`;
+
+  /* ADMIN DELETE */
+  if(isAdmin && d.name!=="system"){
+    div.ondblclick=()=>{
+      if(confirm("管理者削除する？")){
+        remove(ref(db,"chat/"+snap.key));
+      }
+    };
+  }
 
   chatWrap.prepend(div);
 
-  if(isTop()){
-    state.newCount = 0;
-  }else{
-    state.newCount++;
-  }
+  if(isTop()) state.newCount=0;
+  else state.newCount++;
 
-  updateBadge();
+  badge.textContent = state.newCount;
+  badge.classList.toggle("active",state.newCount>0);
 });
 
-/* =====================
-   SCROLL
-===================== */
+/* SCROLL RESET */
 chatWrap.addEventListener("scroll",()=>{
   if(isTop()){
-    state.newCount = 0;
-    updateBadge();
+    state.newCount=0;
+    badge.textContent=0;
+    badge.classList.remove("active");
   }
-});
-
-/* =====================
-   BUTTONS
-===================== */
-joinBtn.onclick = join;
-sendBtn.onclick = send;
-
-upBtn.onclick = () => {
-  goTop();
-  state.newCount = 0;
-  updateBadge();
-};
-
-downBtn.onclick = () => {
-  chatWrap.scrollTop = chatWrap.scrollHeight;
-};
-
-document.addEventListener("keydown",(e)=>{
-  if(e.key !== "Enter") return;
-
-  if(document.activeElement === nameInput) join();
-  if(document.activeElement === msgInput) send();
 });
 
 </script>
