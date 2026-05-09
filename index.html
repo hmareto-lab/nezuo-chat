@@ -1,333 +1,249 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT v48.1 ADMIN</title>
+<!DOCTYPE html>  
+<html lang="ja">  
+<head>  
+<meta charset="UTF-8" />  
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />  
+<title>NEZUO CHAT v62 FLEX NAME + UID TAG</title>  
 
-<style>
-html,body{
-  margin:0;
-  height:100%;
-  overflow:hidden;
-  background:#e9edf2;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-}
+<style>  
+html,body{  
+  margin:0;  
+  height:100%;  
+  overflow:hidden;  
+  background:#e9edf2;  
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;  
+}  
 
-/* HEADER */
-#header{
-  position:fixed;
-  top:0;left:0;right:0;
-  z-index:9999;
-  background:#1f2328;
-  padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
-  display:flex;
-  gap:8px;
-}
+#header{  
+  position:fixed;  
+  top:0;left:0;right:0;  
+  z-index:9999;  
+  background:#1f2328;  
+  padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;  
+  display:flex;  
+  gap:8px;  
+}  
 
-#nameInput,#msgInput{
-  flex:1;
-  min-width:0;
-  border:none;
-  outline:none;
-  border-radius:10px;
-  padding:10px;
-}
+#msgInput{  
+  flex:1;  
+  min-width:0;  
+  border:none;  
+  outline:none;  
+  border-radius:10px;  
+  padding:10px;  
+}  
 
-/* CHAT */
-#chatWrap{
-  position:fixed;
-  top:60px;
-  bottom:60px;
-  left:0;right:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
+button{  
+  height:42px;  
+  border:none;  
+  border-radius:10px;  
+  background:#111;  
+  color:#fff;  
+}  
 
-/* FOOTER */
-#footer{
-  position:fixed;
-  bottom:0;left:0;right:0;
-  z-index:9999;
-  background:#1f2328;
-  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
-  display:grid;
-  grid-template-columns:60px 60px 1fr 60px 60px;
-  gap:8px;
-  align-items:center;
-}
+#sendBtn{width:60px;}  
 
-button{
-  height:42px;
-  border:none;
-  border-radius:10px;
-  background:#111;
-  color:#fff;
-}
+/* 名前ボタン（可変） */  
+#nameBtn{  
+  background:#4da3ff;  
+  padding:0 12px;  
+  width:auto;  
+  min-width:60px;  
+  max-width:180px;  
+  white-space:nowrap;  
+  overflow:hidden;  
+  text-overflow:ellipsis;  
+}  
 
-/* MESSAGE */
-.msg{
-  max-width:78%;
-  padding:10px 12px;
-  border-radius:16px;
-  font-size:14px;
-  word-break:break-word;
-}
+#chatWrap{  
+  position:fixed;  
+  top:60px;  
+  bottom:60px;  
+  left:0;right:0;  
+  overflow-y:auto;  
+  -webkit-overflow-scrolling:touch;  
+  padding:14px;  
+  display:flex;  
+  flex-direction:column;  
+  gap:10px;  
+}  
 
-.me{background:#95ec69;align-self:flex-end;}
-.other{background:#fff;align-self:flex-start;}
-.system{background:#c9ced6;align-self:center;font-size:12px;}
+.msg{  
+  max-width:78%;  
+  padding:10px 12px;  
+  border-radius:16px;  
+  font-size:14px;  
+  word-break:break-word;  
+}  
 
-/* BADGE */
-#newBadge{
-  background:#444;
-  color:#fff;
-  font-size:12px;
-  padding:6px 10px;
-  border-radius:14px;
-  text-align:center;
-}
+.me{background:#95ec69;align-self:flex-end;}  
+.other{background:#fff;align-self:flex-start;}  
+.system{background:#c9ced6;align-self:center;font-size:12px;}  
 
-#newBadge.active{
-  background:#ff3b30;
-}
+#footer{  
+  position:fixed;  
+  bottom:0;left:0;right:0;  
+  z-index:9999;  
+  background:#1f2328;  
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom));  
+  display:grid;  
+  grid-template-columns:60px 60px 1fr auto;  
+  gap:8px;  
+  align-items:center;  
+}  
+</style>  
+</head>  
 
-.hidden{display:none!important;}
-.title{color:#fff;text-align:center;font-size:13px;}
-</style>
-</head>
+<body>  
 
-<body>
+<div id="header">  
+  <input id="msgInput" placeholder="メッセージ" />  
+  <button id="sendBtn">送信</button>  
+  <div></div>  
+</div>  
 
-<!-- HEADER -->
-<div id="header">
-  <input id="nameInput" placeholder="名前" />
-  <button id="joinBtn">入室</button>
+<div id="chatWrap"></div>  
 
-  <input id="msgInput" placeholder="メッセージ" class="hidden"/>
-  <button id="sendBtn" class="hidden">送信</button>
-</div>
+<div id="footer">  
+  <button id="upBtn">↑</button>  
+  <button id="downBtn">↓</button>  
+  <div></div>  
+  <button id="nameBtn"></button>  
+</div>  
 
-<!-- CHAT -->
-<div id="chatWrap"></div>
+<script type="module">  
 
-<!-- FOOTER -->
-<div id="footer">
-  <div id="newBadge">0</div>
-  <button id="upBtn">↑</button>
-  <div class="title" id="footerTitle">NEZUO CHAT v48</div>
-  <button id="downBtn">↓</button>
-  <button id="exitBtn" class="hidden">退出</button>
-</div>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";  
+import { getDatabase, ref, push, onChildAdded, query, limitToLast }  
+from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";  
 
-<script type="module">
+const app = initializeApp({  
+  apiKey:"AIzaSyApju_6KuGq8EkXqPI0aTOysFmZ22vL5HQ",  
+  authDomain:"nezubo2.firebaseapp.com",  
+  databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",  
+  projectId:"nezubo2"  
+});  
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import {
-  getDatabase,
-  ref,
-  push,
-  onChildAdded,
-  query,
-  limitToLast,
-  remove
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+const db = getDatabase(app);  
+const chatRef = query(ref(db,"chat"), limitToLast(80));  
 
-/* =====================
-   FIREBASE
-===================== */
-const app = initializeApp({
-  apiKey:"AIzaSyApju_6KuGq8EkXqPI0aTOysFmZ22vL5HQ",
-  authDomain:"nezubo2.firebaseapp.com",
-  databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
-  projectId:"nezubo2"
-});
+/* =========================  
+   UID  
+========================= */  
+let uid = localStorage.getItem("uid") || crypto.randomUUID();  
+localStorage.setItem("uid", uid);  
 
-const db = getDatabase(app);
-const chatRef = query(ref(db,"chat"), limitToLast(80));
+let userName = localStorage.getItem("userName") || "名無し";  
 
-/* =====================
-   UID
-===================== */
-let uid = localStorage.getItem("uid") || crypto.randomUUID();
-localStorage.setItem("uid", uid);
+let uidTag = "";  
 
-/* 👑 管理者UID */
-const ADMIN_UID = "bm8BD7OcqIZYW81Kpbdb27LxlS83";
-const isAdmin = uid === ADMIN_UID;
+/* =========================  
+   SHA256 → タグ生成  
+========================= */  
+async function makeTag(input){  
+  const enc = new TextEncoder();  
+  const buf = await crypto.subtle.digest("SHA-256", enc.encode(input));  
 
-/* =====================
-   STATE
-===================== */
-const state = {
-  userName:"",
-  newCount:0,
-  lastSend:0
-};
+  return "#" + [...new Uint8Array(buf)]  
+    .map(b => b.toString(16).padStart(2,"0"))  
+    .join("")  
+    .slice(0,6)  
+    .toUpperCase();  
+}  
 
-/* =====================
-   DOM
-===================== */
-const chatWrap=document.getElementById("chatWrap");
-const nameInput=document.getElementById("nameInput");
-const msgInput=document.getElementById("msgInput");
-const joinBtn=document.getElementById("joinBtn");
-const sendBtn=document.getElementById("sendBtn");
-const exitBtn=document.getElementById("exitBtn");
-const badge=document.getElementById("newBadge");
-const upBtn=document.getElementById("upBtn");
-const downBtn=document.getElementById("downBtn");
-const footerTitle=document.getElementById("footerTitle");
+async function initTag(){  
+  uidTag = await makeTag(uid);  
+  updateNameUI();  
+}  
 
-/* 管理者UI */
-if(isAdmin){
-  footerTitle.textContent = "NEZUO CHAT 👑 ADMIN";
-}
+/* =========================  
+   UI  
+========================= */  
+const chatWrap=document.getElementById("chatWrap");  
+const msgInput=document.getElementById("msgInput");  
+const sendBtn=document.getElementById("sendBtn");  
+const nameBtn=document.getElementById("nameBtn");  
 
-/* =====================
-   SCROLL
-===================== */
-const isTop=()=>chatWrap.scrollTop<20;
-const goTop=()=>chatWrap.scrollTop=0;
+function updateNameUI(){  
+  nameBtn.textContent = `${userName} ${uidTag}`;  
+}  
 
-/* =====================
-   BADGE
-===================== */
-function updateBadge(){
-  badge.textContent=state.newCount;
-  badge.classList.toggle("active", state.newCount>0);
-}
+function changeName(){  
+  const n = prompt("名前を変更");  
+  if(!n) return;  
 
-/* =====================
-   UI
-===================== */
-function syncUI(){
-  const inRoom = !!state.userName;
+  userName = n.trim();  
+  localStorage.setItem("userName", userName);  
+  updateNameUI();  
+}  
 
-  nameInput.classList.toggle("hidden", inRoom);
-  joinBtn.classList.toggle("hidden", inRoom);
+/* =========================  
+   送信  
+========================= */  
+function send(){  
+  const t = msgInput.value.trim();  
+  if(!t) return;  
 
-  msgInput.classList.toggle("hidden", !inRoom);
-  sendBtn.classList.toggle("hidden", !inRoom);
+  push(ref(db,"chat"),{  
+    uid,  
+    name:userName,  
+    tag:uidTag,  
+    text:t,  
+    time:Date.now()  
+  });  
 
-  exitBtn.classList.toggle("hidden", !inRoom);
-}
+  msgInput.value="";  
+}  
 
-/* =====================
-   JOIN
-===================== */
-function join(){
-  const n=nameInput.value.trim();
-  if(!n) return;
+/* =========================  
+   表示  
+========================= */  
+onChildAdded(chatRef,(snap)=>{  
+  const d = snap.val();  
 
-  state.userName=n;
+  const div = document.createElement("div");  
+  const mine = d.uid === uid;  
 
-  push(ref(db,"chat"),{
-    uid,
-    name:"system",
-    text:`${n} 入室`,
-    time:Date.now()
-  });
+  div.className = mine ? "msg me" : "msg other";  
 
-  syncUI();
-  goTop();
-  state.newCount=0;
-  updateBadge();
-}
+  const name = document.createElement("b");  
+  name.textContent = `${d.name} ${d.tag || ""}`;  
 
-/* =====================
-   SEND
-===================== */
-function send(){
-  if(!state.userName) return;
+  const br = document.createElement("br");  
+  const text = document.createElement("div");  
+  text.textContent = d.text;  
 
-  const t=msgInput.value.trim();
-  if(!t) return;
+  div.appendChild(name);  
+  div.appendChild(br);  
+  div.appendChild(text);  
 
-  if(Date.now()-state.lastSend<800) return;
-  state.lastSend=Date.now();
+  chatWrap.prepend(div);  
+});  
 
-  push(ref(db,"chat"),{
-    uid,
-    name:state.userName,
-    text:t,
-    time:Date.now()
-  });
+/* =========================  
+   scroll  
+========================= */  
+upBtn.onclick = ()=> chatWrap.scrollTop = 0;  
+downBtn.onclick = ()=> chatWrap.scrollTop = chatWrap.scrollHeight;  
 
-  msgInput.value="";
-}
+/* =========================  
+   events  
+========================= */  
+sendBtn.onclick = send;  
+nameBtn.onclick = changeName;  
 
-/* =====================
-   RECEIVE
-===================== */
-onChildAdded(chatRef,(snap)=>{
+msgInput.addEventListener("keydown",(e)=>{  
+  if(e.key==="Enter"){  
+    e.preventDefault();  
+    send();  
+  }  
+});  
 
-  const d=snap.val();
-  const mine=d.uid===uid;
+/* init */  
+updateNameUI();  
+initTag();  
 
-  const div=document.createElement("div");
+</script>  
 
-  div.className=
-    d.name==="system"?"msg system":
-    mine?"msg me":"msg other";
-
-  div.innerHTML =
-    d.name==="system"
-      ? d.text
-      : mine
-        ? d.text
-        : (d.uid===ADMIN_UID
-            ? `👑 <b>${d.name}</b><br>${d.text}`
-            : `<b>${d.name}</b><br>${d.text}`);
-
-  /* 👑 管理者削除ボタン */
-  if(isAdmin && d.name!=="system"){
-    const del = document.createElement("button");
-    del.textContent="削除";
-    del.onclick = () => remove(ref(db,"chat/" + snap.key));
-    div.appendChild(del);
-  }
-
-  chatWrap.prepend(div);
-
-  if(isTop()){
-    state.newCount=0;
-  }else{
-    state.newCount++;
-  }
-
-  updateBadge();
-});
-
-/* =====================
-   EVENTS
-===================== */
-joinBtn.onclick=join;
-sendBtn.onclick=send;
-
-exitBtn.onclick=()=>{
-  state.userName="";
-  syncUI();
-};
-
-upBtn.onclick=goTop;
-downBtn.onclick=()=>chatWrap.scrollTop=chatWrap.scrollHeight;
-
-document.addEventListener("keydown",(e)=>{
-  if(e.key!=="Enter") return;
-
-  if(document.activeElement===nameInput) join();
-  if(document.activeElement===msgInput) send();
-});
-
-/* INIT */
-syncUI();
-
-</script>
-
-</body>
+</body>  
 </html>
