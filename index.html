@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT v52 AUTH ADMIN</title>
+<title>NEZUO CHAT v52 AUTH ADMIN UID</title>
 
 <style>
 html,body{
@@ -144,7 +144,6 @@ import {
   remove
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-/* AUTH */
 import {
   getAuth,
   GoogleAuthProvider,
@@ -170,7 +169,9 @@ const chatRef = query(ref(db,"chat"), limitToLast(80));
 /* ADMIN */
 const ADMIN_EMAIL = "h.mareto@gmail.com";
 
+/* STATE */
 let user = null;
+let uid = null;
 let isAdmin = false;
 
 let state = {
@@ -187,41 +188,45 @@ const sendBtn=document.getElementById("sendBtn");
 const exitBtn=document.getElementById("exitBtn");
 const badge=document.getElementById("newBadge");
 
-function isTop(){
-  return chatWrap.scrollTop < 20;
-}
-
-/* AUTH LOGIN */
+/* LOGIN */
 loginBtn.onclick = async ()=>{
   await signInWithPopup(auth, provider);
 };
 
-/* AUTH STATE */
+/* AUTH */
 onAuthStateChanged(auth,(u)=>{
   if(u){
     user = u;
+
+    /* ★ UID取得 */
+    uid = u.uid;
+
+    /* 管理者判定 */
     isAdmin = (u.email === ADMIN_EMAIL);
 
+    console.log("UID:", uid);
+
+    /* システムログ */
     push(ref(db,"chat"),{
-      uid:u.uid,
+      uid,
       name:"system",
       text:`${u.displayName} ログイン`,
       time:Date.now()
     });
 
+    /* UI */
     nameInput.classList.add("hidden");
     loginBtn.classList.add("hidden");
 
     msgInput.classList.remove("hidden");
     sendBtn.classList.remove("hidden");
-
     exitBtn.classList.remove("hidden");
   }
 });
 
 /* SEND */
 sendBtn.onclick=()=>{
-  if(!user) return;
+  if(!user || !uid) return;
 
   const t = msgInput.value.trim();
   if(!t) return;
@@ -230,7 +235,7 @@ sendBtn.onclick=()=>{
   state.lastSend = Date.now();
 
   push(ref(db,"chat"),{
-    uid:user.uid,
+    uid, // ★UID保存
     name:user.displayName,
     email:user.email,
     text:t,
@@ -251,20 +256,22 @@ onChildAdded(chatRef,(snap)=>{
   const d=snap.val();
   const div=document.createElement("div");
 
+  const mine = d.uid === uid;
+
   div.className =
     d.name==="system"
       ? "msg system"
-      : (d.uid===user?.uid ? "msg me" : "msg other");
+      : (mine ? "msg me" : "msg other");
 
   div.innerHTML =
     d.name==="system"
       ? d.text
       : `<b>${d.name}${isAdmin ? " 🛡" : ""}</b><br>${d.text}`;
 
-  /* ADMIN DELETE */
+  /* 管理者削除 */
   if(isAdmin && d.name!=="system"){
     div.ondblclick=()=>{
-      if(confirm("管理者削除する？")){
+      if(confirm("削除する？")){
         remove(ref(db,"chat/"+snap.key));
       }
     };
@@ -272,16 +279,19 @@ onChildAdded(chatRef,(snap)=>{
 
   chatWrap.prepend(div);
 
-  if(isTop()) state.newCount=0;
-  else state.newCount++;
+  if(chatWrap.scrollTop < 20){
+    state.newCount=0;
+  }else{
+    state.newCount++;
+  }
 
   badge.textContent = state.newCount;
   badge.classList.toggle("active",state.newCount>0);
 });
 
-/* SCROLL RESET */
+/* SCROLL */
 chatWrap.addEventListener("scroll",()=>{
-  if(isTop()){
+  if(chatWrap.scrollTop < 20){
     state.newCount=0;
     badge.textContent=0;
     badge.classList.remove("active");
