@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NEZUO CHAT v52 AUTH ADMIN</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  overflow:hidden;
+  background:#e9edf2;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+/* HEADER */
+#header{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:9999;
+  background:#1f2328;
+  padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+#nameInput,#msgInput{
+  flex:1;
+  min-width:0;
+  border:none;
+  outline:none;
+  border-radius:10px;
+  padding:10px;
+}
+
+#loginBtn{
+  height:42px;
+  border:none;
+  border-radius:10px;
+  background:#4285f4;
+  color:#fff;
+}
+
+/* CHAT */
+#chatWrap{
+  position:fixed;
+  top:60px;
+  bottom:60px;
+  left:0;
+  right:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* FOOTER */
+#footer{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  z-index:9999;
+  background:#1f2328;
+  padding:10px;
+  display:grid;
+  grid-template-columns:60px 60px 1fr 60px 60px;
+  gap:8px;
+  align-items:center;
+}
+
+button{
+  height:42px;
+  border:none;
+  border-radius:10px;
+  background:#111;
+  color:#fff;
+}
+
+/* MESSAGE */
+.msg{
+  max-width:78%;
+  padding:10px 12px;
+  border-radius:16px;
+  font-size:14px;
+  word-break:break-word;
+}
+
+.me{ background:#95ec69; align-self:flex-end; }
+.other{ background:#fff; align-self:flex-start; }
+.system{ background:#c9ced6; align-self:center; font-size:12px; }
+
+.hidden{ display:none !important; }
+
+#newBadge{
+  background:#444;
+  color:#fff;
+  font-size:12px;
+  padding:6px 10px;
+  border-radius:14px;
+  text-align:center;
+}
+
+#newBadge.active{ background:#ff3b30; }
+</style>
+</head>
+
+<body>
+
+<div id="header">
+  <input id="nameInput" placeholder="名前（未ログイン時）" />
+  <button id="loginBtn">Googleログイン</button>
+
+  <input id="msgInput" class="hidden" placeholder="メッセージ" />
+  <button id="sendBtn" class="hidden">送信</button>
+</div>
+
+<div id="chatWrap"></div>
+
+<div id="footer">
+  <div id="newBadge">0</div>
+  <button id="upBtn">↑</button>
+  <div style="color:#fff;text-align:center;">NEZUO CHAT AUTH</div>
+  <button id="downBtn">↓</button>
+  <button id="exitBtn" class="hidden">退出</button>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import {
+  getDatabase,
+  ref,
+  push,
+  onChildAdded,
+  query,
+  limitToLast,
+  remove
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+/* AUTH */
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+/* FIREBASE */
+const app = initializeApp({
+  apiKey:"AIzaSyApju_6KuGq8EkXqPI0aTOysFmZ22vL5HQ",
+  authDomain:"nezubo2.firebaseapp.com",
+  databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
+  projectId:"nezubo2"
+});
+
+const db = getDatabase(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+const chatRef = query(ref(db,"chat"), limitToLast(80));
+
+/* ADMIN */
+const ADMIN_EMAIL = "h.mareto@gmail.com";
+
+let user = null;
+let isAdmin = false;
+
+let state = {
+  newCount:0,
+  lastSend:0
+};
+
+/* DOM */
+const chatWrap=document.getElementById("chatWrap");
+const nameInput=document.getElementById("nameInput");
+const msgInput=document.getElementById("msgInput");
+const loginBtn=document.getElementById("loginBtn");
+const sendBtn=document.getElementById("sendBtn");
+const exitBtn=document.getElementById("exitBtn");
+const badge=document.getElementById("newBadge");
+
+function isTop(){
+  return chatWrap.scrollTop < 20;
+}
+
+/* AUTH LOGIN */
+loginBtn.onclick = async ()=>{
+  await signInWithPopup(auth, provider);
+};
+
+/* AUTH STATE */
+onAuthStateChanged(auth,(u)=>{
+  if(u){
+    user = u;
+    isAdmin = (u.email === ADMIN_EMAIL);
+
+    push(ref(db,"chat"),{
+      uid:u.uid,
+      name:"system",
+      text:`${u.displayName} ログイン`,
+      time:Date.now()
+    });
+
+    nameInput.classList.add("hidden");
+    loginBtn.classList.add("hidden");
+
+    msgInput.classList.remove("hidden");
+    sendBtn.classList.remove("hidden");
+
+    exitBtn.classList.remove("hidden");
+  }
+});
+
+/* SEND */
+sendBtn.onclick=()=>{
+  if(!user) return;
+
+  const t = msgInput.value.trim();
+  if(!t) return;
+
+  if(Date.now() - state.lastSend < 1200) return;
+  state.lastSend = Date.now();
+
+  push(ref(db,"chat"),{
+    uid:user.uid,
+    name:user.displayName,
+    email:user.email,
+    text:t,
+    time:Date.now()
+  });
+
+  msgInput.value="";
+};
+
+/* LOGOUT */
+exitBtn.onclick=()=>{
+  signOut(auth);
+  location.reload();
+};
+
+/* RECEIVE */
+onChildAdded(chatRef,(snap)=>{
+  const d=snap.val();
+  const div=document.createElement("div");
+
+  div.className =
+    d.name==="system"
+      ? "msg system"
+      : (d.uid===user?.uid ? "msg me" : "msg other");
+
+  div.innerHTML =
+    d.name==="system"
+      ? d.text
+      : `<b>${d.name}${isAdmin ? " 🛡" : ""}</b><br>${d.text}`;
+
+  /* ADMIN DELETE */
+  if(isAdmin && d.name!=="system"){
+    div.ondblclick=()=>{
+      if(confirm("管理者削除する？")){
+        remove(ref(db,"chat/"+snap.key));
+      }
+    };
+  }
+
+  chatWrap.prepend(div);
+
+  if(isTop()) state.newCount=0;
+  else state.newCount++;
+
+  badge.textContent = state.newCount;
+  badge.classList.toggle("active",state.newCount>0);
+});
+
+/* SCROLL RESET */
+chatWrap.addEventListener("scroll",()=>{
+  if(isTop()){
+    state.newCount=0;
+    badge.textContent=0;
+    badge.classList.remove("active");
+  }
+});
+
+</script>
+
+</body>
+</html>
