@@ -15,12 +15,6 @@ html,body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
-/* APP */
-#app{
-  width:100%;
-  height:100%;
-}
-
 /* HEADER */
 #header{
   position:fixed;
@@ -57,14 +51,16 @@ button{
 
 #sendBtn{
   width:70px;
+  height:42px;
   background:rgba(40,48,58,.84);
+  font-size:14px;
 }
 
 /* CHAT */
 #chatWrap{
   position:fixed;
   top:68px;
-  bottom:74px;
+  bottom:84px;
   left:0;
   right:0;
   overflow-y:auto;
@@ -95,22 +91,51 @@ button{
   color:#111;
 }
 
+/* =========================
+   ★ 名前強調UI（黒白設計）
+========================= */
+
+/* 名前ベース */
 .msg b{
   display:flex;
   gap:6px;
   margin-bottom:4px;
-  font-size:12px;
+  font-size:13px;
+  font-weight:700;
+  color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.35);
 }
 
-/* TAG */
+/* 自分はさらに強調 */
+.me b{
+  font-weight:800;
+  color:#ffffff;
+}
+
+/* 他人は少し落ち着かせる */
+.other b{
+  color:#111;
+  text-shadow:0 1px 1px rgba(255,255,255,.3);
+}
+
+/* 管理者（反転スタイル） */
+.msg b.admin{
+  color:#000;
+  background:#fff;
+  padding:2px 6px;
+  border-radius:8px;
+  font-weight:900;
+  text-shadow:none;
+}
+
+/* #コード（補助情報） */
 .tag{
-  padding:2px 7px;
-  border-radius:999px;
   font-size:10px;
-  background:rgba(0,0,0,.08);
+  opacity:0.45;
+  letter-spacing:1.2px;
 }
 
-/* DELETE */
+/* 削除ボタン */
 .delBtn{
   position:absolute;
   top:6px;
@@ -123,42 +148,58 @@ button{
   font-size:14px;
 }
 
-/* MEDIA */
-.msg img{
-  max-width:100%;
-  border-radius:12px;
-  margin-top:6px;
-}
-
-.msg iframe{
-  width:100%;
-  height:180px;
-  border-radius:12px;
-  margin-top:6px;
-}
-
 /* FOOTER */
 #footer{
   position:fixed;
   left:0;
   right:0;
   bottom:0;
-  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+  padding:calc(env(safe-area-inset-bottom) + 10px) 10px 10px;
   display:grid;
-  grid-template-columns:70px 70px 1fr auto;
-  gap:8px;
+  grid-template-columns:44px 44px 1fr auto;
+  gap:12px;
   background:rgba(255,255,255,.14);
   border-top:1px solid rgba(255,255,255,.25);
   backdrop-filter:blur(14px);
+  align-items:center;
 }
 
-#upBtn,#downBtn,#nameBtn{
+#upBtn,#downBtn{
+  height:44px;
+  width:44px;
+  border-radius:14px;
   background:rgba(40,48,58,.78);
+  font-size:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-a{
-  color:#3b82f6;
+#nameBtn{
+  height:44px;
+  min-width:44px;
+  max-width:160px;
+  padding:0 10px;
+  border-radius:14px;
+  background:rgba(40,48,58,.78);
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
+
+/* send */
+#sendBtn{
+  width:70px;
+  height:42px;
+  border-radius:12px;
+}
+
+/* link */
+a{ color:#3b82f6; }
 
 </style>
 </head>
@@ -224,7 +265,17 @@ async function startChat(){
 
   let userName = localStorage.getItem("userName") || "名無し";
 
-  const ADMIN_UID = "eobk3m5b";
+  /* =========================
+     管理者UID
+  ========================= */
+  const ADMIN_UIDS = [
+    "eobk3m5b",
+    "6ee437db-57db-43f2-8bfd-40193e9d5b3c"
+  ];
+
+  function isAdmin(u){
+    return ADMIN_UIDS.includes(u);
+  }
 
   const chatWrap = document.getElementById("chatWrap");
   const msgInput = document.getElementById("msgInput");
@@ -233,12 +284,13 @@ async function startChat(){
   const upBtn = document.getElementById("upBtn");
   const downBtn = document.getElementById("downBtn");
 
-  function isAdmin(u){
-    return u === ADMIN_UID;
+  function makeShortCode(uid){
+    let hash = 0;
+    for(let i = 0; i < uid.length; i++){
+      hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
+    }
+    return hash.toString(36).toUpperCase().slice(0,4);
   }
-
-  nameBtn.textContent =
-  (isAdmin(uid) ? "👑 " : "") + userName;
 
   function changeName(){
     const n = prompt("名前変更");
@@ -247,9 +299,26 @@ async function startChat(){
     userName = n.trim();
     localStorage.setItem("userName",userName);
 
-    nameBtn.textContent =
-    (isAdmin(uid) ? "👑 " : "") + userName;
+    updateName();
   }
+
+  function updateName(){
+    const code = makeShortCode(uid);
+    const base = isAdmin(uid) ? "👑 " : "";
+    const full = `${base}${userName} #${code}`;
+
+    nameBtn.textContent = full;
+
+    if(full.length <= 10){
+      nameBtn.style.fontSize = "14px";
+    } else if(full.length <= 14){
+      nameBtn.style.fontSize = "13px";
+    } else {
+      nameBtn.style.fontSize = "12px";
+    }
+  }
+
+  updateName();
 
   async function send(){
     const t = msgInput.value.trim();
@@ -269,30 +338,19 @@ async function startChat(){
     return isAdmin(uid) || uid === messageUid;
   }
 
-  /* =========================
-     ★ メディア変換関数
-  ========================= */
   function renderText(text){
 
-    // YouTube
     const yt = text.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
     if(yt){
-      const id = yt[1];
-      return `
-        <iframe src="https://www.youtube.com/embed/${id}"
-        frameborder="0" allowfullscreen></iframe>
-      `;
+      return `<iframe src="https://www.youtube.com/embed/${yt[1]}" frameborder="0" allowfullscreen></iframe>`;
     }
 
-    // 画像
     const img = text.match(/(https?:\/\/.*\.(jpg|jpeg|png|gif|webp))/i);
     if(img){
       return `<img src="${img[1]}">`;
     }
 
-    // 通常リンク
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex,(url)=>{
+    return text.replace(/(https?:\/\/[^\s]+)/g,url=>{
       return `<a href="${url}" target="_blank">${url}</a>`;
     });
   }
@@ -304,16 +362,17 @@ async function startChat(){
 
     div.className = mine ? "msg me" : "msg other";
 
+    const adminClass = isAdmin(d.uid) ? "admin" : "";
+
     div.innerHTML = `
-      <b>
-        ${d.uid === ADMIN_UID ? "👑 " : ""}
-        ${d.name}
+      <b class="${adminClass}">
+        ${isAdmin(d.uid) ? "👑 " : ""}
+        ${d.name} #${makeShortCode(d.uid)}
       </b>
       <div>${renderText(d.text)}</div>
     `;
 
     if(canDelete(d.uid)){
-
       const del = document.createElement("button");
       del.className = "delBtn";
       del.textContent = "×";
