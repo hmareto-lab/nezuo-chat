@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NEZUO CHAT AUTH FIX</title>
+
+<style>
+
+html,body{
+  margin:0;
+  height:100%;
+  overflow:hidden;
+
+  background:
+  linear-gradient(
+    135deg,
+    #d7dde5,
+    #b8c2cf
+  );
+
+  font-family:
+  -apple-system,
+  BlinkMacSystemFont,
+  sans-serif;
+}
+
+/* LOGIN */
+
+#loginScreen{
+  position:fixed;
+  inset:0;
+
+  z-index:9999;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  padding:20px;
+
+  background:
+  rgba(220,228,236,.92);
+
+  backdrop-filter:blur(18px);
+}
+
+#loginBox{
+  width:100%;
+  max-width:340px;
+
+  padding:24px;
+
+  border-radius:24px;
+
+  background:
+  rgba(255,255,255,.18);
+
+  border:
+  1px solid rgba(255,255,255,.35);
+
+  backdrop-filter:blur(18px);
+}
+
+#loginTitle{
+  text-align:center;
+
+  font-size:24px;
+  font-weight:800;
+
+  margin-bottom:24px;
+}
+
+#passInput{
+  width:100%;
+  height:52px;
+
+  border:none;
+  outline:none;
+
+  border-radius:14px;
+
+  padding:0 14px;
+
+  box-sizing:border-box;
+
+  font-size:16px;
+
+  background:
+  rgba(255,255,255,.65);
+
+  margin-bottom:14px;
+}
+
+#loginBtn{
+  width:100%;
+  height:52px;
+
+  border:none;
+
+  border-radius:14px;
+
+  background:
+  rgba(40,48,58,.85);
+
+  color:#fff;
+
+  font-weight:700;
+}
+
+#error{
+  margin-top:14px;
+
+  text-align:center;
+
+  color:#c00022;
+
+  font-size:14px;
+}
+
+/* APP */
+
+#app{
+  display:none;
+  width:100%;
+  height:100%;
+}
+
+/* HEADER */
+
+#header{
+  position:fixed;
+
+  top:0;
+  left:0;
+  right:0;
+
+  z-index:5000;
+
+  padding:
+  calc(env(safe-area-inset-top) + 10px)
+  10px
+  10px;
+
+  display:flex;
+  gap:8px;
+
+  background:
+  rgba(255,255,255,.14);
+
+  border-bottom:
+  1px solid rgba(255,255,255,.25);
+
+  backdrop-filter:blur(14px);
+}
+
+#msgInput{
+  flex:1;
+
+  min-width:0;
+
+  height:42px;
+
+  border:none;
+  outline:none;
+
+  border-radius:12px;
+
+  padding:0 12px;
+
+  background:
+  rgba(255,255,255,.62);
+
+  font-size:15px;
+}
+
+button{
+  border:none;
+
+  border-radius:12px;
+
+  color:#fff;
+
+  font-weight:700;
+
+  cursor:pointer;
+}
+
+#sendBtn{
+  width:64px;
+
+  background:
+  rgba(40,48,58,.85);
+}
+
+/* CHAT */
+
+#chatWrap{
+  position:fixed;
+
+  top:64px;
+  bottom:70px;
+  left:0;
+  right:0;
+
+  overflow-y:auto;
+
+  -webkit-overflow-scrolling:touch;
+
+  scroll-behavior:smooth;
+
+  padding:14px;
+
+  display:flex;
+  flex-direction:column;
+
+  gap:10px;
+}
+
+.msg{
+  max-width:78%;
+
+  padding:10px 12px;
+
+  border-radius:18px;
+
+  word-break:break-word;
+
+  position:relative;
+
+  backdrop-filter:blur(12px);
+
+  box-shadow:
+  0 4px 18px rgba(0,0,0,.08);
+}
+
+.me{
+  align-self:flex-end;
+
+  background:
+  rgba(40,48,58,.75);
+
+  color:#fff;
+}
+
+.other{
+  align-self:flex-start;
+
+  background:
+  rgba(255,255,255,.6);
+
+  color:#111;
+}
+
+.msg b{
+  display:flex;
+  align-items:center;
+
+  gap:6px;
+
+  margin-bottom:4px;
+
+  font-size:12px;
+}
+
+.tag{
+  padding:2px 7px;
+
+  border-radius:999px;
+
+  font-size:10px;
+
+  background:
+  rgba(0,0,0,.08);
+}
+
+.adminBadge{
+  padding:2px 8px;
+
+  border-radius:999px;
+
+  font-size:10px;
+
+  background:
+  rgba(255,215,0,.18);
+
+  color:#ffb700;
+}
+
+.delBtn{
+  position:absolute;
+
+  top:6px;
+  right:6px;
+
+  width:24px;
+  height:24px;
+
+  border-radius:999px;
+
+  background:
+  rgba(255,0,0,.14);
+
+  color:#ff4d4d;
+}
+
+/* FOOTER */
+
+#footer{
+  position:fixed;
+
+  left:0;
+  right:0;
+  bottom:0;
+
+  z-index:5000;
+
+  padding:
+  10px
+  10px
+  calc(10px + env(safe-area-inset-bottom));
+
+  display:grid;
+
+  grid-template-columns:
+  70px
+  70px
+  1fr
+  auto;
+
+  gap:8px;
+
+  background:
+  rgba(255,255,255,.14);
+
+  border-top:
+  1px solid rgba(255,255,255,.25);
+
+  backdrop-filter:blur(14px);
+}
+
+#upBtn,
+#downBtn,
+#nameBtn{
+  background:
+  rgba(40,48,58,.78);
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="loginScreen">
+
+  <div id="loginBox">
+
+    <div id="loginTitle">
+      NEZUO CHAT
+    </div>
+
+    <input
+      id="passInput"
+      type="password"
+      placeholder="部屋の鍵"
+    />
+
+    <button id="loginBtn">
+      入室
+    </button>
+
+    <div id="error"></div>
+
+  </div>
+
+</div>
+
+<div id="app">
+
+  <div id="header">
+
+    <input
+      id="msgInput"
+      placeholder="メッセージ"
+    />
+
+    <button id="sendBtn">
+      送信
+    </button>
+
+  </div>
+
+  <div id="chatWrap"></div>
+
+  <div id="footer">
+
+    <button id="upBtn">
+      LIVE
+    </button>
+
+    <button id="downBtn">
+      OLD
+    </button>
+
+    <div></div>
+
+    <button id="nameBtn">
+      名前
+    </button>
+
+  </div>
+
+</div>
+
+<script type="module">
+
+let started = false;
+
+/* PASSWORD HASH */
+
+const ROOM_HASH =
+"1E577E9A06D7B98CC0E7609D21439C9F6E5DE33416ADFF1F8D408673E97AE859";
+
+/* ADMIN UID */
+
+const ADMIN_UID =
+"ここに自分のFirebaseUID";
+
+/* UI */
+
+const loginScreen =
+document.getElementById("loginScreen");
+
+const app =
+document.getElementById("app");
+
+const passInput =
+document.getElementById("passInput");
+
+const loginBtn =
+document.getElementById("loginBtn");
+
+const error =
+document.getElementById("error");
+
+/* SHA256 */
+
+async function sha256(str){
+
+  const enc =
+  new TextEncoder();
+
+  const buf =
+  await crypto.subtle.digest(
+    "SHA-256",
+    enc.encode(str)
+  );
+
+  return [...new Uint8Array(buf)]
+  .map(b =>
+    b.toString(16).padStart(2,"0")
+  )
+  .join("")
+  .toUpperCase();
+}
+
+/* LOGIN */
+
+async function login(){
+
+  const pass =
+  passInput.value.trim();
+
+  if(!pass){
+
+    error.textContent =
+    "鍵を入力";
+
+    return;
+  }
+
+  const hash =
+  await sha256(pass);
+
+  if(hash !== ROOM_HASH){
+
+    error.textContent =
+    "鍵が違います";
+
+    passInput.value = "";
+
+    return;
+  }
+
+  sessionStorage.setItem(
+    "roomAuth",
+    "ok"
+  );
+
+  startChat();
+}
+
+/* AUTO LOGIN */
+
+window.addEventListener("load",()=>{
+
+  if(
+    sessionStorage.getItem("roomAuth")
+    === "ok"
+  ){
+    startChat();
+  }
+
+});
+
+/* START CHAT */
+
+async function startChat(){
+
+  if(started) return;
+
+  started = true;
+
+  try{
+
+    loginScreen.style.display =
+    "none";
+
+    app.style.display =
+    "block";
+
+    /* FIREBASE */
+
+    const {
+      initializeApp
+    } = await import(
+      "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"
+    );
+
+    const {
+      getDatabase,
+      ref,
+      push,
+      onChildAdded,
+      query,
+      limitToLast,
+      remove
+    } = await import(
+      "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"
+    );
+
+    const {
+      getAuth,
+      signInAnonymously
+    } = await import(
+      "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"
+    );
+
+    const firebaseApp =
+    initializeApp({
+      apiKey:"AIzaSyApju_6KuGq8EkXqPI0aTOysFmZ22vL5HQ",
+      authDomain:"nezubo2.firebaseapp.com",
+      databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
+      projectId:"nezubo2"
+    });
+
+    /* AUTH */
+
+    const auth =
+    getAuth(firebaseApp);
+
+    let authUid =
+    "guest";
+
+    try{
+
+      const userCredential =
+      await signInAnonymously(auth);
+
+      authUid =
+      userCredential.user.uid;
+
+      console.log(
+        "AUTH OK:",
+        authUid
+      );
+
+    }catch(err){
+
+      console.error(err);
+
+      alert(
+        "匿名認証失敗\nRulesを一時的にwrite:trueへ"
+      );
+    }
+
+    /* DB */
+
+    const db =
+    getDatabase(firebaseApp);
+
+    const chatRef =
+    query(
+      ref(db,"chat"),
+      limitToLast(80)
+    );
+
+    /* UID */
+
+    let uid =
+    localStorage.getItem("uid");
+
+    if(!uid){
+
+      uid =
+      crypto.randomUUID();
+
+      localStorage.setItem(
+        "uid",
+        uid
+      );
+    }
+
+    /* NAME */
+
+    let userName =
+    localStorage.getItem("userName")
+    || "名無し";
+
+    /* TAG */
+
+    async function makeTag(input){
+
+      const enc =
+      new TextEncoder();
+
+      const buf =
+      await crypto.subtle.digest(
+        "SHA-256",
+        enc.encode(input)
+      );
+
+      return "#" +
+      [...new Uint8Array(buf)]
+      .map(b =>
+        b.toString(16).padStart(2,"0")
+      )
+      .join("")
+      .slice(0,6)
+      .toUpperCase();
+    }
+
+    const uidTag =
+    await makeTag(uid);
+
+    const isAdmin =
+    authUid === ADMIN_UID;
+
+    /* UI */
+
+    const chatWrap =
+    document.getElementById("chatWrap");
+
+    const msgInput =
+    document.getElementById("msgInput");
+
+    const sendBtn =
+    document.getElementById("sendBtn");
+
+    const nameBtn =
+    document.getElementById("nameBtn");
+
+    const upBtn =
+    document.getElementById("upBtn");
+
+    const downBtn =
+    document.getElementById("downBtn");
+
+    /* NAME */
+
+    function updateNameUI(){
+
+      if(isAdmin){
+
+        nameBtn.textContent =
+        "👑 ADMIN";
+
+      }else{
+
+        nameBtn.textContent =
+        userName;
+      }
+    }
+
+    updateNameUI();
+
+    function changeName(){
+
+      const n =
+      prompt("名前変更");
+
+      if(!n) return;
+
+      userName =
+      n.trim();
+
+      if(!userName) return;
+
+      localStorage.setItem(
+        "userName",
+        userName
+      );
+
+      updateNameUI();
+    }
+
+    /* SEND */
+
+    let lastSend = 0;
+
+    async function send(){
+
+      const t =
+      msgInput.value.trim();
+
+      if(!t) return;
+
+      if(t.length > 300){
+
+        alert("300文字まで");
+
+        return;
+      }
+
+      if(
+        Date.now() - lastSend
+        < 1200
+      ){
+        return;
+      }
+
+      lastSend =
+      Date.now();
+
+      try{
+
+        await push(
+          ref(db,"chat"),
+          {
+            uid,
+            authUid,
+            name:userName,
+            tag:uidTag,
+            text:t,
+            time:Date.now()
+          }
+        );
+
+        msgInput.value = "";
+
+      }catch(err){
+
+        console.error(err);
+
+        alert(
+          "送信失敗\nRules確認"
+        );
+      }
+    }
+
+    /* RECEIVE */
+
+    onChildAdded(chatRef,(snap)=>{
+
+      const d =
+      snap.val();
+
+      const msgId =
+      snap.key;
+
+      const div =
+      document.createElement("div");
+
+      const mine =
+      d.uid === uid;
+
+      div.className =
+      mine
+      ? "msg me"
+      : "msg other";
+
+      const name =
+      document.createElement("b");
+
+      const userSpan =
+      document.createElement("span");
+
+      userSpan.textContent =
+      d.name;
+
+      name.appendChild(userSpan);
+
+      if(
+        d.authUid === ADMIN_UID
+      ){
+
+        const adminBadge =
+        document.createElement("span");
+
+        adminBadge.className =
+        "adminBadge";
+
+        adminBadge.textContent =
+        "ADMIN";
+
+        name.appendChild(adminBadge);
+      }
+
+      const tagSpan =
+      document.createElement("span");
+
+      tagSpan.className =
+      "tag";
+
+      tagSpan.textContent =
+      d.tag || "";
+
+      name.appendChild(tagSpan);
+
+      const text =
+      document.createElement("div");
+
+      text.textContent =
+      d.text;
+
+      div.appendChild(name);
+      div.appendChild(text);
+
+      if(isAdmin){
+
+        const delBtn =
+        document.createElement("button");
+
+        delBtn.className =
+        "delBtn";
+
+        delBtn.textContent =
+        "✕";
+
+        delBtn.addEventListener(
+          "click",
+          async ()=>{
+
+            if(!confirm("削除する？"))
+              return;
+
+            await remove(
+              ref(db,"chat/"+msgId)
+            );
+
+            div.remove();
+          }
+        );
+
+        div.appendChild(delBtn);
+      }
+
+      chatWrap.prepend(div);
+
+      while(
+        chatWrap.children.length > 80
+      ){
+        chatWrap.lastChild.remove();
+      }
+
+    });
+
+    /* SCROLL */
+
+    upBtn.addEventListener(
+      "click",
+      ()=>{
+
+        chatWrap.scrollTo({
+          top:0,
+          behavior:"smooth"
+        });
+
+      }
+    );
+
+    downBtn.addEventListener(
+      "click",
+      ()=>{
+
+        chatWrap.scrollTo({
+          top:chatWrap.scrollHeight,
+          behavior:"smooth"
+        });
+
+      }
+    );
+
+    /* EVENTS */
+
+    sendBtn.addEventListener(
+      "click",
+      send
+    );
+
+    nameBtn.addEventListener(
+      "click",
+      changeName
+    );
+
+    msgInput.addEventListener(
+      "keydown",
+      (e)=>{
+
+        if(
+          e.key === "Enter" &&
+          !e.shiftKey &&
+          !e.isComposing
+        ){
+
+          e.preventDefault();
+
+          send();
+        }
+      }
+    );
+
+  }catch(err){
+
+    console.error(err);
+
+    alert(
+      "Firebase接続失敗"
+    );
+
+    started = false;
+  }
+}
+
+/* LOGIN EVENTS */
+
+loginBtn.addEventListener(
+  "click",
+  login
+);
+
+passInput.addEventListener(
+  "keydown",
+  (e)=>{
+
+    if(
+      e.key === "Enter" &&
+      !e.isComposing
+    ){
+      login();
+    }
+  }
+);
+
+</script>
+
+</body>
+</html>
