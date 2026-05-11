@@ -3,462 +3,161 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT GLASS ADMIN DELETE</title>
+<title>NEZUO CHAT KING MODE</title>
 
 <style>
-
-/* =========================
-   BASE
-========================= */
 
 html,body{
   margin:0;
   height:100%;
   overflow:hidden;
-
-  background:
-    linear-gradient(
-      135deg,
-      #d7dde5,
-      #b8c2cf
-    );
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  background:linear-gradient(135deg,#d7dde5,#b8c2cf);
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
-/* =========================
-   LOGIN
-========================= */
-
-#loginScreen{
-  position:fixed;
-  inset:0;
-
-  z-index:30000;
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
-
-  padding:20px;
-
-  background:
-    linear-gradient(
-      135deg,
-      rgba(215,221,229,.95),
-      rgba(184,194,207,.95)
-    );
-}
-
-#loginBox{
-  width:100%;
-  max-width:340px;
-
-  padding:24px;
-
-  border-radius:24px;
-
-  background:
-    rgba(255,255,255,.18);
-
-  border:
-    1px solid rgba(255,255,255,.35);
-
-  box-shadow:
-    0 8px 30px rgba(0,0,0,.12);
-
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-}
-
-#loginTitle{
-  text-align:center;
-
-  font-size:24px;
-  font-weight:800;
-
-  color:#1f2328;
-
-  margin-bottom:24px;
-}
-
-#passInput{
-  width:100%;
-  height:52px;
-
-  border:none;
-  outline:none;
-
-  border-radius:14px;
-
-  padding:0 14px;
-
-  box-sizing:border-box;
-
-  font-size:16px;
-
-  background:
-    rgba(255,255,255,.55);
-
-  color:#111;
-
-  margin-bottom:14px;
-}
-
-#passInput::placeholder{
-  color:#5f6977;
-}
-
-#loginBtn{
-  width:100%;
-  height:52px;
-
-  border:none;
-
-  border-radius:14px;
-
-  background:
-    rgba(40,48,58,.78);
-
-  color:#fff;
-
-  font-size:16px;
-  font-weight:700;
-}
-
-#error{
-  margin-top:14px;
-
-  text-align:center;
-
-  color:#b30021;
-
-  font-size:14px;
-}
-
-/* =========================
-   APP
-========================= */
-
+/* APP */
 #app{
-  display:none;
   width:100%;
   height:100%;
 }
 
-/* =========================
-   HEADER
-========================= */
-
+/* HEADER */
 #header{
   position:fixed;
-
   top:0;
   left:0;
   right:0;
-
-  z-index:9999;
-
-  padding:
-    calc(env(safe-area-inset-top) + 10px)
-    10px
-    10px;
-
+  z-index:9000;
+  padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
   display:flex;
   gap:8px;
-
-  background:
-    rgba(255,255,255,.12);
-
-  border-bottom:
-    1px solid rgba(255,255,255,.25);
-
+  background:rgba(255,255,255,.14);
+  border-bottom:1px solid rgba(255,255,255,.25);
   backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
 }
 
 #msgInput{
   flex:1;
-  min-width:0;
-
+  height:42px;
   border:none;
   outline:none;
-
   border-radius:12px;
-
-  padding:10px 12px;
-
+  padding:0 12px;
+  background:rgba(255,255,255,.64);
   font-size:15px;
-
-  background:
-    rgba(255,255,255,.6);
-
-  color:#111;
 }
 
 button{
-  height:42px;
-
   border:none;
-
   border-radius:12px;
-
   color:#fff;
-
   font-weight:700;
+  cursor:pointer;
 }
 
 #sendBtn{
-  width:60px;
-
-  background:
-    rgba(40,48,58,.82);
+  width:70px;
+  background:rgba(40,48,58,.84);
 }
 
-#nameBtn{
-  background:
-    rgba(40,48,58,.72);
-
-  padding:0 12px;
-
-  width:auto;
-  min-width:60px;
-  max-width:180px;
-
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-/* =========================
-   CHAT
-========================= */
-
+/* CHAT */
 #chatWrap{
   position:fixed;
-
-  top:64px;
-  bottom:64px;
+  top:68px;
+  bottom:74px;
   left:0;
   right:0;
-
   overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-
   padding:14px;
-
   display:flex;
   flex-direction:column;
-
   gap:10px;
 }
 
-/* =========================
-   MESSAGE
-========================= */
-
 .msg{
   max-width:78%;
-
   padding:10px 12px;
-
   border-radius:18px;
-
-  font-size:14px;
-
   word-break:break-word;
-
-  box-shadow:
-    0 4px 18px rgba(0,0,0,.08);
-
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-
   position:relative;
+  box-shadow:0 4px 18px rgba(0,0,0,.08);
 }
 
 .me{
-  background:
-    rgba(40,48,58,.72);
-
-  border:
-    1px solid rgba(255,255,255,.12);
-
-  color:#fff;
-
   align-self:flex-end;
+  background:rgba(40,48,58,.78);
+  color:#fff;
 }
 
 .other{
-  background:
-    rgba(255,255,255,.55);
-
-  border:
-    1px solid rgba(255,255,255,.42);
-
-  color:#111;
-
   align-self:flex-start;
+  background:rgba(255,255,255,.62);
+  color:#111;
 }
-
-/* =========================
-   NAME
-========================= */
 
 .msg b{
   display:flex;
-  align-items:center;
-
   gap:6px;
-
   margin-bottom:4px;
-
   font-size:12px;
-  font-weight:700;
-
-  opacity:.88;
 }
 
-/* =========================
-   TAG
-========================= */
-
+/* TAG */
 .tag{
-  user-select:text;
-
-  padding:1px 7px;
-
+  padding:2px 7px;
   border-radius:999px;
-
   font-size:10px;
-  font-weight:700;
-
-  letter-spacing:.5px;
+  background:rgba(0,0,0,.08);
 }
 
-.me .tag{
-  background:
-    rgba(255,255,255,.06);
-
-  border:
-    1px solid rgba(255,255,255,.05);
-
-  color:
-    rgba(40,48,58,.72);
-}
-
-.other .tag{
-  background:
-    rgba(255,255,255,.18);
-
-  border:
-    1px solid rgba(255,255,255,.10);
-
-  color:
-    rgba(255,255,255,.55);
-}
-
-/* =========================
-   ADMIN
-========================= */
-
-.adminBadge{
-  font-size:11px;
-
-  padding:2px 8px;
-
-  border-radius:999px;
-
-  background:
-    rgba(255,215,0,.18);
-
-  border:
-    1px solid rgba(255,215,0,.25);
-
-  color:#ffcc33;
-
-  font-weight:700;
-}
-
-/* =========================
-   DELETE BUTTON
-========================= */
-
+/* DELETE */
 .delBtn{
   position:absolute;
-
   top:6px;
   right:6px;
-
-  width:24px;
-  height:24px;
-
-  border:none;
-
+  width:26px;
+  height:26px;
   border-radius:999px;
-
-  background:
-    rgba(255,0,0,.14);
-
+  background:rgba(255,0,0,.15);
   color:#ff4d4d;
-
-  font-size:12px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  cursor:pointer;
-
-  backdrop-filter:blur(8px);
+  font-size:14px;
 }
 
-/* =========================
-   FOOTER
-========================= */
+/* MEDIA */
+.msg img{
+  max-width:100%;
+  border-radius:12px;
+  margin-top:6px;
+}
 
+.msg iframe{
+  width:100%;
+  height:180px;
+  border-radius:12px;
+  margin-top:6px;
+}
+
+/* FOOTER */
 #footer{
   position:fixed;
-
-  bottom:0;
   left:0;
   right:0;
-
-  z-index:9999;
-
-  padding:
-    10px
-    10px
-    calc(10px + env(safe-area-inset-bottom));
-
+  bottom:0;
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
   display:grid;
-
-  grid-template-columns:
-    60px
-    60px
-    1fr
-    auto;
-
+  grid-template-columns:70px 70px 1fr auto;
   gap:8px;
-  align-items:center;
-
-  background:
-    rgba(255,255,255,.12);
-
-  border-top:
-    1px solid rgba(255,255,255,.25);
-
+  background:rgba(255,255,255,.14);
+  border-top:1px solid rgba(255,255,255,.25);
   backdrop-filter:blur(14px);
 }
 
-#upBtn,
-#downBtn{
-  background:
-    rgba(40,48,58,.72);
+#upBtn,#downBtn,#nameBtn{
+  background:rgba(40,48,58,.78);
+}
+
+a{
+  color:#3b82f6;
 }
 
 </style>
@@ -466,194 +165,36 @@ button{
 
 <body>
 
-<!-- LOGIN -->
-
-<div id="loginScreen">
-
-  <div id="loginBox">
-
-    <div id="loginTitle">
-      NEZUO CHAT
-    </div>
-
-    <input
-      id="passInput"
-      type="password"
-      placeholder="部屋の鍵"
-      autocomplete="off"
-    />
-
-    <button id="loginBtn">
-      入室
-    </button>
-
-    <div id="error"></div>
-
-  </div>
-
-</div>
-
-<!-- APP -->
-
 <div id="app">
 
   <div id="header">
-
-    <input
-      id="msgInput"
-      placeholder="メッセージ"
-    />
-
-    <button id="sendBtn">
-      送信
-    </button>
-
-    <div></div>
-
+    <input id="msgInput" placeholder="メッセージ" />
+    <button id="sendBtn">送信</button>
   </div>
 
   <div id="chatWrap"></div>
 
   <div id="footer">
-
-    <button id="upBtn">
-      ↑
-    </button>
-
-    <button id="downBtn">
-      ↓
-    </button>
-
+    <button id="upBtn">↑</button>
+    <button id="downBtn">↓</button>
     <div></div>
-
-    <button id="nameBtn"></button>
-
+    <button id="nameBtn">名前</button>
   </div>
 
 </div>
 
 <script type="module">
 
-/* =========================
-   SHA256
-========================= */
-
-async function sha256(str){
-
-  const enc = new TextEncoder();
-
-  const buf = await crypto.subtle.digest(
-    "SHA-256",
-    enc.encode(str)
-  );
-
-  return [...new Uint8Array(buf)]
-    .map(b =>
-      b.toString(16).padStart(2,"0")
-    )
-    .join("")
-    .toUpperCase();
-}
-
-/* =========================
-   PASSWORD
-========================= */
-
-const ROOM_HASH =
-"1E577E9A06D7B98CC0E7609D21439C9F6E5DE33416ADFF1F8D408673E97AE859";
-
-/* =========================
-   ADMIN
-========================= */
-
-const ADMIN_TAG =
-  "#6FA6E7";
-
-/* =========================
-   LOGIN UI
-========================= */
-
-const loginScreen =
-  document.getElementById("loginScreen");
-
-const app =
-  document.getElementById("app");
-
-const passInput =
-  document.getElementById("passInput");
-
-const loginBtn =
-  document.getElementById("loginBtn");
-
-const error =
-  document.getElementById("error");
-
-/* =========================
-   LOGIN
-========================= */
-
-async function login(){
-
-  const pass =
-    passInput.value.trim();
-
-  if(!pass){
-
-    error.textContent =
-      "鍵を入力してください";
-
-    return;
-  }
-
-  const hash =
-    await sha256(pass);
-
-  if(hash !== ROOM_HASH){
-
-    error.textContent =
-      "鍵が違います";
-
-    passInput.value = "";
-
-    return;
-  }
-
-  sessionStorage.setItem(
-    "roomAuth",
-    "ok"
-  );
-
-  startChat();
-}
-
-/* =========================
-   AUTO LOGIN
-========================= */
-
-if(
-  sessionStorage.getItem("roomAuth")
-  === "ok"
-){
-  startChat();
-}
-
-/* =========================
-   START CHAT
-========================= */
+let started = false;
+window.addEventListener("load", startChat);
 
 async function startChat(){
 
-  loginScreen.style.display =
-    "none";
+  if(started) return;
+  started = true;
 
-  app.style.display =
-    "block";
-
-  const {
-    initializeApp
-  } = await import(
-    "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"
-  );
+  const { initializeApp } =
+  await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js");
 
   const {
     getDatabase,
@@ -663,159 +204,60 @@ async function startChat(){
     query,
     limitToLast,
     remove
-  } = await import(
-    "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js"
-  );
+  } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js");
 
-  const firebaseApp =
-    initializeApp({
-      apiKey:"AIzaSyApju_6KuGq8EkXqPI0aTOysFmZ22vL5HQ",
-      authDomain:"nezubo2.firebaseapp.com",
-      databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
-      projectId:"nezubo2"
-    });
+  const app = initializeApp({
+    apiKey:"AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
+    authDomain:"nezubo2.firebaseapp.com",
+    databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
+    projectId:"nezubo2"
+  });
 
-  const db =
-    getDatabase(firebaseApp);
+  const db = getDatabase(app);
+  const chatRef = query(ref(db,"chat"), limitToLast(80));
 
-  const chatRef =
-    query(
-      ref(db,"chat"),
-      limitToLast(80)
-    );
-
-  /* UID */
-
-  let uid =
-    localStorage.getItem("uid")
-    || crypto.randomUUID();
-
-  localStorage.setItem(
-    "uid",
-    uid
-  );
-
-  let userName =
-    localStorage.getItem("userName")
-    || "名無し";
-
-  /* TAG */
-
-  async function makeTag(input){
-
-    const enc =
-      new TextEncoder();
-
-    const buf =
-      await crypto.subtle.digest(
-        "SHA-256",
-        enc.encode(input)
-      );
-
-    return "#" +
-      [...new Uint8Array(buf)]
-      .map(b =>
-        b.toString(16).padStart(2,"0")
-      )
-      .join("")
-      .slice(0,6)
-      .toUpperCase();
+  let uid = localStorage.getItem("uid");
+  if(!uid){
+    uid = crypto.randomUUID();
+    localStorage.setItem("uid",uid);
   }
 
-  const uidTag =
-    await makeTag(uid);
+  let userName = localStorage.getItem("userName") || "名無し";
 
-  const isAdmin =
-    uidTag === ADMIN_TAG;
+  const ADMIN_UID = "eobk3m5b";
 
-  /* UI */
+  const chatWrap = document.getElementById("chatWrap");
+  const msgInput = document.getElementById("msgInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const nameBtn = document.getElementById("nameBtn");
+  const upBtn = document.getElementById("upBtn");
+  const downBtn = document.getElementById("downBtn");
 
-  const chatWrap =
-    document.getElementById("chatWrap");
-
-  const msgInput =
-    document.getElementById("msgInput");
-
-  const sendBtn =
-    document.getElementById("sendBtn");
-
-  const nameBtn =
-    document.getElementById("nameBtn");
-
-  const upBtn =
-    document.getElementById("upBtn");
-
-  const downBtn =
-    document.getElementById("downBtn");
-
-  function updateNameUI(){
-
-    if(isAdmin){
-
-      nameBtn.textContent =
-        "👑 ADMIN";
-
-    }else{
-
-      nameBtn.textContent =
-        userName;
-    }
+  function isAdmin(u){
+    return u === ADMIN_UID;
   }
 
-  updateNameUI();
-
-  /* NAME */
+  nameBtn.textContent =
+  (isAdmin(uid) ? "👑 " : "") + userName;
 
   function changeName(){
-
-    const n =
-      prompt("名前変更");
-
+    const n = prompt("名前変更");
     if(!n) return;
 
-    userName =
-      n.trim();
+    userName = n.trim();
+    localStorage.setItem("userName",userName);
 
-    localStorage.setItem(
-      "userName",
-      userName
-    );
-
-    updateNameUI();
+    nameBtn.textContent =
+    (isAdmin(uid) ? "👑 " : "") + userName;
   }
 
-  /* SEND */
-
-  let lastSend = 0;
-
-  function send(){
-
-    const t =
-      msgInput.value.trim();
-
+  async function send(){
+    const t = msgInput.value.trim();
     if(!t) return;
 
-    if(t.length > 300){
-
-      alert("300文字まで");
-
-      return;
-    }
-
-    if(
-      Date.now() - lastSend
-      < 1200
-    ){
-      return;
-    }
-
-    lastSend =
-      Date.now();
-
-    push(ref(db,"chat"),{
+    await push(ref(db,"chat"),{
       uid,
       name:userName,
-      tag:uidTag,
       text:t,
       time:Date.now()
     });
@@ -823,167 +265,89 @@ async function startChat(){
     msgInput.value = "";
   }
 
-  /* RECEIVE */
+  function canDelete(messageUid){
+    return isAdmin(uid) || uid === messageUid;
+  }
 
-  onChildAdded(chatRef,(snap)=>{
+  /* =========================
+     ★ メディア変換関数
+  ========================= */
+  function renderText(text){
 
-    const d = snap.val();
-
-    const msgId =
-      snap.key;
-
-    const div =
-      document.createElement("div");
-
-    const mine =
-      d.uid === uid;
-
-    div.className =
-      mine
-      ? "msg me"
-      : "msg other";
-
-    /* NAME */
-
-    const name =
-      document.createElement("b");
-
-    const userSpan =
-      document.createElement("span");
-
-    if(d.tag === ADMIN_TAG){
-
-      userSpan.textContent =
-        "👑 " + d.name;
-
-    }else{
-
-      userSpan.textContent =
-        d.name;
+    // YouTube
+    const yt = text.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+    if(yt){
+      const id = yt[1];
+      return `
+        <iframe src="https://www.youtube.com/embed/${id}"
+        frameborder="0" allowfullscreen></iframe>
+      `;
     }
 
-    name.appendChild(userSpan);
-
-    /* ADMIN BADGE */
-
-    if(d.tag === ADMIN_TAG){
-
-      const adminBadge =
-        document.createElement("span");
-
-      adminBadge.className =
-        "adminBadge";
-
-      adminBadge.textContent =
-        "ADMIN";
-
-      name.appendChild(adminBadge);
+    // 画像
+    const img = text.match(/(https?:\/\/.*\.(jpg|jpeg|png|gif|webp))/i);
+    if(img){
+      return `<img src="${img[1]}">`;
     }
 
-    /* TAG */
+    // 通常リンク
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex,(url)=>{
+      return `<a href="${url}" target="_blank">${url}</a>`;
+    });
+  }
 
-    const tagSpan =
-      document.createElement("span");
+  function createMsg(d,id){
 
-    tagSpan.className =
-      "tag";
+    const div = document.createElement("div");
+    const mine = d.uid === uid;
 
-    tagSpan.textContent =
-      d.tag || "";
+    div.className = mine ? "msg me" : "msg other";
 
-    name.appendChild(tagSpan);
+    div.innerHTML = `
+      <b>
+        ${d.uid === ADMIN_UID ? "👑 " : ""}
+        ${d.name}
+      </b>
+      <div>${renderText(d.text)}</div>
+    `;
 
-    /* TEXT */
+    if(canDelete(d.uid)){
 
-    const text =
-      document.createElement("div");
+      const del = document.createElement("button");
+      del.className = "delBtn";
+      del.textContent = "×";
 
-    text.textContent =
-      d.text;
-
-    div.appendChild(name);
-    div.appendChild(text);
-
-    /* DELETE */
-
-    if(isAdmin){
-
-      const delBtn =
-        document.createElement("button");
-
-      delBtn.className =
-        "delBtn";
-
-      delBtn.textContent =
-        "✕";
-
-      delBtn.onclick = ()=>{
-
-        if(!confirm("削除する？"))
-          return;
-
-        remove(
-          ref(db,"chat/"+msgId)
-        );
-
+      del.onclick = async ()=>{
+        if(!confirm("削除する？")) return;
+        await remove(ref(db,"chat/" + id));
         div.remove();
       };
 
-      div.appendChild(delBtn);
+      div.appendChild(del);
     }
 
     chatWrap.prepend(div);
+  }
 
-    while(
-      chatWrap.children.length > 80
-    ){
-      chatWrap.lastChild.remove();
-    }
+  onChildAdded(chatRef,(snap)=>{
+    createMsg(snap.val(), snap.key);
   });
 
-  /* SCROLL */
-
-  upBtn.onclick = ()=>{
-    chatWrap.scrollTop = 0;
-  };
-
-  downBtn.onclick = ()=>{
-    chatWrap.scrollTop =
-      chatWrap.scrollHeight;
-  };
-
-  /* EVENTS */
+  upBtn.onclick = ()=> chatWrap.scrollTo({top:0,behavior:"smooth"});
+  downBtn.onclick = ()=> chatWrap.scrollTo({top:chatWrap.scrollHeight,behavior:"smooth"});
 
   sendBtn.onclick = send;
+  nameBtn.onclick = changeName;
 
-  nameBtn.onclick =
-    changeName;
-
-  msgInput.addEventListener(
-    "keydown",
-    (e)=>{
-      if(e.key==="Enter"){
-        e.preventDefault();
-        send();
-      }
-    }
-  );
-}
-
-/* =========================
-   LOGIN EVENTS
-========================= */
-
-loginBtn.onclick = login;
-
-passInput.addEventListener(
-  "keydown",
-  (e)=>{
+  msgInput.onkeydown = (e)=>{
     if(e.key==="Enter"){
-      login();
+      e.preventDefault();
+      send();
     }
-  }
-);
+  };
+
+}
 
 </script>
 
