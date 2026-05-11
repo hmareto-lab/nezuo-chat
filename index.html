@@ -92,47 +92,41 @@ button{
 }
 
 /* =========================
-   ★ 名前強調UI（黒白設計）
+   ★ 名前反転UI（ここ重要）
 ========================= */
 
-/* 名前ベース */
 .msg b{
   display:flex;
   gap:6px;
   margin-bottom:4px;
   font-size:13px;
   font-weight:700;
-  color:#fff;
-  text-shadow:0 1px 2px rgba(0,0,0,.35);
 }
 
-/* 自分はさらに強調 */
-.me b{
-  font-weight:800;
-  color:#ffffff;
+/* 自分：黒→白反転 */
+.mine-name{
+  background:#000 !important;
+  color:#fff !important;
+  padding:2px 8px;
+  border-radius:8px;
 }
 
-/* 他人は少し落ち着かせる */
-.other b{
-  color:#111;
-  text-shadow:0 1px 1px rgba(255,255,255,.3);
+/* 相手：白→黒反転 */
+.other-name{
+  background:#fff !important;
+  color:#000 !important;
+  padding:2px 8px;
+  border-radius:8px;
+  border:1px solid #000;
 }
 
-/* 管理者（反転スタイル） */
+/* 管理者 */
 .msg b.admin{
   color:#000;
   background:#fff;
   padding:2px 6px;
   border-radius:8px;
   font-weight:900;
-  text-shadow:none;
-}
-
-/* #コード（補助情報） */
-.tag{
-  font-size:10px;
-  opacity:0.45;
-  letter-spacing:1.2px;
 }
 
 /* 削除ボタン */
@@ -169,59 +163,33 @@ button{
   width:44px;
   border-radius:14px;
   background:rgba(40,48,58,.78);
-  font-size:14px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
 }
 
 #nameBtn{
   height:44px;
-  min-width:44px;
-  max-width:160px;
-  padding:0 10px;
   border-radius:14px;
   background:rgba(40,48,58,.78);
   font-size:13px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  padding:0 10px;
 }
-
-/* send */
-#sendBtn{
-  width:70px;
-  height:42px;
-  border-radius:12px;
-}
-
-/* link */
-a{ color:#3b82f6; }
 
 </style>
 </head>
 
 <body>
 
-<div id="app">
+<div id="header">
+  <input id="msgInput" placeholder="メッセージ" />
+  <button id="sendBtn">送信</button>
+</div>
 
-  <div id="header">
-    <input id="msgInput" placeholder="メッセージ" />
-    <button id="sendBtn">送信</button>
-  </div>
+<div id="chatWrap"></div>
 
-  <div id="chatWrap"></div>
-
-  <div id="footer">
-    <button id="upBtn">↑</button>
-    <button id="downBtn">↓</button>
-    <div></div>
-    <button id="nameBtn">名前</button>
-  </div>
-
+<div id="footer">
+  <button id="upBtn">↑</button>
+  <button id="downBtn">↓</button>
+  <div></div>
+  <button id="nameBtn">名前</button>
 </div>
 
 <script type="module">
@@ -265,13 +233,7 @@ async function startChat(){
 
   let userName = localStorage.getItem("userName") || "名無し";
 
-  /* =========================
-     管理者UID
-  ========================= */
-  const ADMIN_UIDS = [
-    "eobk3m5b",
-    "6ee437db-57db-43f2-8bfd-40193e9d5b3c"
-  ];
+  const ADMIN_UIDS = ["eobk3m5b"];
 
   function isAdmin(u){
     return ADMIN_UIDS.includes(u);
@@ -281,41 +243,17 @@ async function startChat(){
   const msgInput = document.getElementById("msgInput");
   const sendBtn = document.getElementById("sendBtn");
   const nameBtn = document.getElementById("nameBtn");
-  const upBtn = document.getElementById("upBtn");
-  const downBtn = document.getElementById("downBtn");
 
   function makeShortCode(uid){
-    let hash = 0;
-    for(let i = 0; i < uid.length; i++){
-      hash = (hash * 31 + uid.charCodeAt(i)) >>> 0;
+    let h=0;
+    for(let i=0;i<uid.length;i++){
+      h=(h*31+uid.charCodeAt(i))>>>0;
     }
-    return hash.toString(36).toUpperCase().slice(0,4);
-  }
-
-  function changeName(){
-    const n = prompt("名前変更");
-    if(!n) return;
-
-    userName = n.trim();
-    localStorage.setItem("userName",userName);
-
-    updateName();
+    return h.toString(36).toUpperCase().slice(0,4);
   }
 
   function updateName(){
-    const code = makeShortCode(uid);
-    const base = isAdmin(uid) ? "👑 " : "";
-    const full = `${base}${userName} #${code}`;
-
-    nameBtn.textContent = full;
-
-    if(full.length <= 10){
-      nameBtn.style.fontSize = "14px";
-    } else if(full.length <= 14){
-      nameBtn.style.fontSize = "13px";
-    } else {
-      nameBtn.style.fontSize = "12px";
-    }
+    nameBtn.textContent = `${userName} #${makeShortCode(uid)}`;
   }
 
   updateName();
@@ -331,28 +269,13 @@ async function startChat(){
       time:Date.now()
     });
 
-    msgInput.value = "";
-  }
-
-  function canDelete(messageUid){
-    return isAdmin(uid) || uid === messageUid;
+    msgInput.value="";
   }
 
   function renderText(text){
-
-    const yt = text.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    if(yt){
-      return `<iframe src="https://www.youtube.com/embed/${yt[1]}" frameborder="0" allowfullscreen></iframe>`;
-    }
-
-    const img = text.match(/(https?:\/\/.*\.(jpg|jpeg|png|gif|webp))/i);
-    if(img){
-      return `<img src="${img[1]}">`;
-    }
-
-    return text.replace(/(https?:\/\/[^\s]+)/g,url=>{
-      return `<a href="${url}" target="_blank">${url}</a>`;
-    });
+    return text.replace(/(https?:\/\/[^\s]+)/g,
+      url=>`<a href="${url}" target="_blank">${url}</a>`
+    );
   }
 
   function createMsg(d,id){
@@ -362,24 +285,27 @@ async function startChat(){
 
     div.className = mine ? "msg me" : "msg other";
 
-    const adminClass = isAdmin(d.uid) ? "admin" : "";
+    const nameClass =
+      isAdmin(d.uid) ? "admin"
+      : mine ? "mine-name"
+      : "other-name";
 
     div.innerHTML = `
-      <b class="${adminClass}">
+      <b class="${nameClass}">
         ${isAdmin(d.uid) ? "👑 " : ""}
         ${d.name} #${makeShortCode(d.uid)}
       </b>
       <div>${renderText(d.text)}</div>
     `;
 
-    if(canDelete(d.uid)){
+    if(isAdmin(uid) || uid === d.uid){
       const del = document.createElement("button");
-      del.className = "delBtn";
-      del.textContent = "×";
+      del.className="delBtn";
+      del.textContent="×";
 
-      del.onclick = async ()=>{
-        if(!confirm("削除する？")) return;
-        await remove(ref(db,"chat/" + id));
+      del.onclick=async()=>{
+        if(!confirm("削除？"))return;
+        await remove(ref(db,"chat/"+id));
         div.remove();
       };
 
@@ -390,18 +316,13 @@ async function startChat(){
   }
 
   onChildAdded(chatRef,(snap)=>{
-    createMsg(snap.val(), snap.key);
+    createMsg(snap.val(),snap.key);
   });
 
-  upBtn.onclick = ()=> chatWrap.scrollTo({top:0,behavior:"smooth"});
-  downBtn.onclick = ()=> chatWrap.scrollTo({top:chatWrap.scrollHeight,behavior:"smooth"});
+  sendBtn.onclick=send;
 
-  sendBtn.onclick = send;
-  nameBtn.onclick = changeName;
-
-  msgInput.onkeydown = (e)=>{
+  msgInput.onkeydown=(e)=>{
     if(e.key==="Enter"){
-      e.preventDefault();
       send();
     }
   };
