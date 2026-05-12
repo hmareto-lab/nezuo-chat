@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT KING MODE</title>
+<title>NEZUO CHAT</title>
 
 <style>
 
@@ -15,7 +15,6 @@ html,body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
-/* HEADER */
 #header{
   position:fixed;
   top:0;
@@ -55,7 +54,6 @@ button{
   background:rgba(40,48,58,.84);
 }
 
-/* CHAT */
 #chatWrap{
   position:fixed;
   top:68px;
@@ -90,7 +88,6 @@ button{
   color:#111;
 }
 
-/* 名前 */
 .msg b{
   display:flex;
   align-items:center;
@@ -121,7 +118,6 @@ button{
   font-weight:900;
 }
 
-/* 削除ボタン */
 .delBtn{
   position:absolute;
   top:6px;
@@ -140,7 +136,6 @@ button{
   border:1px solid rgba(255,255,255,0.3);
 }
 
-/* FOOTER */
 #footer{
   position:fixed;
   left:0;
@@ -161,7 +156,6 @@ button{
   background:rgba(40,48,58,.78);
 }
 
-/* ===== MEDIA ===== */
 .chat-img{
   width:100%;
   max-height:260px;
@@ -205,7 +199,6 @@ button{
   font-size:22px;
 }
 
-/* ===== IMAGE MODAL ===== */
 #imgModal{
   position:fixed;
   top:0;
@@ -244,7 +237,6 @@ button{
   <button id="nameBtn">名前</button>
 </div>
 
-<!-- 画像モーダル -->
 <div id="imgModal" onclick="closeImg()">
   <img id="modalImg">
 </div>
@@ -282,7 +274,11 @@ const app = initializeApp({
 const db=getDatabase(app);
 const chatRef=query(ref(db,"chat"),limitToLast(80));
 
-const ADMIN_UID="eobk3m5b";
+/* ★ 管理者追加 */
+const ADMIN_UIDS = [
+  "eobk3m5b",
+  "6ee437db-57db-43f2-8bfd-40193e9d5b3c"
+];
 
 let uid=localStorage.getItem("uid")||crypto.randomUUID();
 localStorage.setItem("uid",uid);
@@ -298,7 +294,6 @@ nameBtn.textContent=userName;
 
 const msgElements=new Map();
 
-/* 名前 */
 nameBtn.onclick=()=>{
   const n=prompt("名前変更",userName);
   if(!n)return;
@@ -307,13 +302,12 @@ nameBtn.onclick=()=>{
   nameBtn.textContent=userName;
 };
 
-/* 削除 */
+/* ★ 削除権限 */
 window.deleteMsg=async(id,msgUid)=>{
-  if(uid!==msgUid && uid!==ADMIN_UID) return;
+  if(msgUid!==uid && !ADMIN_UIDS.includes(uid)) return;
   await remove(ref(db,"chat/"+id));
 };
 
-/* 画像拡大 */
 window.showImage=(src)=>{
   document.getElementById("modalImg").src=src;
   document.getElementById("imgModal").style.display="flex";
@@ -323,20 +317,17 @@ window.closeImg=()=>{
   document.getElementById("imgModal").style.display="none";
 };
 
-/* short uid */
 function makeShort(u){
   let h=0;
   for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
   return h.toString(36).slice(0,4).toUpperCase();
 }
 
-/* ===== 変換 ===== */
 function renderContent(text){
 
   const urlRegex=/(https?:\/\/[^\s]+)/g;
   const ytRegex=/(?:youtu\.be\/|youtube\.com.*v=)([a-zA-Z0-9_-]{11})/;
 
-  // YouTube
   if(ytRegex.test(text)){
     const id=text.match(ytRegex)[1];
     return `
@@ -347,22 +338,19 @@ function renderContent(text){
     `;
   }
 
-  // 画像
   if(text.match(/\.(jpg|jpeg|png|webp)$/i)){
     return `<img src="${text}" class="chat-img" onclick="showImage('${text}')">`;
   }
 
-  // URLリンク
   return text.replace(urlRegex,url=>{
     return `<a href="${url}" target="_blank" style="color:#2a6cff">${url}</a>`;
   });
 }
 
-/* メッセージ作成 */
 function createMsg(d,id){
 
   const mine=d.uid===uid;
-  const isAdmin=d.uid===ADMIN_UID;
+  const isAdmin=ADMIN_UIDS.includes(d.uid);
 
   const div=document.createElement("div");
   div.className=mine?"msg me":"msg other";
@@ -387,12 +375,10 @@ function createMsg(d,id){
   msgElements.set(id,div);
 }
 
-/* 受信 */
 onChildAdded(chatRef,snap=>{
   createMsg(snap.val(),snap.key);
 });
 
-/* 削除同期 */
 onChildRemoved(ref(db,"chat"),snap=>{
   const id=snap.key;
   const el=msgElements.get(id);
@@ -402,7 +388,6 @@ onChildRemoved(ref(db,"chat"),snap=>{
   }
 });
 
-/* 送信 */
 async function send(){
   const t=msgInput.value.trim();
   if(!t)return;
