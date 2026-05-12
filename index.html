@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT</title>
+<title>NEZUO CHAT THREAD MODE</title>
 
 <style>
 
@@ -15,6 +15,7 @@ html,body{
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
 }
 
+/* HEADER */
 #header{
   position:fixed;
   top:0;
@@ -23,10 +24,25 @@ html,body{
   z-index:9000;
   padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
   display:flex;
-  gap:8px;
+  flex-direction:column;
+  gap:6px;
   background:rgba(255,255,255,.14);
   border-bottom:1px solid rgba(255,255,255,.25);
   backdrop-filter:blur(14px);
+}
+
+#replyBar{
+  display:none;
+  font-size:12px;
+  padding:6px 10px;
+  border-radius:10px;
+  background:rgba(0,0,0,.15);
+  color:#fff;
+}
+
+#msgInputWrap{
+  display:flex;
+  gap:8px;
 }
 
 #msgInput{
@@ -54,9 +70,10 @@ button{
   background:rgba(40,48,58,.84);
 }
 
+/* CHAT */
 #chatWrap{
   position:fixed;
-  top:68px;
+  top:100px;
   bottom:84px;
   left:0;
   right:0;
@@ -64,12 +81,39 @@ button{
   padding:14px;
   display:flex;
   flex-direction:column;
-  gap:10px;
+  gap:14px;
 }
 
+/* THREAD */
+.thread{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.threadHeader{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+/* collapse */
+.collapseBtn{
+  width:24px;
+  height:24px;
+  border-radius:6px;
+  background:rgba(0,0,0,.25);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+}
+
+/* MESSAGE */
 .msg{
   max-width:78%;
-  padding:10px 12px 12px;
+  padding:10px 12px;
   border-radius:18px;
   word-break:break-word;
   position:relative;
@@ -88,21 +132,23 @@ button{
   color:#111;
 }
 
-.msg b{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin-bottom:4px;
+/* CHILD */
+.replyChild{
+  margin-left:30px;
+  max-width:72%;
+  padding:8px 10px;
+  border-radius:14px;
   font-size:13px;
-  font-weight:700;
-  padding-right:28px;
+  opacity:0.95;
 }
 
+/* NAME */
 .mine-name{
   background:#000;
   color:#fff;
   padding:2px 8px;
   border-radius:8px;
+  font-size:13px;
 }
 
 .other-name{
@@ -111,31 +157,38 @@ button{
   padding:2px 8px;
   border-radius:8px;
   border:1px solid #000;
+  font-size:13px;
 }
 
-.admin-mark{
-  color:gold;
-  font-weight:900;
-}
-
-.delBtn{
+/* ACTION */
+.delBtn,.replyBtn{
   position:absolute;
-  top:6px;
-  right:6px;
   width:22px;
   height:22px;
   border-radius:6px;
-  background:rgba(255,0,0,0.45);
   color:#fff;
-  font-size:14px;
+  font-size:12px;
   font-weight:900;
   display:flex;
   align-items:center;
   justify-content:center;
-  cursor:pointer;
-  border:1px solid rgba(255,255,255,0.3);
 }
 
+/* 削除 */
+.delBtn{
+  top:6px;
+  right:6px;
+  background:rgba(255,0,0,0.45);
+}
+
+/* 返信（右下） */
+.replyBtn{
+  bottom:6px;
+  right:32px;
+  background:rgba(0,120,255,0.45);
+}
+
+/* FOOTER */
 #footer{
   position:fixed;
   left:0;
@@ -156,76 +209,17 @@ button{
   background:rgba(40,48,58,.78);
 }
 
-.chat-img{
-  width:100%;
-  max-height:260px;
-  object-fit:cover;
-  border-radius:12px;
-  margin-top:6px;
-  cursor:pointer;
-}
-
-.yt-thumb{
-  position:relative;
-  width:100%;
-  aspect-ratio:16/9;
-  border-radius:12px;
-  overflow:hidden;
-  margin-top:6px;
-  cursor:pointer;
-  background:#000;
-}
-
-.yt-thumb img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  filter:brightness(.85);
-}
-
-.yt-play{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  width:60px;
-  height:60px;
-  border-radius:50%;
-  background:rgba(0,0,0,.6);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:22px;
-}
-
-#imgModal{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.92);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:99999;
-}
-
-#imgModal img{
-  max-width:95%;
-  max-height:95%;
-  border-radius:12px;
-}
-
 </style>
 </head>
 
 <body>
 
 <div id="header">
-  <input id="msgInput" placeholder="メッセージ" />
-  <button id="sendBtn">送信</button>
+  <div id="replyBar"></div>
+  <div id="msgInputWrap">
+    <input id="msgInput" placeholder="メッセージ" />
+    <button id="sendBtn">送信</button>
+  </div>
 </div>
 
 <div id="chatWrap"></div>
@@ -235,10 +229,6 @@ button{
   <button id="downBtn">↓</button>
   <div></div>
   <button id="nameBtn">名前</button>
-</div>
-
-<div id="imgModal" onclick="closeImg()">
-  <img id="modalImg">
 </div>
 
 <script type="module">
@@ -258,10 +248,9 @@ const {
   ref,
   push,
   onChildAdded,
-  onChildRemoved,
+  remove,
   query,
-  limitToLast,
-  remove
+  limitToLast
 } = await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js");
 
 const app = initializeApp({
@@ -274,11 +263,7 @@ const app = initializeApp({
 const db=getDatabase(app);
 const chatRef=query(ref(db,"chat"),limitToLast(80));
 
-/* ★ 管理者追加 */
-const ADMIN_UIDS = [
-  "eobk3m5b",
-  "6ee437db-57db-43f2-8bfd-40193e9d5b3c"
-];
+const ADMIN_UID="eobk3m5b";
 
 let uid=localStorage.getItem("uid")||crypto.randomUUID();
 localStorage.setItem("uid",uid);
@@ -289,11 +274,18 @@ const chatWrap=document.getElementById("chatWrap");
 const msgInput=document.getElementById("msgInput");
 const sendBtn=document.getElementById("sendBtn");
 const nameBtn=document.getElementById("nameBtn");
+const replyBar=document.getElementById("replyBar");
 
 nameBtn.textContent=userName;
 
-const msgElements=new Map();
+/* STATE */
+let replyingTo=null;
 
+const messages=new Map();
+const threads=new Map();
+const collapsedMap=new Map();
+
+/* 名前変更 */
 nameBtn.onclick=()=>{
   const n=prompt("名前変更",userName);
   if(!n)return;
@@ -302,92 +294,161 @@ nameBtn.onclick=()=>{
   nameBtn.textContent=userName;
 };
 
-/* ★ 削除権限 */
-window.deleteMsg=async(id,msgUid)=>{
-  if(msgUid!==uid && !ADMIN_UIDS.includes(uid)) return;
-  await remove(ref(db,"chat/"+id));
-};
+/* 返信 */
+window.startReply=(id)=>{
+  const msg=messages.get(id);
+  if(!msg)return;
 
-window.showImage=(src)=>{
-  document.getElementById("modalImg").src=src;
-  document.getElementById("imgModal").style.display="flex";
-};
+  replyingTo=id;
 
-window.closeImg=()=>{
-  document.getElementById("imgModal").style.display="none";
-};
-
-function makeShort(u){
-  let h=0;
-  for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
-  return h.toString(36).slice(0,4).toUpperCase();
-}
-
-function renderContent(text){
-
-  const urlRegex=/(https?:\/\/[^\s]+)/g;
-  const ytRegex=/(?:youtu\.be\/|youtube\.com.*v=)([a-zA-Z0-9_-]{11})/;
-
-  if(ytRegex.test(text)){
-    const id=text.match(ytRegex)[1];
-    return `
-      <div class="yt-thumb" onclick="window.open('https://www.youtube.com/watch?v=${id}','_blank')">
-        <img src="https://img.youtube.com/vi/${id}/hqdefault.jpg">
-        <div class="yt-play">▶</div>
-      </div>
-    `;
-  }
-
-  if(text.match(/\.(jpg|jpeg|png|webp)$/i)){
-    return `<img src="${text}" class="chat-img" onclick="showImage('${text}')">`;
-  }
-
-  return text.replace(urlRegex,url=>{
-    return `<a href="${url}" target="_blank" style="color:#2a6cff">${url}</a>`;
-  });
-}
-
-function createMsg(d,id){
-
-  const mine=d.uid===uid;
-  const isAdmin=ADMIN_UIDS.includes(d.uid);
-
-  const div=document.createElement("div");
-  div.className=mine?"msg me":"msg other";
-
-  const nameClass=mine?"mine-name":"other-name";
-
-  div.innerHTML=`
-    <b class="${nameClass}">
-      ${isAdmin?"👑 ":""}${d.name} #${makeShort(d.uid)}
-    </b>
-    <div>${renderContent(d.text)}</div>
+  replyBar.style.display="block";
+  replyBar.innerHTML=`
+    返信中: ${msg.name} > ${msg.text.slice(0,20)}
+    <span id="cancelReply"
+      style="margin-left:10px;padding:2px 6px;background:rgba(255,0,0,.4);border-radius:6px;cursor:pointer;">
+      ×キャンセル
+    </span>
   `;
 
-  const del=document.createElement("button");
-  del.className="delBtn";
-  del.textContent="✖";
-  del.onclick=()=>deleteMsg(id,d.uid);
+  setTimeout(()=>{
+    document.getElementById("cancelReply").onclick=()=>{
+      replyingTo=null;
+      replyBar.style.display="none";
+    };
+  },0);
+};
 
-  div.appendChild(del);
+/* ===== 削除（完全安定版） ===== */
+window.deleteMsg = async (id, uidMsg) => {
+  if (uid !== uidMsg && uid !== ADMIN_UID) return;
 
-  chatWrap.prepend(div);
-  msgElements.set(id,div);
+  // Firebase削除
+  await remove(ref(db, "chat/" + id));
+
+  messages.delete(id);
+
+  // スレッドから安全削除
+  for (const [rootId, list] of threads.entries()) {
+
+    const exists = list.find(m => m.id === id);
+    if (!exists) continue;
+
+    // 親 or 子判定
+    if (rootId === id) {
+      // スレッド丸ごと削除
+      for (const m of list) {
+        await remove(ref(db, "chat/" + m.id));
+        messages.delete(m.id);
+      }
+      threads.delete(rootId);
+    } else {
+      // 単体削除
+      const newList = list.filter(m => m.id !== id);
+
+      if (newList.length === 0) {
+        threads.delete(rootId);
+      } else {
+        threads.set(rootId, newList);
+      }
+    }
+
+    break;
+  }
+
+  render();
+};
+
+/* RENDER */
+function render(){
+  chatWrap.innerHTML="";
+
+  for(const [rootId,list] of threads.entries()){
+    const root=list.find(m=>m.id===rootId);
+    if(!root)continue;
+
+    const thread=document.createElement("div");
+    thread.className="thread";
+
+    const header=document.createElement("div");
+    header.className="threadHeader";
+
+    const btn=document.createElement("div");
+    btn.className="collapseBtn";
+
+    const collapsed=collapsedMap.get(rootId)||false;
+    btn.textContent=collapsed?"▶":"▼";
+
+    btn.onclick=()=>{
+      collapsedMap.set(rootId,!collapsed);
+      render();
+    };
+
+    header.appendChild(btn);
+    header.appendChild(createMsg(root));
+    thread.appendChild(header);
+
+    if(!collapsed){
+      list.filter(m=>m.id!==rootId).forEach(child=>{
+        thread.appendChild(createChild(child));
+      });
+    }
+
+    chatWrap.prepend(thread);
+  }
 }
 
+/* MESSAGE */
+function createMsg(d){
+  const mine=d.uid===uid;
+
+  const div=document.createElement("div");
+  div.className="msg "+(mine?"me":"other");
+
+  div.innerHTML=`
+    <b class="${mine?'mine-name':'other-name'}">${d.name}</b>
+    <div>${d.text}</div>
+  `;
+
+  const rbtn=document.createElement("div");
+  rbtn.className="replyBtn";
+  rbtn.textContent="↩";
+  rbtn.onclick=()=>startReply(d.id);
+  div.appendChild(rbtn);
+
+  const del=document.createElement("div");
+  del.className="delBtn";
+  del.textContent="✖";
+  del.onclick=()=>deleteMsg(d.id,d.uid);
+  div.appendChild(del);
+
+  return div;
+}
+
+/* CHILD */
+function createChild(d){
+  const div=document.createElement("div");
+  div.className="replyChild "+(d.uid===uid?"me":"other");
+  div.innerHTML=`${d.name}: ${d.text}`;
+  return div;
+}
+
+/* FIREBASE */
 onChildAdded(chatRef,snap=>{
-  createMsg(snap.val(),snap.key);
-});
-
-onChildRemoved(ref(db,"chat"),snap=>{
+  const d=snap.val();
   const id=snap.key;
-  const el=msgElements.get(id);
-  if(el){
-    el.style.opacity="0";
-    setTimeout(()=>el.remove(),200);
-  }
+  d.id=id;
+
+  messages.set(id,d);
+
+  const root=d.replyTo || id;
+
+  if(!threads.has(root)) threads.set(root,[]);
+  threads.get(root).push(d);
+
+  render();
 });
 
+/* SEND */
 async function send(){
   const t=msgInput.value.trim();
   if(!t)return;
@@ -396,10 +457,13 @@ async function send(){
     uid,
     name:userName,
     text:t,
-    time:Date.now()
+    time:Date.now(),
+    replyTo:replyingTo
   });
 
   msgInput.value="";
+  replyingTo=null;
+  replyBar.style.display="none";
 }
 
 sendBtn.onclick=send;
