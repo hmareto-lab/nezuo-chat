@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
-<title>NEZUO CHAT FULL FIX STABLE</title>
+<title>NEZUO CHAT</title>
 
 <style>
 
@@ -87,10 +87,11 @@ button{
   padding-left:10px;
 }
 
+/* ★★★ここが修正ポイント★★★ */
 .msg{
   position:relative;
   max-width:78%;
-  padding:10px 12px;
+  padding:10px 44px 12px 12px; /* ←返信・削除ボタンの逃げ場 */
   border-radius:18px;
   word-break:break-word;
   box-shadow:0 4px 18px rgba(0,0,0,.08);
@@ -250,7 +251,7 @@ const msgInput=document.getElementById("msgInput");
 const replyBar=document.getElementById("replyBar");
 const copyBtn=document.getElementById("copyBtn");
 
-/* ================= UID COPY ================= */
+/* UID COPY */
 copyBtn.onclick = async () => {
   try {
     await navigator.clipboard.writeText(uid);
@@ -266,7 +267,7 @@ copyBtn.onclick = async () => {
   setTimeout(()=>copyBtn.textContent="UIDコピー",1000);
 };
 
-/* ================= NAME ================= */
+/* NAME */
 function makeCode(u){
   let h=0;
   for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
@@ -293,7 +294,7 @@ uidBtn.onclick=()=>{
   document.getElementById("uidPanel").style.display="flex";
 };
 
-/* ================= REPLY ================= */
+/* REPLY */
 window.startReply=(id,name)=>{
   replyingTo=id;
   replyBar.style.display="flex";
@@ -306,8 +307,7 @@ window.cancelReply=()=>{
   replyBar.style.display="none";
 };
 
-/* ================= CONTENT ================= */
-
+/* CONTENT */
 function escapeHtml(str){
   return str
     .replaceAll("&","&amp;")
@@ -365,8 +365,7 @@ function renderContent(text){
   });
 }
 
-/* ================= MESSAGE ================= */
-
+/* MESSAGE */
 function msg(m,isChild=false){
   const mine=m.uid===uid;
 
@@ -398,8 +397,7 @@ function msg(m,isChild=false){
   return div;
 }
 
-/* ================= DRAW ================= */
-
+/* DRAW */
 function draw(data){
   chatWrap.innerHTML="";
 
@@ -448,8 +446,7 @@ function draw(data){
 
 onValue(chatRef,s=>draw(s.val()));
 
-/* ================= SEND ================= */
-
+/* SEND */
 sendBtn.onclick=async()=>{
   const t=msgInput.value.trim();
   if(!t)return;
