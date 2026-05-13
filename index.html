@@ -1,61 +1,51 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>NEZUO CHAT THREAD MODE</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<title>NEZUO CHAT FULL FIX STABLE</title>
 
 <style>
+
 html,body{
   margin:0;
   height:100%;
   overflow:hidden;
-  background:linear-gradient(135deg,#d7dde5,#b8c2cf);
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  background:linear-gradient(135deg,#d7dde5,#b8c2cf);
 }
 
 /* HEADER */
 #header{
   position:fixed;
-  top:0;
-  left:0;
-  right:0;
-  z-index:9000;
+  top:0;left:0;right:0;
+  z-index:9999;
   padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
   display:flex;
   flex-direction:column;
-  gap:6px;
-  background:rgba(255,255,255,.14);
+  gap:8px;
+  background:rgba(255,255,255,.15);
   border-bottom:1px solid rgba(255,255,255,.25);
   backdrop-filter:blur(14px);
 }
 
-/* REPLY BAR */
 #replyBar{
   display:none;
-  font-size:12px;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
   padding:6px 10px;
   border-radius:10px;
-  background:rgba(0,0,0,.25);
+  background:rgba(0,0,0,.35);
   color:#fff;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-}
-
-/* 🔴 返信キャンセル */
-#cancelReply{
-  background:rgba(255,0,0,.75);
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  padding:2px 8px;
   font-size:12px;
-  cursor:pointer;
 }
 
-#msgInputWrap{display:flex;gap:8px;}
+#msgInputWrap{
+  display:flex;
+  gap:8px;
+}
 
 #msgInput{
   flex:1;
@@ -64,7 +54,7 @@ html,body{
   outline:none;
   border-radius:12px;
   padding:0 12px;
-  background:rgba(255,255,255,.64);
+  background:rgba(255,255,255,.72);
   font-size:15px;
 }
 
@@ -73,36 +63,80 @@ button{
   border-radius:12px;
   color:#fff;
   font-weight:700;
-  cursor:pointer;
 }
 
-#sendBtn{
-  width:70px;
-  height:42px;
-  background:rgba(40,48,58,.84);
-}
+#sendBtn{width:72px;background:rgba(0,120,255,.55);}
+#nameBtn{height:44px;background:rgba(0,120,255,.55);}
+#uidBtn,#upBtn,#downBtn{height:44px;background:rgba(40,48,58,.85);}
 
 /* CHAT */
 #chatWrap{
   position:fixed;
-  top:100px;
+  top:102px;
   bottom:84px;
-  left:0;
-  right:0;
+  left:0;right:0;
   overflow-y:auto;
   padding:14px;
   display:flex;
   flex-direction:column;
-  gap:14px;
+  gap:18px;
 }
 
-/* THREAD */
-.thread{display:flex;flex-direction:column;gap:6px;}
+.thread{
+  border-left:2px solid rgba(0,0,0,.15);
+  padding-left:10px;
+}
 
-.threadHeader{
+.msg{
+  position:relative;
+  max-width:78%;
+  padding:10px 12px;
+  border-radius:18px;
+  word-break:break-word;
+  box-shadow:0 4px 18px rgba(0,0,0,.08);
+}
+
+.replyChild{
+  margin-left:24px;
+  margin-top:10px;
+  padding:8px 10px;
+  border-radius:14px;
+  background:rgba(255,255,255,.6);
+  border-left:2px solid rgba(0,0,0,.12);
+  position:relative;
+}
+
+.me{background:rgba(40,48,58,.82);color:#fff;}
+.other{background:rgba(255,255,255,.72);color:#111;}
+
+.replyBtn,.delBtn{
+  position:absolute;
+  width:22px;height:22px;
+  border-radius:6px;
   display:flex;
   align-items:center;
-  gap:8px;
+  justify-content:center;
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+}
+
+.replyBtn{right:34px;bottom:6px;background:rgba(0,120,255,.55);}
+.delBtn{right:6px;top:6px;background:rgba(255,0,0,.7);}
+
+.childDelBtn{
+  position:absolute;
+  right:6px;
+  top:6px;
+  width:22px;height:22px;
+  border-radius:6px;
+  background:rgba(255,0,0,.75);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#fff;
+  font-weight:900;
+  font-size:12px;
 }
 
 .collapseBtn{
@@ -113,85 +147,6 @@ button{
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:12px;
-}
-
-/* MSG */
-.msg{
-  max-width:78%;
-  padding:10px 12px;
-  border-radius:18px;
-  word-break:break-word;
-  position:relative;
-  box-shadow:0 4px 18px rgba(0,0,0,.08);
-}
-
-.me{align-self:flex-end;background:rgba(40,48,58,.78);color:#fff;}
-.other{align-self:flex-start;background:rgba(255,255,255,.62);color:#111;}
-
-/* CHILD */
-.replyChild{
-  margin-left:30px;
-  max-width:72%;
-  padding:8px 10px;
-  border-radius:14px;
-  font-size:13px;
-}
-
-/* NAME */
-.mine-name{background:#000;color:#fff;padding:2px 8px;border-radius:8px;font-size:13px;}
-.other-name{background:#fff;color:#000;padding:2px 8px;border-radius:8px;border:1px solid #000;font-size:13px;}
-
-/* ACTION */
-.delBtn,.replyBtn{
-  position:absolute;
-  width:22px;height:22px;
-  border-radius:6px;
-  color:#fff;
-  font-size:12px;
-  font-weight:900;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.delBtn{top:6px;right:6px;background:rgba(255,0,0,0.45);}
-.replyBtn{bottom:6px;right:32px;background:rgba(0,120,255,0.45);}
-
-/* MEDIA */
-.msg img{
-  max-width:100%;
-  border-radius:12px;
-  margin-top:6px;
-  cursor:pointer;
-}
-
-.ytThumb{
-  position:relative;
-  margin-top:6px;
-  cursor:pointer;
-}
-
-.ytThumb img{
-  width:100%;
-  border-radius:12px;
-}
-
-/* MODAL */
-#modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.8);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:9999;
-}
-
-#modal img{
-  max-width:90%;
-  max-height:90%;
-  border-radius:10px;
 }
 
 /* FOOTER */
@@ -200,18 +155,37 @@ button{
   left:0;right:0;bottom:0;
   padding:calc(env(safe-area-inset-bottom) + 10px) 10px 10px;
   display:grid;
-  grid-template-columns:44px 44px 1fr auto;
+  grid-template-columns:44px 44px 44px 1fr auto;
   gap:12px;
-  background:rgba(255,255,255,.14);
+  background:rgba(255,255,255,.15);
   border-top:1px solid rgba(255,255,255,.25);
   backdrop-filter:blur(14px);
 }
 
-#upBtn,#downBtn,#nameBtn{
-  height:44px;
-  border-radius:14px;
-  background:rgba(40,48,58,.78);
+/* modal */
+#modal,#uidPanel{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.85);
+  z-index:99999;
 }
+
+#modal img{max-width:90%;max-height:90%;border-radius:12px;}
+
+#uidBox{
+  background:#fff;
+  padding:16px;
+  border-radius:12px;
+  width:85%;
+  max-width:360px;
+}
+
+.btn-copy{background:rgba(0,120,255,.55)!important;}
+.btn-danger{background:rgba(255,0,0,.65)!important;}
+
 </style>
 </head>
 
@@ -220,7 +194,7 @@ button{
 <div id="header">
   <div id="replyBar"></div>
   <div id="msgInputWrap">
-    <input id="msgInput" placeholder="メッセージ" />
+    <input id="msgInput" placeholder="メッセージ">
     <button id="sendBtn">送信</button>
   </div>
 </div>
@@ -230,54 +204,30 @@ button{
 <div id="footer">
   <button id="upBtn">↑</button>
   <button id="downBtn">↓</button>
+  <button id="uidBtn">UID</button>
   <div></div>
   <button id="nameBtn"></button>
 </div>
 
 <div id="modal" onclick="this.style.display='none'">
-  <img id="modalImg" />
+  <img id="modalImg">
+</div>
+
+<div id="uidPanel" onclick="this.style.display='none'">
+  <div id="uidBox" onclick="event.stopPropagation()">
+    <div id="uidInfo"></div>
+    <button id="copyBtn" class="btn-copy">UIDコピー</button>
+    <button class="btn-danger" onclick="uidPanel.style.display='none'">閉じる</button>
+  </div>
 </div>
 
 <script type="module">
 
-let started=false;
-window.addEventListener("load",startChat);
+import {initializeApp} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import {getDatabase,ref,push,remove,onValue,query,limitToLast}
+from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-window.openImg=(url)=>{
-  document.getElementById("modalImg").src=url;
-  document.getElementById("modal").style.display="flex";
-};
-
-function renderContent(text){
-  return text.replace(/(https?:\/\/[^\s]+)/g,url=>{
-    if(url.match(/\.(jpg|jpeg|png|gif|webp)$/i)){
-      return `<img src="${url}" onclick="openImg('${url}')">`;
-    }
-
-    let yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
-    if(yt){
-      const id=yt[1];
-      const thumb=`https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-      return `<div class="ytThumb" onclick="window.open('${url}','_blank')">
-        <img src="${thumb}">
-      </div>`;
-    }
-
-    return `<a href="${url}" target="_blank" style="color:#06c;">${url}</a>`;
-  });
-}
-
-async function startChat(){
-if(started)return;
-started=true;
-
-const { initializeApp } =
-await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js");
-
-const { getDatabase, ref, push, onChildAdded, remove, query, limitToLast }
-= await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js");
-
-const app = initializeApp({
+const app=initializeApp({
   apiKey:"AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
   authDomain:"nezubo2.firebaseapp.com",
   databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
@@ -289,174 +239,250 @@ const chatRef=query(ref(db,"chat"),limitToLast(80));
 
 const ADMIN_UIDS=["eobk3m5b","6ee437db-57db-43f2-8bfd-40193e9d5b3c"];
 
-let uid=localStorage.getItem("uid")||crypto.randomUUID();
-localStorage.setItem("uid",uid);
+let uid=localStorage.getItem("fixed_uid")||crypto.randomUUID();
+localStorage.setItem("fixed_uid",uid);
 
 let userName=localStorage.getItem("userName")||"名無し";
-
-function makeCode(uid){
-  let h=0;
-  for(let i=0;i<uid.length;i++)h=(h*31+uid.charCodeAt(i))>>>0;
-  return "#"+h.toString(16).slice(0,4).toUpperCase();
-}
-
-let myCode=makeCode(uid);
+let replyingTo=null;
 
 const chatWrap=document.getElementById("chatWrap");
 const msgInput=document.getElementById("msgInput");
-const sendBtn=document.getElementById("sendBtn");
-const nameBtn=document.getElementById("nameBtn");
 const replyBar=document.getElementById("replyBar");
+const copyBtn=document.getElementById("copyBtn");
 
-let replyingTo=null;
+/* ================= UID COPY ================= */
+copyBtn.onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(uid);
+  } catch {
+    const ta=document.createElement("textarea");
+    ta.value=uid;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+  }
+  copyBtn.textContent="コピー完了";
+  setTimeout(()=>copyBtn.textContent="UIDコピー",1000);
+};
 
-const messages=new Map();
-const threads=new Map();
-const collapsedMap=new Map();
+/* ================= NAME ================= */
+function makeCode(u){
+  let h=0;
+  for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
+  return "#"+h.toString(16).slice(0,4).toUpperCase();
+}
 
 function updateName(){
-  nameBtn.textContent=(ADMIN_UIDS.includes(uid)?"👑 ":"")+userName+" "+myCode;
+  nameBtn.textContent=(ADMIN_UIDS.includes(uid)?"👑 ":"")+userName+" "+makeCode(uid);
 }
 updateName();
 
-/* 🔴 返信キャンセル */
-function cancelReply(){
-  replyingTo=null;
-  replyBar.style.display="none";
-}
+nameBtn.onclick=()=>{
+  const n=prompt("名前変更",userName);
+  if(!n)return;
+  userName=n;
+  localStorage.setItem("userName",n);
+  updateName();
+};
 
-function showReply(name,id){
+/* UID PANEL */
+uidBtn.onclick=()=>{
+  document.getElementById("uidInfo").innerHTML=
+  `UID:<br>${uid}<br><br>CODE:<br>${makeCode(uid)}<br><br>ADMIN:${ADMIN_UIDS.includes(uid)}`;
+  document.getElementById("uidPanel").style.display="flex";
+};
+
+/* ================= REPLY ================= */
+window.startReply=(id,name)=>{
   replyingTo=id;
   replyBar.style.display="flex";
-  replyBar.innerHTML=`
-    <span>返信: ${name}</span>
-    <button id="cancelReply">キャンセル</button>
-  `;
-  document.getElementById("cancelReply").onclick=cancelReply;
-}
-
-window.startReply=(id)=>{
-  const msg=messages.get(id);
-  if(msg)showReply(msg.name,id);
+  replyBar.innerHTML=`返信: ${name}
+  <button class="btn-danger" onclick="cancelReply()">キャンセル</button>`;
 };
 
-/* 🔥 削除修正 */
-window.deleteMsg=async(id,uidMsg)=>{
-  try{
-    if(!ADMIN_UIDS.includes(uid)&&uid!==uidMsg){
-      alert("権限がありません");
-      return;
+window.cancelReply=()=>{
+  replyingTo=null;
+  replyBar.style.display="none";
+};
+
+/* ================= CONTENT ================= */
+
+function escapeHtml(str){
+  return str
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function isImage(url){
+  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+}
+
+function getYouTubeId(url){
+  const m =
+    url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/) ||
+    url.match(/v=([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+window.openImage=(url)=>{
+  document.getElementById("modalImg").src=url;
+  document.getElementById("modal").style.display="flex";
+};
+
+function renderContent(text){
+  let safe=escapeHtml(text);
+  const urlRegex=/(https?:\/\/[^\s]+)/g;
+
+  return safe.replace(urlRegex,(url)=>{
+
+    const yt=getYouTubeId(url);
+    if(yt){
+      return `
+        <div style="margin-top:6px">
+          <a href="${url}" target="_blank">
+            <img src="https://img.youtube.com/vi/${yt}/hqdefault.jpg"
+              style="max-width:220px;border-radius:10px;cursor:pointer">
+          </a>
+        </div>
+      `;
     }
 
-    const ok=confirm("このメッセージを削除しますか？");
-    if(!ok)return;
+    if(isImage(url)){
+      return `
+        <div style="margin-top:6px">
+          <img src="${url}"
+            onclick="openImage('${url}')"
+            style="max-width:220px;border-radius:10px;cursor:pointer">
+        </div>
+      `;
+    }
 
-    await remove(ref(db,"chat/"+id));
+    return `<a href="${url}" target="_blank" style="color:#1a73e8">${url}</a>`;
+  });
+}
 
-  }catch(e){
-    alert("削除失敗: "+e.message);
-  }
-};
+/* ================= MESSAGE ================= */
 
-function createMsg(d){
-  const mine=d.uid===uid;
+function msg(m,isChild=false){
+  const mine=m.uid===uid;
+
   const div=document.createElement("div");
-  div.className="msg "+(mine?"me":"other");
-
-  const crown = ADMIN_UIDS.includes(d.uid)?"👑 ":"";
+  div.dataset.id=m.id;
+  div.className=isChild?"replyChild":"msg "+(mine?"me":"other");
 
   div.innerHTML=`
-    <b class="${mine?'mine-name':'other-name'}">${crown}${d.name} ${makeCode(d.uid)}</b>
-    <div>${renderContent(d.text)}</div>
+    <b>${m.name}</b>
+    <div>${renderContent(m.text)}</div>
   `;
 
-  const r=document.createElement("div");
-  r.className="replyBtn";r.textContent="↩";
-  r.onclick=()=>window.startReply(d.id);
-  div.appendChild(r);
+  if(!isChild){
+    const r=document.createElement("div");
+    r.className="replyBtn";
+    r.textContent="↩";
+    r.onclick=()=>startReply(m.id,m.name);
+    div.appendChild(r);
+  }
 
-  const del=document.createElement("div");
-  del.className="delBtn";del.textContent="✖";
-  del.onclick=()=>window.deleteMsg(d.id,d.uid);
-  div.appendChild(del);
+  if(m.uid===uid || ADMIN_UIDS.includes(uid)){
+    const d=document.createElement("div");
+    d.className=isChild?"childDelBtn":"delBtn";
+    d.textContent="✖";
+    d.onclick=()=>remove(ref(db,"chat/"+m.id));
+    div.appendChild(d);
+  }
 
   return div;
 }
 
-function createChild(d){
-  const div=document.createElement("div");
-  div.className="replyChild";
-  div.innerHTML=renderContent(d.name+": "+d.text);
-  return div;
-}
+/* ================= DRAW ================= */
 
-function render(){
+function draw(data){
   chatWrap.innerHTML="";
-  for(const [rootId,list] of threads.entries()){
-    const root=list.find(m=>m.id===rootId);
-    if(!root)continue;
 
+  const arr=Object.entries(data||{}).map(([id,v])=>({id,...v}));
+
+  const roots=arr.filter(m=>!m.replyTo).sort((a,b)=>b.time-a.time);
+
+  roots.forEach(root=>{
     const thread=document.createElement("div");
+    thread.className="thread";
+
     const header=document.createElement("div");
-    header.className="threadHeader";
 
     const btn=document.createElement("div");
     btn.className="collapseBtn";
 
-    const collapsed=collapsedMap.get(rootId)??true;
-    btn.textContent=collapsed?"▶":"▼";
+    const childrenArr=arr.filter(c=>c.replyTo===root.id);
 
-    btn.onclick=()=>{
-      collapsedMap.set(rootId,!collapsed);
-      render();
-    };
+    const children=document.createElement("div");
 
-    header.appendChild(btn);
-    header.appendChild(createMsg(root));
-    thread.appendChild(header);
+    const body=msg(root);
 
-    if(!collapsed){
-      list.filter(m=>m.id!==rootId).forEach(c=>{
-        thread.appendChild(createChild(c));
-      });
+    if(childrenArr.length===0){
+      btn.textContent="・";
+      btn.style.opacity=".4";
+    }else{
+      btn.textContent="▶";
+      btn.onclick=()=>{
+        const open=children.style.display==="block";
+        children.style.display=open?"none":"block";
+        btn.textContent=open?"▶":"▼";
+      };
     }
 
-    chatWrap.prepend(thread);
-  }
+    childrenArr.forEach(c=>children.appendChild(msg(c,true)));
+
+    header.appendChild(btn);
+    header.appendChild(body);
+
+    thread.appendChild(header);
+    thread.appendChild(children);
+
+    chatWrap.appendChild(thread);
+  });
 }
 
-/* FIREBASE */
-onChildAdded(chatRef,snap=>{
-  const d=snap.val();
-  const id=snap.key;
-  d.id=id;
+onValue(chatRef,s=>draw(s.val()));
 
-  messages.set(id,d);
-  const root=d.replyTo||id;
+/* ================= SEND ================= */
 
-  if(!threads.has(root))threads.set(root,[]);
-  threads.get(root).push(d);
-
-  render();
-});
-
-/* SEND */
-async function send(){
+sendBtn.onclick=async()=>{
   const t=msgInput.value.trim();
   if(!t)return;
 
-  await push(ref(db,"chat"),{
-    uid,name:userName,text:t,time:Date.now(),replyTo:replyingTo
+  const p=await push(ref(db,"chat"),{
+    uid,
+    name:userName,
+    text:t,
+    time:Date.now(),
+    replyTo:replyingTo||null
   });
+
+  const id=p.key;
 
   msgInput.value="";
   cancelReply();
-}
 
-sendBtn.onclick=send;
-msgInput.onkeydown=e=>e.key==="Enter"&&send();
+  setTimeout(()=>{
+    const el=document.querySelector(`[data-id="${id}"]`);
+    if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
+  },400);
+};
 
-}
+upBtn.onclick=()=>chatWrap.scrollTo({top:0,behavior:"smooth"});
+downBtn.onclick=()=>chatWrap.scrollTo({top:chatWrap.scrollHeight,behavior:"smooth"});
+
+msgInput.onkeydown=e=>{
+  if(e.key==="Enter"){
+    e.preventDefault();
+    sendBtn.onclick();
+  }
+};
+
 </script>
 
 </body>
