@@ -149,6 +149,7 @@ button{
   justify-content:center;
 }
 
+/* FOOTER */
 #footer{
   position:fixed;
   left:0;right:0;bottom:0;
@@ -253,7 +254,7 @@ const msgInput=document.getElementById("msgInput");
 const replyBar=document.getElementById("replyBar");
 const copyBtn=document.getElementById("copyBtn");
 
-/* ===== UID COPY（復活） ===== */
+/* UID COPY */
 copyBtn.onclick=async()=>{
   try{
     await navigator.clipboard.writeText(uid);
@@ -267,20 +268,16 @@ copyBtn.onclick=async()=>{
     ta.remove();
     copyBtn.textContent="コピー完了";
   }
-
-  setTimeout(()=>{
-    copyBtn.textContent="UIDコピー";
-  },1000);
+  setTimeout(()=>copyBtn.textContent="UIDコピー",1000);
 };
 
-/* ===== CODE ===== */
+/* NAME CODE */
 function makeCode(u){
   let h=0;
   for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
   return "#"+h.toString(16).slice(0,4).toUpperCase();
 }
 
-/* ===== NAME BUTTON（復活） ===== */
 function updateName(){
   const isAdmin=ADMIN_UIDS.includes(uid);
   const code=isAdmin?"#Admin":makeCode(uid);
@@ -300,14 +297,14 @@ nameBtn.onclick=()=>{
   updateName();
 };
 
-/* ===== UID PANEL（復活） ===== */
+/* UID PANEL */
 uidBtn.onclick=()=>{
   document.getElementById("uidInfo").innerHTML=
   `UID:<br>${uid}<br><br>CODE:<br>${makeCode(uid)}<br><br>ADMIN:<br>${ADMIN_UIDS.includes(uid)}`;
   document.getElementById("uidPanel").style.display="flex";
 };
 
-/* ===== REPLY ===== */
+/* REPLY */
 window.startReply=(id,name)=>{
   replyingTo=id;
   replyBar.style.display="flex";
@@ -319,7 +316,7 @@ window.cancelReply=()=>{
   replyBar.style.display="none";
 };
 
-/* ===== CONTENT ===== */
+/* CONTENT */
 function escapeHtml(str){
   return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
@@ -335,7 +332,6 @@ function getYouTubeId(url){
   return m?m[1]:null;
 }
 
-/* ===== YOUTUBE LAZY ===== */
 function renderContent(text){
   let safe=escapeHtml(text);
   const urlRegex=/(https?:\/\/[^\s]+)/g;
@@ -362,7 +358,7 @@ function renderContent(text){
   });
 }
 
-/* ===== YOUTUBE CLICK LAZY PLAYER ===== */
+/* YT CLICK */
 document.addEventListener("click",(e)=>{
   const box=e.target.closest(".yt-box");
   if(!box)return;
@@ -389,7 +385,7 @@ document.addEventListener("click",(e)=>{
   `;
 });
 
-/* ===== MESSAGE ===== */
+/* MESSAGE */
 function msg(m,isChild=false){
   const mine=m.uid===uid;
   const isAdmin=ADMIN_UIDS.includes(m.uid);
@@ -425,30 +421,48 @@ function msg(m,isChild=false){
   return div;
 }
 
-/* ===== DRAW ===== */
+/* DRAW FIXED (▼ / ▶ / ・完全修正) */
 function draw(data){
   chatWrap.innerHTML="";
 
   const arr=Object.entries(data||{}).map(([id,v])=>({id,...v}));
-  const roots=arr.filter(m=>!m.replyTo).sort((a,b)=>b.time-a.time);
+
+  const roots=arr
+    .filter(m=>!m.replyTo)
+    .sort((a,b)=>b.time-a.time);
 
   roots.forEach(root=>{
     const thread=document.createElement("div");
     thread.className="thread";
 
     const header=document.createElement("div");
+
     const btn=document.createElement("div");
     btn.className="collapseBtn";
 
     const childrenArr=arr.filter(c=>c.replyTo===root.id);
     const children=document.createElement("div");
 
-    btn.textContent=childrenArr.length?"▶":"・";
+    let hasChild = childrenArr.length > 0;
+    let open = true;
+
+    if(!hasChild){
+      btn.textContent="・";
+      btn.style.pointerEvents="none";
+      btn.style.opacity="0.4";
+      children.style.display="none";
+    }else{
+      btn.textContent="▼";
+      btn.style.pointerEvents="auto";
+      btn.style.opacity="1";
+      children.style.display="block";
+    }
 
     btn.onclick=()=>{
-      const open=children.style.display==="block";
-      children.style.display=open?"none":"block";
-      btn.textContent=open?"▶":"▼";
+      if(!hasChild) return;
+      open=!open;
+      children.style.display=open?"block":"none";
+      btn.textContent=open?"▼":"▶";
     };
 
     childrenArr.forEach(c=>children.appendChild(msg(c,true)));
@@ -458,13 +472,23 @@ function draw(data){
 
     thread.appendChild(header);
     thread.appendChild(children);
+
     chatWrap.appendChild(thread);
   });
 }
 
-onValue(chatRef,s=>draw(s.val()));
+/* 🔥 返信中に親が削除されたらキャンセル */
+onValue(chatRef,s=>{
+  const data=s.val()||{};
 
-/* ===== SEND ===== */
+  if(replyingTo && !data[replyingTo]){
+    cancelReply();
+  }
+
+  draw(data);
+});
+
+/* SEND */
 sendBtn.onclick=async()=>{
   const t=msgInput.value.trim();
   if(!t)return;
