@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
-<title>NEZUO CHAT</title>
+<title>NEZUO CHAT FULL FIX STABLE</title>
 
 <style>
 
@@ -87,11 +87,10 @@ button{
   padding-left:10px;
 }
 
-/* ★★★ここが修正ポイント★★★ */
 .msg{
   position:relative;
   max-width:78%;
-  padding:10px 44px 12px 12px; /* ←返信・削除ボタンの逃げ場 */
+  padding:10px 44px 12px 12px;
   border-radius:18px;
   word-break:break-word;
   box-shadow:0 4px 18px rgba(0,0,0,.08);
@@ -150,7 +149,6 @@ button{
   justify-content:center;
 }
 
-/* FOOTER */
 #footer{
   position:fixed;
   left:0;right:0;bottom:0;
@@ -163,7 +161,6 @@ button{
   backdrop-filter:blur(14px);
 }
 
-/* modal */
 #modal,#uidPanel{
   position:fixed;
   inset:0;
@@ -238,7 +235,12 @@ const app=initializeApp({
 const db=getDatabase(app);
 const chatRef=query(ref(db,"chat"),limitToLast(80));
 
-const ADMIN_UIDS=["eobk3m5b","6ee437db-57db-43f2-8bfd-40193e9d5b3c"];
+const ADMIN_UIDS=[
+  "eobk3m5b",
+  "6ee437db-57db-43f2-8bfd-40193e9d5b3c",
+  "899eada9-5b18-4013-9316-c2b9536acd7e",
+  "cfc790a3-202a-4d4d-9d68-eca12915fa32"
+];
 
 let uid=localStorage.getItem("fixed_uid")||crypto.randomUUID();
 localStorage.setItem("fixed_uid",uid);
@@ -251,31 +253,42 @@ const msgInput=document.getElementById("msgInput");
 const replyBar=document.getElementById("replyBar");
 const copyBtn=document.getElementById("copyBtn");
 
-/* UID COPY */
-copyBtn.onclick = async () => {
-  try {
+/* ===== UID COPY（復活） ===== */
+copyBtn.onclick=async()=>{
+  try{
     await navigator.clipboard.writeText(uid);
-  } catch {
+    copyBtn.textContent="コピー完了";
+  }catch{
     const ta=document.createElement("textarea");
     ta.value=uid;
     document.body.appendChild(ta);
     ta.select();
     document.execCommand("copy");
     ta.remove();
+    copyBtn.textContent="コピー完了";
   }
-  copyBtn.textContent="コピー完了";
-  setTimeout(()=>copyBtn.textContent="UIDコピー",1000);
+
+  setTimeout(()=>{
+    copyBtn.textContent="UIDコピー";
+  },1000);
 };
 
-/* NAME */
+/* ===== CODE ===== */
 function makeCode(u){
   let h=0;
   for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
   return "#"+h.toString(16).slice(0,4).toUpperCase();
 }
 
+/* ===== NAME BUTTON（復活） ===== */
 function updateName(){
-  nameBtn.textContent=(ADMIN_UIDS.includes(uid)?"👑 ":"")+userName+" "+makeCode(uid);
+  const isAdmin=ADMIN_UIDS.includes(uid);
+  const code=isAdmin?"#Admin":makeCode(uid);
+
+  nameBtn.innerHTML=
+    (isAdmin?"👑 ":"")+
+    userName+
+    " <span style='opacity:.5'> "+code+"</span>";
 }
 updateName();
 
@@ -287,19 +300,18 @@ nameBtn.onclick=()=>{
   updateName();
 };
 
-/* UID PANEL */
+/* ===== UID PANEL（復活） ===== */
 uidBtn.onclick=()=>{
   document.getElementById("uidInfo").innerHTML=
-  `UID:<br>${uid}<br><br>CODE:<br>${makeCode(uid)}<br><br>ADMIN:${ADMIN_UIDS.includes(uid)}`;
+  `UID:<br>${uid}<br><br>CODE:<br>${makeCode(uid)}<br><br>ADMIN:<br>${ADMIN_UIDS.includes(uid)}`;
   document.getElementById("uidPanel").style.display="flex";
 };
 
-/* REPLY */
+/* ===== REPLY ===== */
 window.startReply=(id,name)=>{
   replyingTo=id;
   replyBar.style.display="flex";
-  replyBar.innerHTML=`返信: ${name}
-  <button class="btn-danger" onclick="cancelReply()">キャンセル</button>`;
+  replyBar.innerHTML=`返信: ${name} <button class="btn-danger" onclick="cancelReply()">キャンセル</button>`;
 };
 
 window.cancelReply=()=>{
@@ -307,14 +319,9 @@ window.cancelReply=()=>{
   replyBar.style.display="none";
 };
 
-/* CONTENT */
+/* ===== CONTENT ===== */
 function escapeHtml(str){
-  return str
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+  return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
 
 function isImage(url){
@@ -322,17 +329,13 @@ function isImage(url){
 }
 
 function getYouTubeId(url){
-  const m =
-    url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/) ||
+  const m=
+    url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)||
     url.match(/v=([a-zA-Z0-9_-]+)/);
-  return m ? m[1] : null;
+  return m?m[1]:null;
 }
 
-window.openImage=(url)=>{
-  document.getElementById("modalImg").src=url;
-  document.getElementById("modal").style.display="flex";
-};
-
+/* ===== YOUTUBE LAZY ===== */
 function renderContent(text){
   let safe=escapeHtml(text);
   const urlRegex=/(https?:\/\/[^\s]+)/g;
@@ -341,40 +344,65 @@ function renderContent(text){
 
     const yt=getYouTubeId(url);
     if(yt){
+      const thumb=`https://img.youtube.com/vi/${yt}/hqdefault.jpg`;
+
       return `
-        <div style="margin-top:6px">
-          <a href="${url}" target="_blank">
-            <img src="https://img.youtube.com/vi/${yt}/hqdefault.jpg"
-              style="max-width:220px;border-radius:10px;cursor:pointer">
-          </a>
+        <div class="yt-box" data-id="${yt}" style="position:relative;max-width:220px;margin-top:6px;cursor:pointer">
+          <img src="${thumb}" style="width:100%;border-radius:10px">
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px">▶ 再生</div>
         </div>
       `;
     }
 
     if(isImage(url)){
-      return `
-        <div style="margin-top:6px">
-          <img src="${url}"
-            onclick="openImage('${url}')"
-            style="max-width:220px;border-radius:10px;cursor:pointer">
-        </div>
-      `;
+      return `<img src="${url}" style="max-width:220px;border-radius:10px;margin-top:6px">`;
     }
 
-    return `<a href="${url}" target="_blank" style="color:#1a73e8">${url}</a>`;
+    return `<a href="${url}" target="_blank">${url}</a>`;
   });
 }
 
-/* MESSAGE */
+/* ===== YOUTUBE CLICK LAZY PLAYER ===== */
+document.addEventListener("click",(e)=>{
+  const box=e.target.closest(".yt-box");
+  if(!box)return;
+
+  const id=box.dataset.id;
+
+  if(box.classList.contains("playing")){
+    const thumb=`https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    box.classList.remove("playing");
+    box.innerHTML=`
+      <img src="${thumb}" style="width:100%;border-radius:10px">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px">▶ 再生</div>
+    `;
+    return;
+  }
+
+  box.classList.add("playing");
+  box.innerHTML=`
+    <iframe width="220" height="124"
+    style="border-radius:10px;border:none"
+    src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0"
+    allow="autoplay; encrypted-media"
+    allowfullscreen></iframe>
+  `;
+});
+
+/* ===== MESSAGE ===== */
 function msg(m,isChild=false){
   const mine=m.uid===uid;
+  const isAdmin=ADMIN_UIDS.includes(m.uid);
 
   const div=document.createElement("div");
   div.dataset.id=m.id;
   div.className=isChild?"replyChild":"msg "+(mine?"me":"other");
 
   div.innerHTML=`
-    <b>${m.name}</b>
+    <b>
+      ${isAdmin?"👑 ":""}${m.name}
+      <span style="opacity:.5">${isAdmin?" #Admin":makeCode(m.uid)}</span>
+    </b>
     <div>${renderContent(m.text)}</div>
   `;
 
@@ -397,12 +425,11 @@ function msg(m,isChild=false){
   return div;
 }
 
-/* DRAW */
+/* ===== DRAW ===== */
 function draw(data){
   chatWrap.innerHTML="";
 
   const arr=Object.entries(data||{}).map(([id,v])=>({id,...v}));
-
   const roots=arr.filter(m=>!m.replyTo).sort((a,b)=>b.time-a.time);
 
   roots.forEach(root=>{
@@ -410,43 +437,34 @@ function draw(data){
     thread.className="thread";
 
     const header=document.createElement("div");
-
     const btn=document.createElement("div");
     btn.className="collapseBtn";
 
     const childrenArr=arr.filter(c=>c.replyTo===root.id);
-
     const children=document.createElement("div");
 
-    const body=msg(root);
+    btn.textContent=childrenArr.length?"▶":"・";
 
-    if(childrenArr.length===0){
-      btn.textContent="・";
-      btn.style.opacity=".4";
-    }else{
-      btn.textContent="▶";
-      btn.onclick=()=>{
-        const open=children.style.display==="block";
-        children.style.display=open?"none":"block";
-        btn.textContent=open?"▶":"▼";
-      };
-    }
+    btn.onclick=()=>{
+      const open=children.style.display==="block";
+      children.style.display=open?"none":"block";
+      btn.textContent=open?"▶":"▼";
+    };
 
     childrenArr.forEach(c=>children.appendChild(msg(c,true)));
 
     header.appendChild(btn);
-    header.appendChild(body);
+    header.appendChild(msg(root));
 
     thread.appendChild(header);
     thread.appendChild(children);
-
     chatWrap.appendChild(thread);
   });
 }
 
 onValue(chatRef,s=>draw(s.val()));
 
-/* SEND */
+/* ===== SEND ===== */
 sendBtn.onclick=async()=>{
   const t=msgInput.value.trim();
   if(!t)return;
@@ -459,17 +477,17 @@ sendBtn.onclick=async()=>{
     replyTo:replyingTo||null
   });
 
-  const id=p.key;
-
   msgInput.value="";
   cancelReply();
 
+  const id=p.key;
   setTimeout(()=>{
     const el=document.querySelector(`[data-id="${id}"]`);
     if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
   },400);
 };
 
+/* NAV */
 upBtn.onclick=()=>chatWrap.scrollTo({top:0,behavior:"smooth"});
 downBtn.onclick=()=>chatWrap.scrollTo({top:chatWrap.scrollHeight,behavior:"smooth"});
 
