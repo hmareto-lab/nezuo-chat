@@ -253,6 +253,14 @@ const chatWrap=document.getElementById("chatWrap");
 const msgInput=document.getElementById("msgInput");
 const replyBar=document.getElementById("replyBar");
 const copyBtn=document.getElementById("copyBtn");
+const modal=document.getElementById("modal");
+const modalImg=document.getElementById("modalImg");
+
+/* IMAGE ZOOM */
+function openImage(url){
+  modalImg.src=url;
+  modal.style.display="flex";
+}
 
 /* UID COPY */
 copyBtn.onclick=async()=>{
@@ -271,7 +279,7 @@ copyBtn.onclick=async()=>{
   setTimeout(()=>copyBtn.textContent="UIDコピー",1000);
 };
 
-/* NAME CODE */
+/* NAME */
 function makeCode(u){
   let h=0;
   for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
@@ -351,15 +359,22 @@ function renderContent(text){
     }
 
     if(isImage(url)){
-      return `<img src="${url}" style="max-width:220px;border-radius:10px;margin-top:6px">`;
+      return `<img src="${url}" class="chat-img" style="max-width:220px;border-radius:10px;margin-top:6px;cursor:pointer">`;
     }
 
     return `<a href="${url}" target="_blank">${url}</a>`;
   });
 }
 
-/* YT CLICK */
+/* IMAGE CLICK ZOOM */
 document.addEventListener("click",(e)=>{
+
+  const img=e.target.closest(".chat-img");
+  if(img){
+    openImage(img.src);
+    return;
+  }
+
   const box=e.target.closest(".yt-box");
   if(!box)return;
 
@@ -421,15 +436,13 @@ function msg(m,isChild=false){
   return div;
 }
 
-/* DRAW FIXED (▼ / ▶ / ・完全修正) */
+/* DRAW */
 function draw(data){
   chatWrap.innerHTML="";
 
   const arr=Object.entries(data||{}).map(([id,v])=>({id,...v}));
 
-  const roots=arr
-    .filter(m=>!m.replyTo)
-    .sort((a,b)=>b.time-a.time);
+  const roots=arr.filter(m=>!m.replyTo).sort((a,b)=>b.time-a.time);
 
   roots.forEach(root=>{
     const thread=document.createElement("div");
@@ -443,8 +456,8 @@ function draw(data){
     const childrenArr=arr.filter(c=>c.replyTo===root.id);
     const children=document.createElement("div");
 
-    let hasChild = childrenArr.length > 0;
-    let open = true;
+    let hasChild=childrenArr.length>0;
+    let open=true;
 
     if(!hasChild){
       btn.textContent="・";
@@ -453,8 +466,6 @@ function draw(data){
       children.style.display="none";
     }else{
       btn.textContent="▼";
-      btn.style.pointerEvents="auto";
-      btn.style.opacity="1";
       children.style.display="block";
     }
 
@@ -477,7 +488,7 @@ function draw(data){
   });
 }
 
-/* 🔥 返信中に親が削除されたらキャンセル */
+/* FIREBASE */
 onValue(chatRef,s=>{
   const data=s.val()||{};
 
