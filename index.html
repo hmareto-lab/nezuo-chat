@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>NEZUO CHAT UI-FIX (YT-PREVIEW)</title>
+<title>NEZUO CHAT</title>
 <style>
 /* 共通スタイル */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -53,7 +53,7 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMa
 .delBtn, .childDelBtn {position:absolute; right:8px; top:8px;background: rgba(255,59,48,0.1); color:#ff3b30;font-size:11px; padding:4px 6px;border-radius:8px; cursor:pointer;}
 .collapseBtn{width:32px;height:32px;border-radius:8px;background:#fff;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-size:10px;margin-top:4px}
 
-/* YouTubeプレビュー用スタイル */
+/* YouTubeプレビュー用スタイル改修 */
 .yt-container {
   position: relative;
   display: block;
@@ -63,44 +63,57 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMa
   border-radius: 12px;
   overflow: hidden;
   background: #000;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  text-decoration: none;
 }
 .yt-thumb {
   width: 100%;
   display: block;
-  opacity: 0.9;
+  opacity: 0.85;
   transition: opacity 0.2s;
-}
-.yt-container:hover .yt-thumb {
-  opacity: 1;
 }
 .yt-play-btn {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 50px;
-  height: 35px;
+  width: 60px;
+  height: 42px;
   background: rgba(255, 0, 0, 0.9);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, background 0.2s;
+  transition: all 0.2s;
+  border: 1.5px solid rgba(255,255,255,0.3);
 }
+/* 再生ボタンの三角 */
 .yt-play-btn::after {
   content: "";
   display: block;
   width: 0;
   height: 0;
   border-style: solid;
-  border-width: 8px 0 8px 14px;
+  border-width: 9px 0 9px 15px;
   border-color: transparent transparent transparent #fff;
-  margin-left: 4px;
+  margin-left: 3px;
 }
+.yt-container:hover .yt-thumb { opacity: 1; }
 .yt-container:hover .yt-play-btn {
   transform: translate(-50%, -50%) scale(1.1);
   background: #ff0000;
+  box-shadow: 0 0 15px rgba(255,0,0,0.5);
+}
+.yt-time-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 /* フッター */
@@ -225,16 +238,21 @@ const renderText = (text) => {
       return `<img src="${url}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;" onclick="window.openImage('${url}')" loading="lazy">`;
     }
     
-    // YouTube URLの判定 (shorts, watch, youtu.be対応)
-    const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+    // YouTube URLの判定 (IDとタイムスタンプt=を抽出)
+    const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})(?:[?&]t=([\dms]+))?/);
     if (ytMatch) {
         const videoId = ytMatch[1];
-        // mqdefault.jpg は 320x180 の軽量なプレビュー画像
+        const time = ytMatch[2] || "";
         const thumbUrl = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+        // ジャンプ用リンク生成
+        const jumpUrl = time ? `https://www.youtube.com/watch?v=${videoId}&t=${time}` : url;
+        const timeLabel = time ? `<div class="yt-time-badge">${time.replace('s','秒').replace('m','分')}~</div>` : "";
+
         return `
-          <a href="${url}" target="_blank" class="yt-container">
+          <a href="${jumpUrl}" target="_blank" class="yt-container">
             <img src="${thumbUrl}" class="yt-thumb" loading="lazy">
             <div class="yt-play-btn"></div>
+            ${timeLabel}
           </a>
         `;
     }
