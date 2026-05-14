@@ -3,197 +3,126 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-
-<title>NEZUO CHAT FULL FIX STABLE</title>
-
+<title>NEZUO CHAT UI-FIX (YT-PREVIEW)</title>
 <style>
+/* 共通スタイル */
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f0f2f5;color:#333}
 
-html,body{
-  margin:0;
-  height:100%;
-  overflow:hidden;
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  background:linear-gradient(135deg,#d7dde5,#b8c2cf);
-}
-
-/* HEADER */
+/* ヘッダーエリア */
 #header{
-  position:fixed;
-  top:0;left:0;right:0;
-  z-index:9999;
-  padding:calc(env(safe-area-inset-top) + 10px) 10px 10px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  background:rgba(255,255,255,.15);
-  border-bottom:1px solid rgba(255,255,255,.25);
-  backdrop-filter:blur(14px);
+  position:fixed;top:0;left:0;right:0;z-index:999;
+  padding:calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,.05)
 }
+#replyBar{display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-radius:8px;background:#333;color:#fff;font-size:12px;margin-bottom:8px}
 
-#replyBar{
-  display:none;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  padding:6px 10px;
-  border-radius:10px;
-  background:rgba(0,0,0,.35);
-  color:#fff;
-  font-size:12px;
-}
-
-#msgInputWrap{
-  display:flex;
-  gap:8px;
-}
-
+/* 入力エリア */
+#msgInputWrap{display:flex;gap:10px;align-items:flex-end}
 #msgInput{
-  flex:1;
-  height:42px;
-  border:none;
-  outline:none;
-  border-radius:12px;
-  padding:0 12px;
-  background:rgba(255,255,255,.72);
-  font-size:15px;
-}
-
-button{
-  border:none;
-  border-radius:12px;
-  color:#fff;
-  font-weight:700;
-}
-
-#sendBtn{width:72px;background:rgba(0,120,255,.55);}
-#nameBtn{height:44px;background:rgba(0,120,255,.55);}
-#uidBtn,#upBtn,#downBtn{height:44px;background:rgba(40,48,58,.85);}
-
-/* CHAT */
-#chatWrap{
-  position:fixed;
-  top:102px;
-  bottom:84px;
-  left:0;right:0;
+  flex:1;height:42px;max-height:150px;
+  border:1px solid rgba(0,0,0,.1);outline:none;border-radius:20px;
+  padding:10px 16px;background:#fff;font-size:16px;
+  resize:none;line-height:1.4;
   overflow-y:auto;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:18px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+#msgInput::-webkit-scrollbar { display: none; }
+
+#sendBtn{
+  width:66px;height:42px;background:#007aff;color:#fff;
+  font-weight:700;border-radius:20px;border:none;cursor:pointer;flex-shrink:0
 }
 
-.thread{
-  border-left:2px solid rgba(0,0,0,.15);
-  padding-left:10px;
+#chatWrap{position:fixed;top:110px;bottom:84px;left:0;right:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px;will-change:transform}
+
+/* メッセージ */
+.thread{display:flex;flex-direction:column;gap:4px}
+.thread-header{display:flex;align-items:flex-start;gap:10px}
+.msg{position:relative;flex:1;padding:12px 16px;border-radius:18px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.08);min-width:0}
+.msg.parent{font-size:15px;border-top-left-radius:4px}
+.msg-body {word-break: break-all;white-space: pre-wrap;padding-right: 40px;padding-bottom: 14px;}
+.reply-container {margin-left:42px;display:flex;flex-direction:column;gap:6px;margin-top:4px;border-left:2px solid rgba(0,0,0,.05);padding-left:12px}
+.msg.child{background:#e9ecef;border:none;font-size:14px;padding:10px 14px;border-radius:14px;border-top-left-radius:2px}
+.user-info{font-size:11px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.user-name{font-weight:700;color:#555}
+.user-code{opacity:0.4;font-family:monospace}
+.replyBtn {position:absolute; right:8px; bottom:8px;background: rgba(0,122,255,0.1); color:#007aff;font-size:10px; font-weight:700; padding:4px 10px;border-radius:10px; cursor:pointer;}
+.delBtn, .childDelBtn {position:absolute; right:8px; top:8px;background: rgba(255,59,48,0.1); color:#ff3b30;font-size:11px; padding:4px 6px;border-radius:8px; cursor:pointer;}
+.collapseBtn{width:32px;height:32px;border-radius:8px;background:#fff;border:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-size:10px;margin-top:4px}
+
+/* YouTubeプレビュー用スタイル */
+.yt-container {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.yt-thumb {
+  width: 100%;
+  display: block;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+.yt-container:hover .yt-thumb {
+  opacity: 1;
+}
+.yt-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 35px;
+  background: rgba(255, 0, 0, 0.9);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+}
+.yt-play-btn::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 0 8px 14px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 4px;
+}
+.yt-container:hover .yt-play-btn {
+  transform: translate(-50%, -50%) scale(1.1);
+  background: #ff0000;
 }
 
-.msg{
-  position:relative;
-  max-width:78%;
-  padding:10px 44px 12px 12px;
-  border-radius:18px;
-  word-break:break-word;
-  box-shadow:0 4px 18px rgba(0,0,0,.08);
-}
+/* フッター */
+#footer{position:fixed;left:0;right:0;bottom:0;padding:calc(env(safe-area-inset-bottom) + 10px) 16px 16px;display:grid;grid-template-columns:44px 44px 44px 1fr auto;gap:10px;background:rgba(255,255,255,.85);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,.05)}
+#footer button{border:none;border-radius:12px;cursor:pointer;background:#eee;color:#333;font-weight:700;height:44px}
+#nameBtn{background:#333!important;color:#fff!important;padding:0 12px;font-size:12px;border-radius:22px!important;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.replyChild{
-  margin-left:24px;
-  margin-top:10px;
-  padding:8px 10px;
-  border-radius:14px;
-  background:rgba(255,255,255,.6);
-  border-left:2px solid rgba(0,0,0,.12);
-  position:relative;
-}
-
-.me{background:rgba(40,48,58,.82);color:#fff;}
-.other{background:rgba(255,255,255,.72);color:#111;}
-
-.replyBtn,.delBtn{
-  position:absolute;
-  width:22px;height:22px;
-  border-radius:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-size:12px;
-  font-weight:900;
-}
-
-.replyBtn{right:34px;bottom:6px;background:rgba(0,120,255,.55);}
-.delBtn{right:6px;top:6px;background:rgba(255,0,0,.7);}
-
-.childDelBtn{
-  position:absolute;
-  right:6px;
-  top:6px;
-  width:22px;height:22px;
-  border-radius:6px;
-  background:rgba(255,0,0,.75);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#fff;
-  font-weight:900;
-  font-size:12px;
-}
-
-.collapseBtn{
-  width:24px;height:24px;
-  border-radius:6px;
-  background:rgba(0,0,0,.25);
-  color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* FOOTER */
-#footer{
-  position:fixed;
-  left:0;right:0;bottom:0;
-  padding:calc(env(safe-area-inset-bottom) + 10px) 10px 10px;
-  display:grid;
-  grid-template-columns:44px 44px 44px 1fr auto;
-  gap:12px;
-  background:rgba(255,255,255,.15);
-  border-top:1px solid rgba(255,255,255,.25);
-  backdrop-filter:blur(14px);
-}
-
-#modal,#uidPanel{
-  position:fixed;
-  inset:0;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,.85);
-  z-index:99999;
-}
-
-#modal img{max-width:90%;max-height:90%;border-radius:12px;}
-
-#uidBox{
-  background:#fff;
-  padding:16px;
-  border-radius:12px;
-  width:85%;
-  max-width:360px;
-}
-
-.btn-copy{background:rgba(0,120,255,.55)!important;}
-.btn-danger{background:rgba(255,0,0,.65)!important;}
-
+#modal,#uidPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8);z-index:9999}
+#modal img{max-width:90%;max-height:90%;border-radius:12px}
+#uidBox{background:#fff;padding:24px;border-radius:24px;width:85%;max-width:340px;text-align:center}
+#uidInfo{font-family:monospace;margin-bottom:20px;font-size:13px;color:#444;word-break:break-all;background:#f8f9fa;padding:12px;border-radius:12px}
+.panel-btn{width:100%;height:46px;border-radius:14px;border:none;font-weight:700;cursor:pointer;margin-bottom:8px;font-size:14px}
+.panel-btn.copy{background:#007aff;color:#fff}
+.panel-btn.close{background:#eee;color:#333}
 </style>
 </head>
-
 <body>
 
 <div id="header">
   <div id="replyBar"></div>
   <div id="msgInputWrap">
-    <input id="msgInput" placeholder="メッセージ">
+    <textarea id="msgInput" placeholder="メッセージを入力..." autocomplete="off" rows="1"></textarea>
     <button id="sendBtn">送信</button>
   </div>
 </div>
@@ -203,337 +132,230 @@ button{
 <div id="footer">
   <button id="upBtn">↑</button>
   <button id="downBtn">↓</button>
-  <button id="uidBtn">UID</button>
+  <button id="uidBtn">ID</button>
   <div></div>
   <button id="nameBtn"></button>
 </div>
 
-<div id="modal" onclick="this.style.display='none'">
-  <img id="modalImg">
-</div>
-
-<div id="uidPanel" onclick="this.style.display='none'">
+<div id="modal" onclick="this.style.display='none'"><img id="modalImg"></div>
+<div id="uidPanel" onclick="window.closeUidPanel()">
   <div id="uidBox" onclick="event.stopPropagation()">
     <div id="uidInfo"></div>
-    <button id="copyBtn" class="btn-copy">UIDコピー</button>
-    <button class="btn-danger" onclick="uidPanel.style.display='none'">閉じる</button>
+    <button id="copyBtn" class="panel-btn copy" onclick="window.copyUid()">UIDをコピー</button>
+    <button class="panel-btn close" onclick="window.closeUidPanel()">閉じる</button>
   </div>
 </div>
 
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, push, remove, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-import {initializeApp} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import {getDatabase,ref,push,remove,onValue,query,limitToLast}
-from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+const config = {
+  apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
+  authDomain: "nezubo2.firebaseapp.com",
+  databaseURL: "https://nezubo2-default-rtdb.firebaseio.com",
+  projectId: "nezubo2"
+};
 
-const app=initializeApp({
-  apiKey:"AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
-  authDomain:"nezubo2.firebaseapp.com",
-  databaseURL:"https://nezubo2-default-rtdb.firebaseio.com",
-  projectId:"nezubo2"
-});
+const app = initializeApp(config);
+const db = getDatabase(app);
+const chatRef = query(ref(db, "chat"), limitToLast(50));
 
-const db=getDatabase(app);
-const chatRef=query(ref(db,"chat"),limitToLast(80));
+const ADMIN_UIDS = ["eobk3m5b", "6ee437db-57db-43f2-8bfd-40193e9d5b3c", "cfc790a3-202a-4d4d-9d68-eca12915fa32"];
+const uid = localStorage.getItem("fixed_uid") || crypto.randomUUID();
+localStorage.setItem("fixed_uid", uid);
 
-const ADMIN_UIDS=[
-  "eobk3m5b",
-  "6ee437db-57db-43f2-8bfd-40193e9d5b3c",
-  "899eada9-5b18-4013-9316-c2b9536acd7e",
-  "cfc790a3-202a-4d4d-9d68-eca12915fa32"
-];
+let userName = localStorage.getItem("userName") || "名無し";
+let replyingTo = null;
+let openedThreads = new Set(JSON.parse(localStorage.getItem("opened_threads") || "[]"));
+let currentSnapshot = {};
 
-let uid=localStorage.getItem("fixed_uid")||crypto.randomUUID();
-localStorage.setItem("fixed_uid",uid);
+const chatWrap = document.getElementById("chatWrap");
+const msgInput = document.getElementById("msgInput");
+const sendBtn = document.getElementById("sendBtn");
+const nameBtn = document.getElementById("nameBtn");
+const replyBar = document.getElementById("replyBar");
 
-let userName=localStorage.getItem("userName")||"名無し";
-let replyingTo=null;
+const adjustHeight = () => {
+  msgInput.style.height = '42px'; 
+  const newHeight = Math.min(msgInput.scrollHeight, 150); 
+  msgInput.style.height = newHeight + 'px';
+};
+msgInput.addEventListener('input', adjustHeight);
 
-const chatWrap=document.getElementById("chatWrap");
-const msgInput=document.getElementById("msgInput");
-const replyBar=document.getElementById("replyBar");
-const copyBtn=document.getElementById("copyBtn");
-const modal=document.getElementById("modal");
-const modalImg=document.getElementById("modalImg");
+const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+const makeCode = (u) => "#" + [...u].reduce((a, b) => (a * 31 + b.charCodeAt(0)) >>> 0, 0).toString(16).toUpperCase().slice(0, 4);
 
-/* IMAGE ZOOM */
-function openImage(url){
-  modalImg.src=url;
-  modal.style.display="flex";
-}
+window.deleteMsg = (id) => { if(confirm("削除しますか？")) remove(ref(db, `chat/${id}`)); };
+window.startReply = (id, name) => {
+  replyingTo = id;
+  replyBar.style.display = "flex";
+  replyBar.innerHTML = `返信先: <b>${escapeHtml(name)}</b> <span style="margin-left:auto; cursor:pointer; padding:2px 8px; font-weight:bold;" onclick="cancelReply()">✕</span>`;
+  msgInput.focus();
+};
+window.cancelReply = () => { replyingTo = null; replyBar.style.display = "none"; };
 
-/* UID COPY */
-copyBtn.onclick=async()=>{
-  try{
-    await navigator.clipboard.writeText(uid);
-    copyBtn.textContent="コピー完了";
-  }catch{
-    const ta=document.createElement("textarea");
-    ta.value=uid;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    copyBtn.textContent="コピー完了";
+window.closeUidPanel = () => {
+  document.getElementById('uidPanel').style.display='none';
+  const b = document.getElementById('copyBtn'); b.textContent = "UIDをコピー"; b.style.background = "#007aff";
+};
+
+window.copyUid = () => {
+  const b = document.getElementById('copyBtn');
+  const done = () => { b.textContent = "コピー完了！"; b.style.background = "#34c759"; setTimeout(window.closeUidPanel, 500); };
+  if(navigator.clipboard) navigator.clipboard.writeText(uid).then(done).catch(()=>fallback());
+  else fallback();
+  function fallback(){ 
+    const t = document.createElement("textarea"); t.value = uid; document.body.appendChild(t); t.select();
+    document.execCommand('copy'); document.body.removeChild(t); done();
   }
-  setTimeout(()=>copyBtn.textContent="UIDコピー",1000);
 };
 
-/* NAME */
-function makeCode(u){
-  let h=0;
-  for(let i=0;i<u.length;i++)h=(h*31+u.charCodeAt(i))>>>0;
-  return "#"+h.toString(16).slice(0,4).toUpperCase();
-}
-
-function updateName(){
-  const isAdmin=ADMIN_UIDS.includes(uid);
-  const code=isAdmin?"#Admin":makeCode(uid);
-
-  nameBtn.innerHTML=
-    (isAdmin?"👑 ":"")+
-    userName+
-    " <span style='opacity:.5'> "+code+"</span>";
-}
-updateName();
-
-nameBtn.onclick=()=>{
-  const n=prompt("名前変更",userName);
-  if(!n)return;
-  userName=n;
-  localStorage.setItem("userName",n);
-  updateName();
+window.toggleThread = (id) => {
+  openedThreads.has(id) ? openedThreads.delete(id) : openedThreads.add(id);
+  localStorage.setItem("opened_threads", JSON.stringify([...openedThreads]));
+  renderChat(currentSnapshot);
 };
 
-/* UID PANEL */
-uidBtn.onclick=()=>{
-  document.getElementById("uidInfo").innerHTML=
-  `UID:<br>${uid}<br><br>CODE:<br>${makeCode(uid)}<br><br>ADMIN:<br>${ADMIN_UIDS.includes(uid)}`;
-  document.getElementById("uidPanel").style.display="flex";
-};
-
-/* REPLY */
-window.startReply=(id,name)=>{
-  replyingTo=id;
-  replyBar.style.display="flex";
-  replyBar.innerHTML=`返信: ${name} <button class="btn-danger" onclick="cancelReply()">キャンセル</button>`;
-};
-
-window.cancelReply=()=>{
-  replyingTo=null;
-  replyBar.style.display="none";
-};
-
-/* CONTENT */
-function escapeHtml(str){
-  return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-}
-
-function isImage(url){
-  return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-}
-
-function getYouTubeId(url){
-  const m=
-    url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)||
-    url.match(/v=([a-zA-Z0-9_-]+)/);
-  return m?m[1]:null;
-}
-
-function renderContent(text){
-  let safe=escapeHtml(text);
-  const urlRegex=/(https?:\/\/[^\s]+)/g;
-
-  return safe.replace(urlRegex,(url)=>{
-
-    const yt=getYouTubeId(url);
-    if(yt){
-      const thumb=`https://img.youtube.com/vi/${yt}/hqdefault.jpg`;
-
-      return `
-        <div class="yt-box" data-id="${yt}" style="position:relative;max-width:220px;margin-top:6px;cursor:pointer">
-          <img src="${thumb}" style="width:100%;border-radius:10px">
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px">▶ 再生</div>
-        </div>
-      `;
+const renderText = (text) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return escapeHtml(text).replace(urlRegex, (url) => {
+    // 画像URLの判定
+    if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
+      return `<img src="${url}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;" onclick="window.openImage('${url}')" loading="lazy">`;
+    }
+    
+    // YouTube URLの判定 (shorts, watch, youtu.be対応)
+    const ytMatch = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+    if (ytMatch) {
+        const videoId = ytMatch[1];
+        // mqdefault.jpg は 320x180 の軽量なプレビュー画像
+        const thumbUrl = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+        return `
+          <a href="${url}" target="_blank" class="yt-container">
+            <img src="${thumbUrl}" class="yt-thumb" loading="lazy">
+            <div class="yt-play-btn"></div>
+          </a>
+        `;
     }
 
-    if(isImage(url)){
-      return `<img src="${url}" class="chat-img" style="max-width:220px;border-radius:10px;margin-top:6px;cursor:pointer">`;
-    }
-
-    return `<a href="${url}" target="_blank">${url}</a>`;
+    return `<a href="${url}" target="_blank" style="color:#007aff; text-decoration:none;">${url}</a>`;
   });
-}
+};
+window.openImage = (u) => { document.getElementById("modalImg").src = u; document.getElementById("modal").style.display = "flex"; };
 
-/* IMAGE CLICK ZOOM */
-document.addEventListener("click",(e)=>{
-
-  const img=e.target.closest(".chat-img");
-  if(img){
-    openImage(img.src);
-    return;
-  }
-
-  const box=e.target.closest(".yt-box");
-  if(!box)return;
-
-  const id=box.dataset.id;
-
-  if(box.classList.contains("playing")){
-    const thumb=`https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-    box.classList.remove("playing");
-    box.innerHTML=`
-      <img src="${thumb}" style="width:100%;border-radius:10px">
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.6);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px">▶ 再生</div>
-    `;
-    return;
-  }
-
-  box.classList.add("playing");
-  box.innerHTML=`
-    <iframe width="220" height="124"
-    style="border-radius:10px;border:none"
-    src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0"
-    allow="autoplay; encrypted-media"
-    allowfullscreen></iframe>
+const createMsgNode = (m, isChild = false) => {
+  const isAdmin = ADMIN_UIDS.includes(m.uid);
+  const isMine = m.uid === uid || ADMIN_UIDS.includes(uid);
+  const div = document.createElement("div");
+  div.className = `msg ${isChild ? 'child' : 'parent'}`;
+  div.id = `msg-${m.id}`;
+  div.innerHTML = `
+    <div class="user-info">
+      <span class="user-name">${isAdmin ? '👑 ' : ''}${escapeHtml(m.name)}</span>
+      <span class="user-code">${makeCode(m.uid)}</span>
+    </div>
+    <div class="msg-body">${renderText(m.text)}</div>
+    ${!isChild ? `<div class="replyBtn" onclick="startReply('${m.id}', '${escapeHtml(m.name)}')">返信</div>` : ''}
+    ${isMine ? `<div class="${isChild ? 'childDelBtn' : 'delBtn'}" onclick="deleteMsg('${m.id}')">🗑</div>` : ''}
   `;
-});
-
-/* MESSAGE */
-function msg(m,isChild=false){
-  const mine=m.uid===uid;
-  const isAdmin=ADMIN_UIDS.includes(m.uid);
-
-  const div=document.createElement("div");
-  div.dataset.id=m.id;
-  div.className=isChild?"replyChild":"msg "+(mine?"me":"other");
-
-  div.innerHTML=`
-    <b>
-      ${isAdmin?"👑 ":""}${m.name}
-      <span style="opacity:.5">${isAdmin?" #Admin":makeCode(m.uid)}</span>
-    </b>
-    <div>${renderContent(m.text)}</div>
-  `;
-
-  if(!isChild){
-    const r=document.createElement("div");
-    r.className="replyBtn";
-    r.textContent="↩";
-    r.onclick=()=>startReply(m.id,m.name);
-    div.appendChild(r);
-  }
-
-  if(m.uid===uid || ADMIN_UIDS.includes(uid)){
-    const d=document.createElement("div");
-    d.className=isChild?"childDelBtn":"delBtn";
-    d.textContent="✖";
-    d.onclick=()=>remove(ref(db,"chat/"+m.id));
-    div.appendChild(d);
-  }
-
   return div;
-}
+};
 
-/* DRAW */
-function draw(data){
-  chatWrap.innerHTML="";
+const renderChat = (data) => {
+  if (replyingTo && !data[replyingTo]) cancelReply();
+  const oldScrollTop = chatWrap.scrollTop;
+  const oldScrollHeight = chatWrap.scrollHeight;
+  const fragment = document.createDocumentFragment();
+  const arr = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+  const roots = arr.filter(m => !m.replyTo).sort((a, b) => b.time - a.time);
 
-  const arr=Object.entries(data||{}).map(([id,v])=>({id,...v}));
-
-  const roots=arr.filter(m=>!m.replyTo).sort((a,b)=>b.time-a.time);
-
-  roots.forEach(root=>{
-    const thread=document.createElement("div");
-    thread.className="thread";
-
-    const header=document.createElement("div");
-
-    const btn=document.createElement("div");
-    btn.className="collapseBtn";
-
-    const childrenArr=arr.filter(c=>c.replyTo===root.id);
-    const children=document.createElement("div");
-
-    let hasChild=childrenArr.length>0;
-    let open=true;
-
-    if(!hasChild){
-      btn.textContent="・";
-      btn.style.pointerEvents="none";
-      btn.style.opacity="0.4";
-      children.style.display="none";
-    }else{
-      btn.textContent="▼";
-      children.style.display="block";
+  roots.forEach(root => {
+    const thread = document.createElement("div");
+    thread.className = "thread";
+    thread.id = `thread-${root.id}`;
+    const header = document.createElement("div");
+    header.className = "thread-header";
+    const children = arr.filter(c => c.replyTo === root.id).sort((a,b) => a.time - b.time);
+    const isOpen = openedThreads.has(root.id);
+    const btn = document.createElement("div");
+    btn.className = "collapseBtn";
+    
+    if (children.length > 0) {
+      btn.textContent = isOpen ? "▼" : "▶";
+      btn.onclick = () => window.toggleThread(root.id);
+      header.append(btn, createMsgNode(root));
+      thread.appendChild(header);
+      if (isOpen) {
+        const rc = document.createElement("div"); rc.className = "reply-container";
+        children.forEach(c => rc.appendChild(createMsgNode(c, true)));
+        thread.appendChild(rc);
+      }
+    } else {
+      btn.textContent = "・"; btn.style.opacity = "0.2";
+      header.append(btn, createMsgNode(root));
+      thread.appendChild(header);
     }
-
-    btn.onclick=()=>{
-      if(!hasChild) return;
-      open=!open;
-      children.style.display=open?"block":"none";
-      btn.textContent=open?"▼":"▶";
-    };
-
-    childrenArr.forEach(c=>children.appendChild(msg(c,true)));
-
-    header.appendChild(btn);
-    header.appendChild(msg(root));
-
-    thread.appendChild(header);
-    thread.appendChild(children);
-
-    chatWrap.appendChild(thread);
+    fragment.appendChild(thread);
   });
-}
 
-/* FIREBASE */
-onValue(chatRef,s=>{
-  const data=s.val()||{};
+  chatWrap.innerHTML = "";
+  chatWrap.appendChild(fragment);
+  chatWrap.scrollTop = oldScrollTop + (chatWrap.scrollHeight - oldScrollHeight);
+};
 
-  if(replyingTo && !data[replyingTo]){
-    cancelReply();
-  }
-
-  draw(data);
+onValue(chatRef, (snapshot) => {
+  currentSnapshot = snapshot.val() || {};
+  renderChat(currentSnapshot);
 });
 
-/* SEND */
-sendBtn.onclick=async()=>{
-  const t=msgInput.value.trim();
-  if(!t)return;
-
-  const p=await push(ref(db,"chat"),{
-    uid,
-    name:userName,
-    text:t,
-    time:Date.now(),
-    replyTo:replyingTo||null
+sendBtn.onclick = async () => {
+  const t = msgInput.value.trim();
+  if (!t) return;
+  const parentId = replyingTo;
+  if (parentId) openedThreads.add(parentId);
+  
+  const p = await push(ref(db, "chat"), {
+    uid, name: userName, text: t, time: Date.now(), replyTo: parentId || null
   });
-
-  msgInput.value="";
+  
+  msgInput.value = "";
+  adjustHeight(); 
   cancelReply();
 
-  const id=p.key;
-  setTimeout(()=>{
-    const el=document.querySelector(`[data-id="${id}"]`);
-    if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
-  },400);
+  setTimeout(() => {
+    if (!parentId) {
+      chatWrap.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      const target = document.getElementById(`msg-${p.key}`);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 150);
 };
 
-/* NAV */
-upBtn.onclick=()=>chatWrap.scrollTo({top:0,behavior:"smooth"});
-downBtn.onclick=()=>chatWrap.scrollTo({top:chatWrap.scrollHeight,behavior:"smooth"});
+const updateNameLabel = () => {
+  const isAdmin = ADMIN_UIDS.includes(uid);
+  nameBtn.innerHTML = `${isAdmin ? '👑 ' : ''}${escapeHtml(userName)} <span style="opacity:0.5; font-size:9px;">${makeCode(uid)}</span>`;
+};
+updateNameLabel();
 
-msgInput.onkeydown=e=>{
-  if(e.key==="Enter"){
+nameBtn.onclick = () => {
+  const n = prompt("名前を変更しますか？", userName);
+  if (n?.trim()) { userName = n.trim(); localStorage.setItem("userName", userName); updateNameLabel(); }
+};
+document.getElementById("uidBtn").onclick = () => {
+  document.getElementById("uidInfo").innerHTML = `<strong>UID:</strong><br>${uid}<br><br><strong>CODE:</strong> ${makeCode(uid)}`;
+  document.getElementById("uidPanel").style.display = "flex";
+};
+document.getElementById("upBtn").onclick = () => chatWrap.scrollTo({ top: 0, behavior: "smooth" });
+document.getElementById("downBtn").onclick = () => chatWrap.scrollTo({ top: chatWrap.scrollHeight, behavior: "smooth" });
+
+msgInput.onkeydown = (e) => { 
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    sendBtn.click();
     e.preventDefault();
-    sendBtn.onclick();
   }
 };
-
 </script>
-
 </body>
 </html>
