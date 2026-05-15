@@ -107,7 +107,11 @@ import { getDatabase, ref, push, onValue, set, remove, serverTimestamp, query, o
 
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
-const uid = crypto.randomUUID();
+
+// ブラウザごとに固定のUIDを使用（二重ログイン防止）
+let uid = localStorage.getItem("nez_uid");
+if(!uid){ uid = crypto.randomUUID(); localStorage.setItem("nez_uid", uid); }
+
 let curR, curP, curN, curT, rawR, lastT=0, userCount=0;
 
 const scrollUp = () => $("chatWrap").scrollTo({top: 0, behavior: 'smooth'});
@@ -131,15 +135,22 @@ async function join(rID, pass, name, trip) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
 
+    // 入室前に自分の古いセッションがあれば物理的に即削除（確実な上書きのため）
+    await remove(myPres);
+
     const snap = await get(presRef);
     const usersExist = snap.val() || {};
     let isRe入室 = false;
 
     for (const key in usersExist) {
+        if(key === uid) { isRe入室 = true; continue; } // 自分のUIDなら再入室扱い
+
         const existN = dec(usersExist[key].nEnc, pass);
         const existT = dec(usersExist[key].tEnc, pass) || "";
         
         if (existN === name && existT === trip) {
+            // 他のUID（別ブラウザ等）で同じ名前とトリップが既にいる場合
+            // 基本は排除だが、リロード時のゴミ対策としてここでも古い方を消す
             isRe入室 = true; await remove(ref(db, `presence/${curR}/${key}`));
         } else if (existN === name) {
             $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
