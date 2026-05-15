@@ -115,7 +115,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, remove, onDisconnect, serverTimestamp, query, orderByChild } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, set, remove, onDisconnect, serverTimestamp, query, orderByChild, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
@@ -136,32 +136,57 @@ window.showRules = () => {
 
 async function join(rID, pass, name) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name;
-    $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
     
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
+
+    // 重複入室（名前+トリップ）のチェックと強制退去
+    const snapshot = await get(presRef);
+    const existingUsers = snapshot.val() || {};
+    for (const key in existingUsers) {
+        if (dec(existingUsers[key].nEnc, pass) === name) {
+            await set(ref(db, `presence/${curR}/${key}/kick`), true);
+        }
+    }
+
+    $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
     
     // 入室通知
     await push(chatRef, { type: "sys", text: enc(`${name}さんが入室しました`, pass), time: serverTimestamp() });
     
-    // ロジック：タブを閉じた際に即座に在室リストから削除
+    // タブ閉じ・切断時の自動削除設定
     onDisconnect(myPres).remove();
 
     onValue(presRef, s => {
-        const users = s.val() || {}; $("presenceList").innerHTML = "";
+        const users = s.val() || {}; 
+        
+        // キックされた場合の処理
+        if (users[uid] && users[uid].kick) {
+            alert("別の端末から入室したため、このセッションを終了します。");
+            location.reload();
+            return;
+        }
+
+        const listContainer = $("presenceList");
+        listContainer.innerHTML = "";
         const keys = Object.keys(users);
         userCount = keys.length;
+
         keys.forEach(k => {
             const dN = dec(users[k].nEnc, curP);
-            if(dN){ const span = document.createElement("span"); span.className="user-chip"; span.innerText=dN; $("presenceList").appendChild(span); }
+            if(dN){ 
+                const span = document.createElement("span"); 
+                span.className="user-chip"; 
+                span.innerText=dN; 
+                listContainer.appendChild(span); 
+            }
         });
         $("presenceCount").innerText = `(${userCount}名)`;
         
-        // ロジック：最後の一人なら、接続が切れたときに部屋ごと消去するように予約
+        // 最後の一人なら、切断時に部屋全体を消去するよう予約
         if (userCount <= 1) {
             onDisconnect(chatRef).remove();
             onDisconnect(presRef).remove();
         } else {
-            // 他に人がいるなら自分の退出通知だけ予約（実際はボタンから行うのが確実）
             onDisconnect(chatRef).cancel();
             onDisconnect(presRef).cancel();
         }
@@ -182,11 +207,12 @@ async function join(rID, pass, name) {
         });
     });
 
+    // 生存確認更新（トリップ付きの名前を保持）
     const upd = () => set(myPres, { nEnc: enc(name, pass), last: serverTimestamp() });
-    upd(); setInterval(upd, 20000);
+    upd(); 
+    setInterval(upd, 15000); 
 }
 
-// 送信ロジック
 const sendMsg = async () => {
     const v = $("mi").value.trim(); if(!v||Date.now()-lastT<300) return;
     lastT=Date.now(); await push(ref(db, `chat/${curR}`), { nEnc:enc(curN,curP), text:enc(v,curP), time:serverTimestamp() });
@@ -194,19 +220,16 @@ const sendMsg = async () => {
     scrollUp();
 };
 
-// 退出・部屋削除ロジック
 $("exitBtn").onclick = async () => {
     if(userCount <= 1) {
         if(!confirm("あなたが最後の一人です。退出すると全データが消滅しますがよろしいですか？")) return;
-        // 最後の一人の場合はデータごと消す
         await remove(ref(db, `chat/${curR}`));
         await remove(ref(db, `presence/${curR}`));
     } else {
-        // 他に人がいる場合は退出通知だけ送って自分の presence を消す
         await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}さんが退出しました`, curP), time: serverTimestamp() });
         await remove(ref(db, `presence/${curR}/${uid}`));
     }
-    location.reload(); // ロビーへ
+    location.reload();
 };
 
 $("sendBtn").onclick = sendMsg;
@@ -216,7 +239,11 @@ $("mi").onfocus = scrollUp;
 
 $("enterBtn").onclick = () => {
     const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し", tp=$("tp").innerText;
-    if(r&&p){ localStorage.setItem("nez_n", n); localStorage.setItem("nez_t", $("tk").value); join(r, p, n + tp); }
+    if(r&&p){ 
+        localStorage.setItem("nez_n", n); 
+        localStorage.setItem("nez_t", $("tk").value); 
+        join(r, p, n + tp); 
+    }
     else alert("部屋IDおよびパスワードの入力が必要です。");
 };
 
@@ -236,12 +263,10 @@ $("copyBtn").onclick = async () => {
         document.body.removeChild(area);
         return success;
     };
-
     let done = false;
     if (navigator.clipboard && navigator.clipboard.writeText) {
         try { await navigator.clipboard.writeText(url); done = true; } catch (err) { done = copyToClipboard(url); }
     } else { done = copyToClipboard(url); }
-
     if (done) {
         const b = $("copyBtn"); b.innerText = "コピー完了";
         setTimeout(() => b.innerText = "招待URLのコピー", 1500);
