@@ -17,7 +17,6 @@
         .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,.15); display:flex; flex-direction:column; gap:10px; max-height: 95vh; overflow-y: auto; }
         .lobby-input{ width:100%; height:44px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; }
         
-        /* 規約・安全性エリア */
         .policy-box { background:#fff9f0; border:1px solid #ffeeba; border-radius:12px; padding:12px; font-size:11px; line-height:1.4; color:#856404; }
         .policy-box h3 { margin:0 0 5px 0; font-size:12px; color:#d9363e; }
         .security-point { display:flex; gap:5px; margin-bottom:3px; font-weight:bold; color:var(--dark); }
@@ -51,8 +50,6 @@
 <div id="lobby">
     <div class="lobby-content">
         <h2 style="text-align:center;color:var(--primary);margin:0;font-size:20px;">NEZUO ONETIME CHAT</h2>
-        
-        <!-- 安全性・規約エリア -->
         <div class="policy-box">
             <div class="security-point">🔒 完全末端間暗号化 (E2EE)</div>
             解析不能なAES方式。サーバー管理者すら会話内容を覗くことは不可能です。
@@ -64,7 +61,6 @@
                 ・規約に同意した方のみ、入室ボタンを押してください。
             </div>
         </div>
-
         <input id="ni" class="lobby-input" maxlength="10" placeholder="名前">
         <div>
             <input id="tk" class="lobby-input" placeholder="なりすまし防止コード">
@@ -149,17 +145,22 @@ async function join(rID,pass,name){
     const snap=await get(chatRef);
     await push(chatRef,{ type:"sys", text:enc(`${name}さんが${snap.exists()?'入室':'部屋を作成'}しました`,pass), time:Date.now() });
 
+    // 遺言システムの修正：監視と予約を整理
     onValue(presRef, (s) => {
         const users = s.val() || {};
         const count = Object.keys(users).length;
+        
+        // 既存の予約を一旦すべて解除
         onDisconnect(chatRef).cancel();
         onDisconnect(presRef).cancel();
         onDisconnect(myPres).cancel();
 
         if (count <= 1) {
+            // 自分だけなら、部屋ごと削除を予約
             onDisconnect(chatRef).remove();
             onDisconnect(presRef).remove();
         } else {
+            // 他に誰かいるなら、退室ログ書き込みと自分の存在削除を予約
             onDisconnect(chatRef).push({ 
                 type: "sys", 
                 text: enc(`${curN}さんが退室しました`, curP), 
@@ -173,7 +174,8 @@ async function join(rID,pass,name){
     onValue(chatRef, s => { 
         if(!s.exists()) { $("list").innerHTML=""; forceExit("部屋が消去されました。"); return; } 
         $("list").innerHTML=""; 
-        Object.values(s.val()).forEach(m=>renderMsg(m,pass)); 
+        const msgs = s.val() ? Object.values(s.val()) : [];
+        msgs.forEach(m=>renderMsg(m,pass)); 
     });
     
     const update=()=>set(myPres,{nEnc:enc(name,pass),last:Date.now()});
@@ -183,11 +185,18 @@ async function join(rID,pass,name){
         const now=Date.now();
         const users = s.val() || {};
         const activeUserIDs = Object.keys(users).filter(k => now - users[k].last < EXPIRE_MS);
+        
         const cSnap = await get(chatRef);
         if(cSnap.exists()){
             const msgs = Object.values(cSnap.val());
-            const isNoTalk = (now - msgs[msgs.length - 1].time) > EXPIRE_MS;
-            if(activeUserIDs.length === 0 || isNoTalk){ await remove(chatRef); await remove(presRef); }
+            const lastMsgTime = msgs[msgs.length - 1].time;
+            const isNoTalk = (now - lastMsgTime) > EXPIRE_MS;
+            
+            // 物理削除の実行条件：アクティブな人が0人、または15分無言
+            if(activeUserIDs.length === 0 || isNoTalk){ 
+                await remove(chatRef); 
+                await remove(presRef); 
+            }
         }
     });
 }
