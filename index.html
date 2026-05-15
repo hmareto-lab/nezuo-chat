@@ -39,6 +39,7 @@
         .msg-wrap{ display:flex; flex-direction:column; }
         .msg{ background:#fff; border-radius:18px; padding:8px 14px; max-width:85%; box-shadow:0 1px 2px rgba(0,0,0,.05); align-self:flex-start; }
         .msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+        .msg-text a { color: var(--primary); text-decoration: underline; }
         .msg-meta{ font-size:10px; color:#999; margin:4px 0 0 8px; }
         .sys-msg{ align-self:center; color:#555; font-size:11px; font-weight:bold; margin:10px 0; background:#e9ecef; padding:4px 12px; border-radius:12px; }
         #footer{ background:#fff; border-top:1px solid #ececec; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
@@ -115,6 +116,13 @@ const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
 const dec = (c,k) => { try { return CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
 const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
+// URLをリンク化する関数
+const linkify = t => {
+    const escaped = esc(t);
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    return escaped.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+};
+
 window.showRules = () => {
     $("modalText").innerText = "【利用規約および運用ポリシー】\n\n1. データの消滅について\n当システムは揮発性の高い環境で運用されています。滞在者が0名となった時点で、データベース上の全暗号化ログは即時に完全抹消されます。\n\n2. セキュリティと機密保持\nすべての通信内容は、エンドユーザーの端末上でAES-256暗号化処理が行われます。パスワードの保持者以外、第三者が内容を閲覧することは技術的に不可能です。";
     $("modal").style.display = "flex";
@@ -157,11 +165,10 @@ async function join(rID, pass, name, trip) {
         $("list").innerHTML = "";
         s.forEach(c => {
             const m = c.val(), txt = dec(m.text, curP); if(!txt) return;
-            // ここで秒数まで表示するように修正しました
             const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
             const div = document.createElement("div"); div.className = "msg-wrap";
-            if(m.type === "sys") div.innerHTML = `<div class="sys-msg">${esc(txt)}</div>`;
-            else div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(dec(m.nEnc,curP))}${esc(dec(m.tEnc,curP))}</div><div class="msg"><div class="msg-text">${esc(txt)}</div></div><div class="msg-meta">${time}</div>`;
+            if(m.type === "sys") div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
+            else div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(dec(m.nEnc,curP))}${esc(dec(m.tEnc,curP))}</div><div class="msg"><div class="msg-text">${linkify(txt)}</div></div><div class="msg-meta">${time}</div>`;
             $("list").appendChild(div);
         });
     });
@@ -173,7 +180,6 @@ async function join(rID, pass, name, trip) {
         const [pS, cS] = await Promise.all([get(presRef), get(query(chatRef, orderByChild("time"), limitToLast(1)))]);
         const us = pS.val() || {}, ms = cS.val() || {};
         
-        // 10分(600000ms)放置で自動退出通知
         Object.keys(us).forEach(async k => { 
             if (us[k].last && (now - us[k].last > 600000)) { 
                 const tN = dec(us[k].nEnc, curP), tT = dec(us[k].tEnc, curP) || "";
