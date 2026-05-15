@@ -67,7 +67,7 @@
             <button id="focusBtn" class="btn" style="background:var(--primary); color:#fff; font-size:20px;">⌨️</button>
             <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
             <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
-            <button id="copyBtn" class="btn" style="background:var(--dark); color:#fff; font-size:9px;">招待用<br>URLコピー</button>
+            <button id="copyBtn" class="btn" style="background:var(--dark); color:#fff; font-size:9px;">招待URL<br>コピー</button>
             <button id="exitBtn" class="btn" style="background:#fff0f0; color:var(--danger); font-size:12px;">退室</button>
         </div>
     </footer>
@@ -82,7 +82,7 @@ const uid = localStorage.getItem("nezu_uid") || crypto.randomUUID();
 localStorage.setItem("nezu_uid", uid);
 
 const $ = id => document.getElementById(id);
-let curR, curP, curN, rawR, rawP, lastT = 0;
+let curR, curP, curN, lastT = 0;
 const EXPIRE_MS = 30 * 60 * 1000; 
 
 const hash = t => CryptoJS.SHA256(t).toString();
@@ -118,7 +118,6 @@ function renderMsg(m, p) {
 
 async function join(r, p, n, skip = false) {
     if(!r || !p) return;
-    rawR = r; rawP = p;
     curR = hash(r); curP = p; curN = n;
     
     if (await checkAndCleanup(curR)) {
@@ -166,10 +165,6 @@ async function join(r, p, n, skip = false) {
     setInterval(async () => {
         if(!curR) return;
         set(pRef, { nEnc: enc(curN.split('◆')[0], curP), last: Date.now() });
-        if (await checkAndCleanup(curR)) {
-            alert("30分間発言がなかったため、部屋を閉じました。");
-            sessionStorage.clear(); location.reload();
-        }
     }, 60000);
 }
 
@@ -207,33 +202,24 @@ $("enterBtn").onclick = () => {
 };
 $("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2, 10); $("pi").value = Math.random().toString(36).slice(2, 12); };
 
-// コピーボタンの修正箇所
+// 【修正箇所】招待URLを難読化してコピー
 $("copyBtn").onclick = async () => {
-    const rVal = rawR || $("ri").value.trim();
-    const pVal = rawP || $("pi").value.trim();
-    if(!rVal || !pVal) return alert("部屋IDとパスワードが設定されていません。");
-    const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rVal)}&p=${encodeURIComponent(pVal)}`;
+    const rVal = $("ri").value.trim() || (curR ? $("roomDisplay").innerText : "");
+    const pVal = $("pi").value.trim() || curP;
+    if(!rVal || !pVal) return alert("部屋情報がありません。");
+
+    // IDとパスワードをBase64で難読化 (r:p 形式)
+    const secret = btoa(encodeURIComponent(rVal + ":" + pVal));
+    const url = `${location.origin}${location.pathname}?s=${secret}`;
     
     let success = false;
-    // 手法1: モダンなAPI
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        try {
-            await navigator.clipboard.writeText(url);
-            success = true;
-        } catch (e) { success = false; }
+        try { await navigator.clipboard.writeText(url); success = true; } catch(e) {}
     }
-    
-    // 手法2: 古いAPIへのフォールバック（iOS/Androidの互換性確保）
     if (!success) {
-        try {
-            const ta = document.createElement("textarea");
-            ta.value = url;
-            ta.style.position = "fixed"; ta.style.left = "-9999px"; ta.style.top = "0";
-            document.body.appendChild(ta);
-            ta.focus(); ta.select(); ta.setSelectionRange(0, 99999); // iOS対策
-            success = document.execCommand('copy');
-            document.body.removeChild(ta);
-        } catch (e) { success = false; }
+        const ta = document.createElement("textarea"); ta.value = url;
+        ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta);
+        ta.focus(); ta.select(); success = document.execCommand('copy'); document.body.removeChild(ta);
     }
 
     if (success) {
@@ -241,7 +227,7 @@ $("copyBtn").onclick = async () => {
         b.innerText = "完了！"; b.style.background = "var(--accent)";
         setTimeout(() => { b.innerHTML = old; b.style.background = "var(--dark)"; }, 2000);
     } else {
-        alert("URLを直接コピーしてください: " + url);
+        alert("URL: " + url);
     }
 };
 
@@ -250,7 +236,7 @@ $("exitBtn").onclick = async () => {
         try {
             await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN.split('◆')[0]} が退室`, curP), time: Date.now() });
             await remove(ref(db, `presence/${curR}/${uid}`));
-        } catch(e) { console.log("Exit error"); }
+        } catch(e) {}
     }
     sessionStorage.clear(); location.href = location.origin + location.pathname;
 };
@@ -262,15 +248,31 @@ window.onload = async () => {
     $("ni").value = localStorage.getItem("nezu_name") || "";
     $("tk").value = localStorage.getItem("nezu_tk") || "";
     await updateTrip();
-    const s = sessionStorage.getItem("nezu_active_session");
+    
     const p = new URLSearchParams(window.location.search);
-    if(s) { 
-        const d = JSON.parse(s); join(d.r, d.p, d.n, true); 
+    const s = p.get('s'); // 難読化パラメータ
+
+    if (s) {
+        try {
+            // Base64をデコードして入室
+            const decoded = decodeURIComponent(atob(s)).split(':');
+            $("ri").value = decoded[0];
+            $("pi").value = decoded[1];
+            // 名前があれば自動入室、なければロビーを表示
+            if($("ni").value) {
+                join(decoded[0], decoded[1], $("ni").value + $("tp").innerText);
+            } else {
+                $("lobby").style.display = "flex";
+            }
+        } catch(e) {
+            $("lobby").style.display = "flex";
+        }
     } else {
-        $("lobby").style.display = "flex";
-        if(p.get('r') && p.get('p')) {
-            $("ri").value = p.get('r'); $("pi").value = p.get('p');
-            $("masterGenBtn").style.display="none";
+        const active = sessionStorage.getItem("nezu_active_session");
+        if(active) { 
+            const d = JSON.parse(active); join(d.r, d.p, d.n, true); 
+        } else {
+            $("lobby").style.display = "flex";
         }
     }
 };
