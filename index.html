@@ -108,7 +108,6 @@ import { getDatabase, ref, push, onValue, set, remove, serverTimestamp, query, o
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
 
-// ブラウザごとに固定のUIDを使用（二重ログイン防止）
 let uid = localStorage.getItem("nez_uid");
 if(!uid){ uid = crypto.randomUUID(); localStorage.setItem("nez_uid", uid); }
 
@@ -135,34 +134,36 @@ async function join(rID, pass, name, trip) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
 
-    // 入室前に自分の古いセッションがあれば物理的に即削除（確実な上書きのため）
-    await remove(myPres);
-
     const snap = await get(presRef);
     const usersExist = snap.val() || {};
     let isRe入室 = false;
 
     for (const key in usersExist) {
-        if(key === uid) { isRe入室 = true; continue; } // 自分のUIDなら再入室扱い
-
         const existN = dec(usersExist[key].nEnc, pass);
         const existT = dec(usersExist[key].tEnc, pass) || "";
         
-        if (existN === name && existT === trip) {
-            // 他のUID（別ブラウザ等）で同じ名前とトリップが既にいる場合
-            // 基本は排除だが、リロード時のゴミ対策としてここでも古い方を消す
-            isRe入室 = true; await remove(ref(db, `presence/${curR}/${key}`));
-        } else if (existN === name) {
+        if (key === uid || (existN === name && existT === trip)) {
+            isRe入室 = true; 
+            if(key !== uid) await remove(ref(db, `presence/${curR}/${key}`));
+            continue; 
+        }
+
+        if (existN === name) {
             $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
             $("errMsg").style.display = "block"; return;
-        } else if (existT !== "" && existT === trip) {
+        }
+        if (trip !== "" && existT === trip) {
             $("errMsg").innerText = "そのトリップは既に別の名前で使用されています。";
             $("errMsg").style.display = "block"; return;
         }
     }
 
+    await remove(myPres);
     $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
-    if (!isRe入室) await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
+    
+    if (!isRe入室) {
+        await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
+    }
     
     onValue(presRef, s => {
         const u = s.val() || {}; const list = $("presenceList"); list.innerHTML = "";
@@ -193,10 +194,8 @@ async function join(rID, pass, name, trip) {
     const upd = async () => {
         const now = Date.now();
         await set(myPres, { nEnc: enc(name, pass), tEnc: enc(trip, pass), last: now });
-        
         const [pS, cS] = await Promise.all([get(presRef), get(query(chatRef, orderByChild("time"), limitToLast(1)))]);
         const us = pS.val() || {}, ms = cS.val() || {};
-        
         Object.keys(us).forEach(async k => { 
             if (us[k].last && (now - us[k].last > 600000)) { 
                 const tN = dec(us[k].nEnc, curP), tT = dec(us[k].tEnc, curP) || "";
@@ -204,7 +203,6 @@ async function join(rID, pass, name, trip) {
                 if(tN) await push(chatRef, { type: "sys", text: enc(`${tN}${tT}さんは長時間操作がなかったため退出しました`, curP), time: serverTimestamp() });
             } 
         });
-
         let lT = 0; if(ms) lT = Object.values(ms)[0].time || 0;
         if (Object.keys(us).length === 0 || (lT > 0 && now - lT > 600000)) {
             await remove(chatRef); await remove(presRef);
@@ -221,9 +219,7 @@ const sendMsg = async () => {
 };
 
 $("exitBtn").onclick = async () => {
-    const confirmMsg = (userCount === 1) 
-        ? "あなたが退出するとこの部屋の履歴はすべて消滅します。よろしいですか？" 
-        : "退出しますか？";
+    const confirmMsg = (userCount === 1) ? "あなたが退出するとこの部屋の履歴はすべて消滅します。よろしいですか？" : "退出しますか？";
     if (!confirm(confirmMsg)) return;
     await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}${curT}さんが退出しました`, curP), time: serverTimestamp() });
     await remove(ref(db, `presence/${curR}/${uid}`));
@@ -237,8 +233,10 @@ $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").focus(); };
 
 $("enterBtn").onclick = () => {
     $("errMsg").style.display = "none";
-    const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し", tp=$("tp").innerText;
+    const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim(), tp=$("tp").innerText;
+    if (!n) { $("errMsg").innerText = "名前を入力してください。"; $("errMsg").style.display = "block"; return; }
     if(r&&p){ localStorage.setItem("nez_n", n); localStorage.setItem("nez_t", $("tk").value); join(r, p, n, tp); }
+    else { $("errMsg").innerText = "部屋IDとパスワードを入力してください。"; $("errMsg").style.display = "block"; }
 };
 
 $("copyBtn").onclick = async () => {
