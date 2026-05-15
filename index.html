@@ -108,7 +108,7 @@ import { getDatabase, ref, push, onValue, set, remove, serverTimestamp, query, o
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
 const uid = crypto.randomUUID();
-let curR, curP, curN, curT, rawR, lastT=0;
+let curR, curP, curN, curT, rawR, lastT=0, userCount=0;
 
 const scrollUp = () => $("chatWrap").scrollTo({top: 0, behavior: 'smooth'});
 const hash = t => CryptoJS.SHA256(t).toString();
@@ -116,7 +116,6 @@ const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
 const dec = (c,k) => { try { return CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
 const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-// URLをリンク化する関数
 const linkify = t => {
     const escaped = esc(t);
     const urlPattern = /(https?:\/\/[^\s]+)/g;
@@ -136,12 +135,22 @@ async function join(rID, pass, name, trip) {
     const usersExist = snap.val() || {};
     let isRe入室 = false;
 
+    // 重複入室チェックの強化
     for (const key in usersExist) {
-        if (dec(usersExist[key].nEnc, pass) === name) {
-            if (dec(usersExist[key].tEnc, pass) !== trip) {
-                $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
-                $("errMsg").style.display = "block"; return;
-            } else { isRe入室 = true; await remove(ref(db, `presence/${curR}/${key}`)); }
+        const existN = dec(usersExist[key].nEnc, pass);
+        const existT = dec(usersExist[key].tEnc, pass) || "";
+        
+        if (existN === name && existT === trip) {
+            // 名前もトリップも一致（再入室）
+            isRe入室 = true; await remove(ref(db, `presence/${curR}/${key}`));
+        } else if (existN === name) {
+            // 名前だけ一致（トリップ違い）
+            $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
+            $("errMsg").style.display = "block"; return;
+        } else if (existT !== "" && existT === trip) {
+            // トリップだけ一致（名前違い）
+            $("errMsg").innerText = "そのトリップは既に別の名前で使用されています。";
+            $("errMsg").style.display = "block"; return;
         }
     }
 
@@ -158,6 +167,7 @@ async function join(rID, pass, name, trip) {
                 span.innerText = n + (dec(u[k].tEnc, curP)||""); list.appendChild(span); 
             }
         });
+        userCount = count; // グローバル変数に保持
         $("presenceCount").innerText = `(${count}名)`;
     });
 
@@ -204,7 +214,10 @@ const sendMsg = async () => {
 };
 
 $("exitBtn").onclick = async () => {
-    if (!confirm("退出しますか？")) return;
+    const confirmMsg = (userCount === 1) 
+        ? "あなたが退出するとこの部屋の履歴はすべて消滅します。よろしいですか？" 
+        : "退出しますか？";
+    if (!confirm(confirmMsg)) return;
     await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}${curT}さんが退出しました`, curP), time: serverTimestamp() });
     await remove(ref(db, `presence/${curR}/${uid}`));
     location.reload();
