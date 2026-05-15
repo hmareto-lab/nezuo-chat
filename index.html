@@ -23,9 +23,9 @@
         .rules-link { font-size:12px; text-align:center; margin:5px 0; color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:bold; }
 
         #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(5px); padding:20px; }
-        .modal-content { width:100%; max-width:360px; background:#fff; border-radius:24px; padding:25px; max-height:80vh; overflow-y:auto; position:relative; }
-        .modal-body { font-size:13px; color:#555; white-space:pre-wrap; line-height:1.7; }
-        .modal-btn-close { width:100%; height:48px; background:var(--primary); color:#fff; border:none; border-radius:12px; margin-top:20px; font-weight:bold; cursor:pointer; }
+        .modal-content { width:100%; max-width:360px; background:#fff; border-radius:24px; padding:20px; max-height:90vh; position:relative; }
+        .modal-body { font-size:12px; color:#555; white-space:pre-wrap; line-height:1.5; }
+        .modal-btn-close { width:100%; height:44px; background:var(--primary); color:#fff; border:none; border-radius:12px; margin-top:15px; font-weight:bold; cursor:pointer; }
 
         #header{ background:#fff; border-bottom:1px solid #ececec; padding-top:env(safe-area-inset-top); z-index: 10; }
         .app-header-top{ display:flex; align-items:flex-end; gap:0; padding:12px; }
@@ -61,7 +61,7 @@
 <div id="modal" onclick="this.style.display='none'">
     <div class="modal-content">
         <div id="modalText" class="modal-body"></div>
-        <button class="modal-btn-close" onclick="document.getElementById('modal').style.display='none'">閉じる</button>
+        <button class="modal-btn-close">閉じる</button>
     </div>
 </div>
 
@@ -115,7 +115,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, onDisconnect, serverTimestamp, query, orderByChild } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, set, remove, onDisconnect, serverTimestamp, query, orderByChild } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
@@ -140,8 +140,11 @@ async function join(rID, pass, name) {
     $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
     
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
+    
     await push(chatRef, { type: "sys", text: enc(`${name}さんが入室しました`, pass), time: serverTimestamp() });
     
+    onDisconnect(myPres).remove();
+
     onValue(presRef, s => {
         const users = s.val() || {}; $("presenceList").innerHTML = "";
         const keys = Object.keys(users);
@@ -151,8 +154,14 @@ async function join(rID, pass, name) {
             if(dN){ const span = document.createElement("span"); span.className="user-chip"; span.innerText=dN; $("presenceList").appendChild(span); }
         });
         $("presenceCount").innerText = `(${userCount}名)`;
-        onDisconnect(myPres).remove();
-        if (userCount <= 1) { onDisconnect(chatRef).remove(); onDisconnect(presRef).remove(); }
+        
+        if (userCount <= 1) {
+            onDisconnect(chatRef).remove();
+            onDisconnect(presRef).remove();
+        } else {
+            onDisconnect(chatRef).cancel();
+            onDisconnect(presRef).cancel();
+        }
     });
 
     onValue(query(chatRef, orderByChild("time")), s => {
@@ -169,6 +178,7 @@ async function join(rID, pass, name) {
             $("list").appendChild(div);
         });
     });
+
     const upd = () => set(myPres, { nEnc: enc(name, pass), last: serverTimestamp() });
     upd(); setInterval(upd, 20000);
 }
@@ -194,24 +204,38 @@ $("enterBtn").onclick = () => {
 
 $("copyBtn").onclick = async () => {
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
-    const copyFallback = (val) => {
-        const area = document.createElement("textarea"); area.value = val;
-        area.style.position = "fixed"; area.style.opacity = "0";
-        document.body.appendChild(area); area.select();
-        const res = document.execCommand("copy");
+    const copyToClipboard = (val) => {
+        const area = document.createElement("textarea");
+        area.value = val;
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        area.style.top = "0";
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        let success = false;
+        try { success = document.execCommand("copy"); } catch (err) {}
         document.body.removeChild(area);
-        return res;
+        return success;
     };
-    try {
-        if (navigator.clipboard) await navigator.clipboard.writeText(url);
-        else copyFallback(url);
-        const b = $("copyBtn"); b.innerText = "コピー完了";
-        setTimeout(() => b.innerText = "招待URLのコピー", 1500);
-    } catch {
-        if(copyFallback(url)) {
-            const b = $("copyBtn"); b.innerText = "コピー完了";
-            setTimeout(() => b.innerText = "招待URLのコピー", 1500);
-        }
+
+    let done = false;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(url);
+            done = true;
+        } catch (err) { done = copyToClipboard(url); }
+    } else {
+        done = copyToClipboard(url);
+    }
+
+    if (done) {
+        const b = $("copyBtn");
+        const old = b.innerText;
+        b.innerText = "コピー完了";
+        setTimeout(() => b.innerText = old, 1500);
+    } else {
+        alert("コピーに失敗しました。ブラウザの設定を確認してください。");
     }
 };
 
@@ -220,14 +244,16 @@ $("toBottomBtn").onclick = () => $("chatWrap").scrollTo({top: $("chatWrap").scro
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").focus(); };
 $("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2,10); $("pi").value = Math.random().toString(36).slice(2,12); };
 
-$("exitBtn").onclick = () => { 
+$("exitBtn").onclick = async () => {
     if(userCount <= 1) {
-        if(confirm("あなたが最後の一人です。退出するとルーム内の全データが即時に完全消滅しますが、よろしいですか？")) {
-            location.href = location.origin + location.pathname;
-        }
+        if(!confirm("あなたが最後の一人です。退出すると全データが消滅しますがよろしいですか？")) return;
+        await remove(ref(db, `chat/${curR}`));
+        await remove(ref(db, `presence/${curR}`));
     } else {
-        location.href = location.origin + location.pathname;
+        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}さんが退出しました`, curP), time: serverTimestamp() });
+        await remove(ref(db, `presence/${curR}/${uid}`));
     }
+    location.href = location.origin + location.pathname;
 };
 
 $("tk").oninput = async (e) => {
