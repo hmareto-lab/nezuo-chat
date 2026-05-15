@@ -11,43 +11,29 @@
         html,body{ margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); font-family:-apple-system,sans-serif; }
         body{ display:flex; justify-content:center; } 
         #lobby, #mainApp { display:none; }
-        
         #mainApp{ flex-direction:column; width:100%; height:100svh; max-width:800px; background:#fff; position:relative; }
         #lobby{ position:fixed; inset:0; justify-content:center; align-items:center; background:linear-gradient(135deg,#f5f7fa,#c3cfe2); z-index:1000; display:flex; }
         .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,.15); display:flex; flex-direction:column; gap:12px; max-height: 95vh; overflow-y: auto; }
         .lobby-input{ width:100%; height:46px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; }
-        
         .error-msg { color: var(--danger); font-size: 12px; font-weight: bold; text-align: center; display: none; background: #fff0f0; padding: 10px; border-radius: 12px; border: 1px solid #ffdada; margin-bottom: 5px; }
-
         .info-box { background:#f8f9fa; border-radius:16px; padding:15px; font-size:12px; line-height:1.6; color:#495057; border:1px solid #efefef; }
         .info-title { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:bold; color:var(--dark); }
         .info-title span { color:var(--primary); font-size:16px; }
         .rules-link { font-size:12px; text-align:center; margin:5px 0; color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:bold; }
-
         #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(5px); padding:20px; }
         .modal-content { width:100%; max-width:360px; background:#fff; border-radius:24px; padding:20px; max-height:90vh; position:relative; }
         .modal-body { font-size:12px; color:#555; white-space:pre-wrap; line-height:1.5; }
         .modal-btn-close { width:100%; height:44px; background:var(--primary); color:#fff; border:none; border-radius:12px; margin-top:15px; font-weight:bold; cursor:pointer; }
-
         #header{ background:#fff; border-bottom:1px solid #ececec; padding-top:env(safe-area-inset-top); z-index: 10; }
         .app-header-top{ display:flex; align-items:flex-end; gap:0; padding:12px; }
-        
-        textarea{ 
-            flex:1; height:42px; min-height:42px; max-height:120px; 
-            padding:10px 15px; background:#f1f3f5; border-radius:20px 0 0 20px; font-size:16px; 
-            border:none; outline:none; scrollbar-width:none; overflow-y:auto; margin-right:-1px; resize:none;
-        }
+        textarea{ flex:1; height:42px; min-height:42px; max-height:120px; padding:10px 15px; background:#f1f3f5; border-radius:20px 0 0 20px; font-size:16px; border:none; outline:none; scrollbar-width:none; overflow-y:auto; margin-right:-1px; resize:none; }
         #clearBtn { width:36px; height:42px; background:#f1f3f5; border:none; color:#adb5bd; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-right:-1px; }
         #sendBtn{ width:70px; height:42px; border:none; border-radius: 0 20px 20px 0; background:var(--primary); color:#fff; font-weight:800; cursor:pointer; }
-        
         .room-info-bar{ display:flex; justify-content:space-between; align-items:flex-start; padding:6px 12px; border-top:1px solid #f6f6f6; background:#fcfcfc; gap:10px; }
         .info-item{ background:#f1f1f1; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; color:#666; white-space:nowrap; }
-        
-        /* 入室者リスト：人数に合わせて1〜最大3行（約56px）まで自動伸縮 */
         #presenceList { display:flex; flex-wrap:wrap; gap:4px; flex:1; max-height:56px; overflow-y:auto; scrollbar-width:none; }
         #presenceList::-webkit-scrollbar { display:none; }
         .user-chip { background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; font-size:10px; white-space:nowrap; height:18px; display:inline-flex; align-items:center; }
-
         #chatWrap{ flex:1; overflow-y:auto; padding:15px 12px; background:#f7f8fa; display:flex; flex-direction:column; }
         #list { display:flex; flex-direction:column-reverse; gap:12px; }
         .msg-wrap{ display:flex; flex-direction:column; }
@@ -55,7 +41,6 @@
         .msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
         .msg-meta{ font-size:10px; color:#999; margin:4px 0 0 8px; }
         .sys-msg{ align-self:center; color:#555; font-size:11px; font-weight:bold; margin:10px 0; background:#e9ecef; padding:4px 12px; border-radius:12px; }
-        
         #footer{ background:#fff; border-top:1px solid #ececec; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
         .footer-nav{ display:grid; grid-template-columns: 50px 44px 44px 1fr 70px; gap:8px; align-items:center; }
         .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; font-size:11px; }
@@ -96,11 +81,7 @@
 
 <div id="mainApp">
     <header id="header">
-        <div class="app-header-top">
-            <textarea id="mi" placeholder="メッセージを作成..." maxlength="500"></textarea>
-            <button id="clearBtn">×</button>
-            <button id="sendBtn">送信</button>
-        </div>
+        <div class="app-header-top"><textarea id="mi" placeholder="メッセージを作成..." maxlength="500"></textarea><button id="clearBtn">×</button><button id="sendBtn">送信</button></div>
         <div class="room-info-bar">
             <div id="roomDisplay" class="info-item"></div>
             <div id="presenceList"></div>
@@ -113,7 +94,7 @@
             <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
             <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
             <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
-            <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URLのコピー</button>
+            <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URL</button>
             <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
         </div>
     </footer>
@@ -121,13 +102,12 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, remove, serverTimestamp, query, orderByChild, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, set, remove, serverTimestamp, query, orderByChild, get, limitToLast } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
 const uid = crypto.randomUUID();
 let curR, curP, curN, curT, rawR, lastT=0;
-let userCount = 0;
 
 const scrollUp = () => $("chatWrap").scrollTo({top: 0, behavior: 'smooth'});
 const hash = t => CryptoJS.SHA256(t).toString();
@@ -142,165 +122,105 @@ window.showRules = () => {
 
 async function join(rID, pass, name, trip) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
-    let isReconstructedSelf = false;
-    
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
 
-    // --- 名前占有・トリップガードロジック ---
-    const snapshot = await get(presRef);
-    const existingUsers = snapshot.val() || {};
+    const snap = await get(presRef);
+    const usersExist = snap.val() || {};
+    let isRe入室 = false;
 
-    for (const key in existingUsers) {
-        const dN = dec(existingUsers[key].nEnc, pass);
-        const dT = dec(existingUsers[key].tEnc, pass);
-        
-        if (dN === name) {
-            if (dT !== trip) {
-                // トリップ不一致：入室拒否
+    for (const key in usersExist) {
+        if (dec(usersExist[key].nEnc, pass) === name) {
+            if (dec(usersExist[key].tEnc, pass) !== trip) {
                 $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
-                $("errMsg").style.display = "block";
-                return;
-            } else {
-                // トリップ一致：同一人物の入れ替わり（古いセッションを即削除）
-                isReconstructedSelf = true;
-                await remove(ref(db, `presence/${curR}/${key}`));
-            }
+                $("errMsg").style.display = "block"; return;
+            } else { isRe入室 = true; await remove(ref(db, `presence/${curR}/${key}`)); }
         }
     }
 
     $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
+    if (!isRe入室) await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
     
-    // 入れ替わりでなければ入室通知を送信
-    if (!isReconstructedSelf) {
-        await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
-    }
-    
-    // 高速同期リアルタイム処理
-    onValue(presRef, async s => {
-        const users = s.val() || {}; 
-        const listContainer = $("presenceList");
-        listContainer.innerHTML = "";
-        const keys = Object.keys(users);
-        const nowServerTime = Date.now();
-        let activeCount = 0;
-
-        for (const k of keys) {
-            // 生存確認（5分 = 300,000ms）：放置やタブ閉じでも5分間はリストに維持
-            if (users[k].last && (nowServerTime - users[k].last > 300000)) {
-                remove(ref(db, `presence/${curR}/${k}`));
-                continue;
+    onValue(presRef, s => {
+        const u = s.val() || {}; const list = $("presenceList"); list.innerHTML = "";
+        let count = 0;
+        Object.keys(u).forEach(k => {
+            const n = dec(u[k].nEnc, curP);
+            if(n) { 
+                count++; const span = document.createElement("span"); span.className="user-chip"; 
+                span.innerText = n + (dec(u[k].tEnc, curP)||""); list.appendChild(span); 
             }
-
-            const dN = dec(users[k].nEnc, curP);
-            const dT = dec(users[k].tEnc, curP) || "";
-            if(dN){ 
-                activeCount++;
-                const span = document.createElement("span"); 
-                span.className="user-chip"; 
-                span.innerText = dN + dT; 
-                listContainer.appendChild(span); 
-            }
-        }
-        userCount = activeCount;
-        $("presenceCount").innerText = `(${userCount}名)`;
+        });
+        $("presenceCount").innerText = `(${count}名)`;
     });
 
     onValue(query(chatRef, orderByChild("time")), s => {
         $("list").innerHTML = "";
         s.forEach(c => {
-            const m = c.val(); const txt = dec(m.text, curP); if(!txt) return;
-            const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            const m = c.val(), txt = dec(m.text, curP); if(!txt) return;
+            const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
             const div = document.createElement("div"); div.className = "msg-wrap";
             if(m.type === "sys") div.innerHTML = `<div class="sys-msg">${esc(txt)}</div>`;
-            else {
-                const n = dec(m.nEnc, curP) || "???";
-                const t = dec(m.tEnc, curP) || "";
-                div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;color:#666;">${esc(n)}${esc(t)}</div><div class="msg"><div class="msg-text">${esc(txt)}</div></div><div class="msg-meta">${time}</div>`;
-            }
+            else div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(dec(m.nEnc,curP))}${esc(dec(m.tEnc,curP))}</div><div class="msg"><div class="msg-text">${esc(txt)}</div></div><div class="msg-meta">${time}</div>`;
             $("list").appendChild(div);
         });
     });
 
-    // 生存確認更新（10秒おき）
-    const upd = () => set(myPres, { 
-        nEnc: enc(name, pass), 
-        tEnc: enc(trip, pass),
-        last: Date.now()
-    });
-    upd(); 
-    setInterval(upd, 10000); 
+    const upd = async () => {
+        const now = Date.now();
+        await set(myPres, { nEnc: enc(name, pass), tEnc: enc(trip, pass), last: now });
+        
+        const [pS, cS] = await Promise.all([get(presRef), get(query(chatRef, orderByChild("time"), limitToLast(1)))]);
+        const us = pS.val() || {}, ms = cS.val() || {};
+        
+        // 10分(600000ms)放置で自動退出通知
+        Object.keys(us).forEach(async k => { 
+            if (us[k].last && (now - us[k].last > 600000)) { 
+                const tN = dec(us[k].nEnc, curP), tT = dec(us[k].tEnc, curP) || "";
+                await remove(ref(db, `presence/${curR}/${k}`));
+                if(tN) await push(chatRef, { type: "sys", text: enc(`${tN}${tT}さんは長時間操作がなかったため退出しました`, curP), time: serverTimestamp() });
+            } 
+        });
+
+        let lT = 0; if(ms) lT = Object.values(ms)[0].time || 0;
+        if (Object.keys(us).length === 0 || (lT > 0 && now - lT > 600000)) {
+            await remove(chatRef); await remove(presRef);
+        }
+    };
+    upd(); setInterval(upd, 10000);
 }
 
 const sendMsg = async () => {
     const v = $("mi").value.trim(); if(!v||Date.now()-lastT<300) return;
     lastT=Date.now(); 
-    await push(ref(db, `chat/${curR}`), { 
-        nEnc: enc(curN, curP), 
-        tEnc: enc(curT, curP),
-        text: enc(v, curP), 
-        time: serverTimestamp() 
-    });
-    $("mi").value = ""; $("mi").style.height="42px"; 
-    scrollUp();
+    await push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: serverTimestamp() });
+    $("mi").value = ""; $("mi").style.height="42px"; scrollUp();
 };
 
 $("exitBtn").onclick = async () => {
-    if(userCount <= 1) {
-        if(!confirm("あなたが最後の一人です。退出すると全データが消滅しますがよろしいですか？")) return;
-        await remove(ref(db, `chat/${curR}`));
-        await remove(ref(db, `presence/${curR}`));
-    } else {
-        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}${curT}さんが退出しました`, curP), time: serverTimestamp() });
-        await remove(ref(db, `presence/${curR}/${uid}`));
-    }
+    if (!confirm("退出しますか？")) return;
+    await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}${curT}さんが退出しました`, curP), time: serverTimestamp() });
+    await remove(ref(db, `presence/${curR}/${uid}`));
     location.reload();
 };
 
 $("sendBtn").onclick = sendMsg;
 $("mi").onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMsg(); } };
 $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
-$("mi").onfocus = scrollUp;
+$("clearBtn").onclick = () => { $("mi").value = ""; $("mi").focus(); };
 
 $("enterBtn").onclick = () => {
     $("errMsg").style.display = "none";
     const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し", tp=$("tp").innerText;
-    if(r&&p){ 
-        localStorage.setItem("nez_n", n); 
-        localStorage.setItem("nez_t", $("tk").value); 
-        join(r, p, n, tp); 
-    }
-    else alert("部屋IDおよびパスワードの入力が必要です。");
+    if(r&&p){ localStorage.setItem("nez_n", n); localStorage.setItem("nez_t", $("tk").value); join(r, p, n, tp); }
 };
 
 $("copyBtn").onclick = async () => {
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
-    const copyToClipboard = (val) => {
-        const area = document.createElement("textarea");
-        area.value = val;
-        area.style.position = "fixed";
-        area.style.left = "-9999px";
-        area.style.top = "0";
-        document.body.appendChild(area);
-        area.focus();
-        area.select();
-        let success = false;
-        try { success = document.execCommand("copy"); } catch (err) {}
-        document.body.removeChild(area);
-        return success;
-    };
-    let done = false;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        try { await navigator.clipboard.writeText(url); done = true; } catch (err) { done = copyToClipboard(url); }
-    } else { done = copyToClipboard(url); }
-    if (done) {
-        const b = $("copyBtn"); b.innerText = "コピー完了";
-        setTimeout(() => b.innerText = "招待URLのコピー", 1500);
-    }
+    try { await navigator.clipboard.writeText(url); alert("コピーしました"); } catch (err) { alert(url); }
 };
 
 $("toTopBtn").onclick = scrollUp;
 $("toBottomBtn").onclick = () => $("chatWrap").scrollTo({top: $("chatWrap").scrollHeight, behavior: 'smooth'});
-$("clearBtn").onclick = () => { $("mi").value = ""; $("mi").focus(); };
 $("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2,10); $("pi").value = Math.random().toString(36).slice(2,12); };
 
 $("tk").oninput = async (e) => {
