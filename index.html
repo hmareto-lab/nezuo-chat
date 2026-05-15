@@ -79,7 +79,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, set, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-// nezuochat プロジェクトの設定
 const firebaseConfig = {
   apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
   databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -87,7 +86,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const uid = crypto.randomUUID(); // セッションごとに使い捨て
+const uid = crypto.randomUUID();
 
 const $ = id => document.getElementById(id);
 let curR=null, curP=null, curN=null, lastT=0, rawR="";
@@ -105,7 +104,7 @@ const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&g
 
 function renderMsg(m,p){
     const decodedText = dec(m.text, p);
-    if (!decodedText) return; // 復号できない場合は無視
+    if (!decodedText) return; 
 
     const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const div = document.createElement("div"); div.className="msg-wrap";
@@ -125,7 +124,6 @@ async function quitChat(isAuto = false) {
     if(!curR) return;
     const chatRef = ref(db, `chat/${curR}`);
     const myPres = ref(db, `presence/${curR}/${uid}`);
-    
     const msg = isAuto ? `${curN}さんが自動退出(または切断)しました` : `${curN}さんが退室しました`;
     await push(chatRef, { type: "sys", text: enc(msg, curP), time: Date.now() });
     await remove(myPres);
@@ -193,21 +191,29 @@ const doSend = async () => {
 };
 $("copyBtn").onclick=()=>{
     const r=rawR||$("roomDisplay").innerText; if(!r||!curP) return;
+    // 名前やなりすましコードは含まない、純粋な部屋URLのみ作成
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(r)}&p=${encodeURIComponent(curP)}`;
     const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t);
     $("copyBtn").innerText="OK!"; $("copyBtn").style.background="var(--accent)";
     setTimeout(()=>{ $("copyBtn").innerText="URLコピー"; $("copyBtn").style.background="var(--dark)"; },1500);
 };
 $("masterGenBtn").onclick=()=>{ $("ri").value=Math.random().toString(36).slice(2,10); $("pi").value=Math.random().toString(36).slice(2,12); };
+
+// 入室時に「名前」と「なりすまし用コード」を保存
 $("enterBtn").onclick=()=>{
-    const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し";
+    const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し", t=$("tk").value.trim();
+    localStorage.setItem("nez_n", n);
+    localStorage.setItem("nez_t", t);
     if(r&&p){ join(r,p,n+$("tp").innerText); }
 };
-$("tk").oninput=async()=>{
-    const v=$("tk").value; if(!v){$("tp").innerText="";return;}
+
+const updateTrip = async (v) => {
+    if(!v){$("tp").innerText="";return;}
     const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));
     $("tp").innerText="◆"+Array.from(new Uint8Array(b)).map(x=>x.toString(36)).join("").slice(2,8);
 };
+
+$("tk").oninput=(e)=>updateTrip(e.target.value);
 $("mi").oninput=function(){ this.style.height="42px"; this.style.height=this.scrollHeight+"px"; };
 $("mi").onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); doSend(); } };
 $("toBottomBtn").onclick=()=>$("chatWrap").scrollTop=$("chatWrap").scrollHeight;
@@ -215,6 +221,12 @@ $("toTopBtn").onclick=()=>$("chatWrap").scrollTop=0;
 $("focusBtn").onclick=()=>$("mi").focus();
 
 window.onload=()=>{
+    // 保存された名前となりすましコードを復元
+    const savedN = localStorage.getItem("nez_n");
+    const savedT = localStorage.getItem("nez_t");
+    if(savedN) $("ni").value = savedN;
+    if(savedT){ $("tk").value = savedT; updateTrip(savedT); }
+
     const u=new URLSearchParams(window.location.search), r=u.get('r'), p=u.get('p');
     if(r&&p){ $("ri").value=r; $("pi").value=p; }
 };
