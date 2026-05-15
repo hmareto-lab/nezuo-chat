@@ -12,21 +12,17 @@
         body{ display:flex; justify-content:center; } 
         #lobby, #mainApp { display:none; }
         
-        /* メインアプリ画面 */
         #mainApp{ flex-direction:column; width:100%; height:100svh; max-width:800px; background:#fff; position:relative; }
         
-        /* ロビーのレイアウト：中央よりやや上に配置 */
         #lobby{ position:fixed; inset:0; justify-content:center; align-items:center; background:linear-gradient(135deg,#f5f7fa,#c3cfe2); z-index:1000; display:flex; }
         .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:30px 25px; box-shadow:0 20px 40px rgba(0,0,0,.15); display:flex; flex-direction:column; gap:12px; transform: translateY(-20px); }
         .lobby-input{ width:100%; height:46px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; transition: border 0.2s; }
         .lobby-input:focus{ border-color: var(--primary); }
         
-        /* 利用規約モーダル */
         #tosModal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; justify-content:center; align-items:center; padding:20px; backdrop-filter: blur(4px); }
         .tos-content{ background:#fff; border-radius:24px; padding:25px; max-width:340px; font-size:13px; line-height:1.7; color:#444; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .tos-content h3 { margin-top:0; color:var(--primary); text-align:center; }
         
-        /* チャット画面のヘッダー・フッター */
         #header{ background:#fff; border-bottom:1px solid #ececec; padding-top:env(safe-area-inset-top); z-index:10; }
         .app-header-top{ display:flex; align-items:flex-end; gap:8px; padding:12px; }
         textarea{ flex:1; height:42px; min-height:42px; max-height:120px; padding:10px 15px; border:none; outline:none; resize:none; background:#f1f3f5; border-radius:20px; font-size:16px; line-height:1.4; overflow-y:hidden; }
@@ -50,18 +46,15 @@
         
         #footer{ background:#fff; border-top:1px solid #ececec; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
         .footer-nav{ display:grid; grid-template-columns: 60px 44px 44px 1.2fr 80px; gap:8px; align-items:center; }
-        .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; font-size:11px; transition: opacity 0.2s; }
-        .btn:active{ opacity:0.7; }
+        .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; font-size:11px; }
     </style>
 </head>
 <body>
 
-<!-- ロビー画面 -->
 <div id="lobby">
     <div class="lobby-content">
         <h2 style="text-align:center;color:var(--primary);margin:0;">NEZUO ONETIME CHAT</h2>
         <p style="font-size:11px;text-align:center;color:#666;margin-bottom:10px;font-weight:bold;">暗号化通信 × 自動消滅型チャット</p>
-        
         <input id="ni" class="lobby-input" maxlength="10" placeholder="名前">
         <div>
             <input id="tk" class="lobby-input" placeholder="なりすまし防止コード">
@@ -69,31 +62,24 @@
         </div>
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="パスワード">
-        
         <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:none;border-radius:12px;color:var(--primary);cursor:pointer;font-weight:bold;margin-top:5px;">🎲 部屋情報を自動生成</button>
         <button id="enterBtn" style="width:100%;height:55px;border:none;border-radius:18px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;cursor:pointer;margin-top:5px;">入室</button>
-        
-        <div style="text-align:center;">
-            <span id="openTos" style="font-size:11px;color:#aaa;text-decoration:underline;cursor:pointer;">利用規約とルール</span>
-        </div>
+        <div style="text-align:center;"><span id="openTos" style="font-size:11px;color:#aaa;text-decoration:underline;cursor:pointer;">利用規約とルール</span></div>
     </div>
 </div>
 
-<!-- 利用規約モーダル -->
 <div id="tosModal">
     <div class="tos-content">
         <h3>利用規約・ルール</h3>
         <ul style="padding-left:18px; margin-bottom:20px;">
-            <li><b>即時抹消:</b> 全員退室または15分無言でログはサーバーから物理削除され、復元は不可能です。</li>
-            <li><b>完全暗号化:</b> 通信はE2EEで保護されます。パスワードを知る者以外は中身を読めません。</li>
-            <li><b>自己責任:</b> トラブル等の責任は負いません。良識を持って利用してください。</li>
-            <li><b>部屋管理:</b> 部屋IDとパスワードを知る人全員がログにアクセス可能です。</li>
+            <li><b>即時抹消:</b> 全員退室または通信切断でログは即座に物理削除されます。</li>
+            <li><b>完全暗号化:</b> メッセージは端末間(E2EE)で保護されます。</li>
+            <li><b>残骸なし:</b> 削除された部屋は二度と復元できません。</li>
         </ul>
         <button id="closeTos" style="width:100%;height:44px;background:var(--dark);color:#fff;border:none;border-radius:12px;cursor:pointer;font-weight:bold;">閉じる</button>
     </div>
 </div>
 
-<!-- メインチャット画面 -->
 <div id="mainApp">
     <header id="header">
         <div class="app-header-top">
@@ -121,7 +107,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, set, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-// Firebase設定
 const firebaseConfig = {
   apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
   databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -135,13 +120,11 @@ const $ = id => document.getElementById(id);
 let curR=null, curP=null, curN=null, lastT=0, rawR="";
 const EXPIRE_MS = 15 * 60 * 1000;
 
-// 暗号化・ユーティリティ
 const hash = t => CryptoJS.SHA256(t).toString();
 const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
 const dec = (c,k) => { try { return CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
 const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-// メッセージ描画
 function renderMsg(m,p){
     const decodedText = dec(m.text, p);
     if (!decodedText) return; 
@@ -163,15 +146,24 @@ const forceExit = (reason) => { alert(reason); location.href = location.origin +
 async function quitChat(isAuto = false) {
     if(!curR) return;
     const chatRef = ref(db, `chat/${curR}`);
+    const presRef = ref(db, `presence/${curR}`);
     const myPres = ref(db, `presence/${curR}/${uid}`);
-    const msg = isAuto ? `${curN}さんが自動退出しました` : `${curN}さんが退室しました`;
-    await push(chatRef, { type: "sys", text: enc(msg, curP), time: Date.now() });
-    await remove(myPres);
+    
+    // 退出前に自分が最後の人かチェック
+    const s = await get(presRef);
+    const users = s.val() || {};
+    if (Object.keys(users).length <= 1) {
+        await remove(chatRef);
+        await remove(presRef);
+    } else {
+        const msg = isAuto ? `${curN}さんが自動退出しました` : `${curN}さんが退室しました`;
+        await push(chatRef, { type: "sys", text: enc(msg, curP), time: Date.now() });
+        await remove(myPres);
+    }
 }
 
 window.addEventListener('beforeunload', () => { quitChat(true); });
 
-// 入室処理
 async function join(rID,pass,name){
     rawR=rID; curR=hash(rID); curP=pass; curN=name;
     $("roomDisplay").innerText=rID; $("lobby").style.display="none"; $("mainApp").style.display="flex";
@@ -180,12 +172,25 @@ async function join(rID,pass,name){
     
     const snap=await get(chatRef);
     await push(chatRef,{ type:"sys", text:enc(`${name}さんが${snap.exists()?'入室':'部屋を作成'}しました`,pass), time:Date.now() });
-    
-    onDisconnect(myPres).remove();
-    
-    // リアルタイム監視
+
+    // 【重要】切断時の爆破予約ロジック
+    onValue(presRef, (s) => {
+        const users = s.val() || {};
+        if (Object.keys(users).length <= 1) {
+            onDisconnect(chatRef).remove(); // 自分が最後の1人なら、切断時に全てを消す
+            onDisconnect(presRef).remove();
+        } else {
+            onDisconnect(chatRef).cancel(); // 他に人がいるなら削除予約を解除
+            onDisconnect(myPres).remove(); // 自分の生存情報だけ消す
+        }
+    });
+
     onValue(chatRef, s => { 
-        if(!s.exists()) { forceExit("部屋が消去されました。"); return; } 
+        if(!s.exists()) { 
+            $("list").innerHTML=""; // ログの残骸を即クリア
+            forceExit("部屋が消去されました。"); 
+            return; 
+        } 
         $("list").innerHTML=""; 
         Object.values(s.val()).forEach(m=>renderMsg(m,pass)); 
     });
@@ -205,6 +210,7 @@ async function join(rID,pass,name){
             }
         });
         
+        // 無言放置・または誰もいない状態の自動削除
         const cSnap = await get(chatRef);
         if(cSnap.exists()){
             const msgs = Object.values(cSnap.val());
@@ -214,7 +220,6 @@ async function join(rID,pass,name){
     });
 }
 
-// UIイベント
 $("openTos").onclick = () => $("tosModal").style.display = "flex";
 $("closeTos").onclick = () => $("tosModal").style.display = "none";
 $("exitBtn").onclick=async()=>{ await quitChat(false); location.href=location.origin+location.pathname; };
@@ -224,35 +229,29 @@ $("enterBtn").onclick=()=>{
     localStorage.setItem("nez_n", n); localStorage.setItem("nez_t", t);
     if(r&&p){ join(r,p,n+$("tp").innerText); }
 };
-
 const updateTrip = async (v) => {
     if(!v){$("tp").innerText="";return;}
     const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));
     $("tp").innerText="◆"+Array.from(new Uint8Array(b)).map(x=>x.toString(36)).join("").slice(2,8);
 };
-
 $("tk").oninput=(e)=>updateTrip(e.target.value);
 $("mi").oninput=function(){ this.style.height="42px"; this.style.height=this.scrollHeight+"px"; };
 $("mi").onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); doSend(); } };
-
 const doSend = async () => {
     const v=$("mi").value.trim(); if(!v||!curR||Date.now()-lastT<300) return;
     lastT=Date.now(); $("sendBtn").disabled=true;
     try{ await push(ref(db,`chat/${curR}`),{ nEnc:enc(curN,curP), text:enc(v,curP), time:Date.now() }); $("mi").value=""; $("mi").style.height="42px"; }catch(e){}
     $("sendBtn").disabled=false;
 };
-
 $("copyBtn").onclick=()=>{
     const r=rawR||$("roomDisplay").innerText; if(!r||!curP) return;
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(r)}&p=${encodeURIComponent(curP)}`;
     const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t);
     $("copyBtn").innerText="OK!"; setTimeout(()=>{ $("copyBtn").innerText="URLコピー"; },1500);
 };
-
 $("toBottomBtn").onclick=()=>$("chatWrap").scrollTop=$("chatWrap").scrollHeight;
 $("toTopBtn").onclick=()=>$("chatWrap").scrollTop=0;
 $("focusBtn").onclick=()=>$("mi").focus();
-
 window.onload=()=>{
     const sN = localStorage.getItem("nez_n"), sT = localStorage.getItem("nez_t");
     if(sN) $("ni").value = sN;
