@@ -134,20 +134,27 @@ async function join(rID, pass, name, trip) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
 
+    // --- 【修正】まず自分自身の古いプレゼンスを完全に削除（クリーンアップ） ---
+    await remove(myPres);
+
+    // 最新の入室状況を再取得
     const snap = await get(presRef);
     const usersExist = snap.val() || {};
     let isRe入室 = false;
 
     for (const key in usersExist) {
+        // 自分（UID一致）は既に消したので、ここに来るのは「他人」または「別端末の自分」
         const existN = dec(usersExist[key].nEnc, pass);
         const existT = dec(usersExist[key].tEnc, pass) || "";
         
-        if (key === uid || (existN === name && existT === trip)) {
+        // 名前とトリップが完全一致する場合のみ「本人（再入室）」とみなす
+        if (existN === name && existT === trip) {
             isRe入室 = true; 
-            if(key !== uid) await remove(ref(db, `presence/${curR}/${key}`));
+            await remove(ref(db, `presence/${curR}/${key}`)); // 別端末の情報を消す
             continue; 
         }
 
+        // なりすまし防止判定
         if (existN === name) {
             $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
             $("errMsg").style.display = "block"; return;
@@ -158,9 +165,10 @@ async function join(rID, pass, name, trip) {
         }
     }
 
-    await remove(myPres);
+    // UI切り替え
     $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
     
+    // 完全一致での再入室でない場合のみログ送信
     if (!isRe入室) {
         await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
     }
