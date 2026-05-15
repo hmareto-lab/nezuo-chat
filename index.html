@@ -17,6 +17,9 @@
         .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,.15); display:flex; flex-direction:column; gap:12px; max-height: 95vh; overflow-y: auto; }
         .lobby-input{ width:100%; height:46px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; }
         
+        /* エラー表示スタイル */
+        .error-msg { color: var(--danger); font-size: 12px; font-weight: bold; text-align: center; display: none; background: #fff0f0; padding: 10px; border-radius: 12px; border: 1px solid #ffdada; margin-bottom: 5px; }
+
         .info-box { background:#f8f9fa; border-radius:16px; padding:15px; font-size:12px; line-height:1.6; color:#495057; border:1px solid #efefef; }
         .info-title { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:bold; color:var(--dark); }
         .info-title span { color:var(--primary); font-size:16px; }
@@ -75,6 +78,7 @@
             <div class="info-title"><span>🔒</span>システム概要</div>
             当ルームは、全利用者の退室に伴い通信履歴が自動消滅する一時的なチャットシステムです。AES-256規格による暗号化を実装しており、運営者を含む第三者による内容の傍受は不可能です。
         </div>
+        <div id="errMsg" class="error-msg"></div>
         <input id="ni" class="lobby-input" maxlength="10" placeholder="表示名">
         <div>
             <input id="tk" class="lobby-input" placeholder="本人確認用キー">
@@ -120,7 +124,7 @@ import { getDatabase, ref, push, onValue, set, remove, onDisconnect, serverTimes
 const $ = id => document.getElementById(id);
 const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
 const uid = crypto.randomUUID();
-let curR, curP, curN, rawR, lastT=0;
+let curR, curP, curN, curT, rawR, lastT=0;
 let userCount = 0;
 
 const scrollUp = () => $("chatWrap").scrollTo({top: 0, behavior: 'smooth'});
@@ -134,32 +138,42 @@ window.showRules = () => {
     $("modal").style.display = "flex";
 };
 
-async function join(rID, pass, name) {
-    rawR = rID; curR = hash(rID); curP = pass; curN = name;
+async function join(rID, pass, name, trip) {
+    rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
     
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
 
-    // 重複入室（名前+トリップ）のチェックと強制退去
+    // --- 名前占有・トリップガードロジック ---
     const snapshot = await get(presRef);
     const existingUsers = snapshot.val() || {};
     for (const key in existingUsers) {
-        if (dec(existingUsers[key].nEnc, pass) === name) {
-            await set(ref(db, `presence/${curR}/${key}/kick`), true);
+        const dN = dec(existingUsers[key].nEnc, pass);
+        const dT = dec(existingUsers[key].tEnc, pass);
+        
+        if (dN === name) {
+            if (dT !== trip) {
+                // 名前が同じでトリップが違う場合：入室拒否
+                $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
+                $("errMsg").style.display = "block";
+                return;
+            } else {
+                // 名前もトリップも同じ場合：同一人物の再入室とみなしてキック
+                await set(ref(db, `presence/${curR}/${key}/kick`), true);
+            }
         }
     }
+    // ------------------------------------
 
     $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
     
     // 入室通知
-    await push(chatRef, { type: "sys", text: enc(`${name}さんが入室しました`, pass), time: serverTimestamp() });
+    await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
     
-    // タブ閉じ・切断時の自動削除設定
     onDisconnect(myPres).remove();
 
     onValue(presRef, s => {
         const users = s.val() || {}; 
         
-        // キックされた場合の処理
         if (users[uid] && users[uid].kick) {
             alert("別の端末から入室したため、このセッションを終了します。");
             location.reload();
@@ -173,16 +187,16 @@ async function join(rID, pass, name) {
 
         keys.forEach(k => {
             const dN = dec(users[k].nEnc, curP);
+            const dT = dec(users[k].tEnc, curP) || "";
             if(dN){ 
                 const span = document.createElement("span"); 
                 span.className="user-chip"; 
-                span.innerText=dN; 
+                span.innerText = dN + dT; 
                 listContainer.appendChild(span); 
             }
         });
         $("presenceCount").innerText = `(${userCount}名)`;
         
-        // 最後の一人なら、切断時に部屋全体を消去するよう予約
         if (userCount <= 1) {
             onDisconnect(chatRef).remove();
             onDisconnect(presRef).remove();
@@ -201,21 +215,31 @@ async function join(rID, pass, name) {
             if(m.type === "sys") div.innerHTML = `<div class="sys-msg">${esc(txt)}</div>`;
             else {
                 const n = dec(m.nEnc, curP) || "???";
-                div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;color:#666;">${esc(n)}</div><div class="msg"><div class="msg-text">${esc(txt)}</div></div><div class="msg-meta">${time}</div>`;
+                const t = dec(m.tEnc, curP) || "";
+                div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;color:#666;">${esc(n)}${esc(t)}</div><div class="msg"><div class="msg-text">${esc(txt)}</div></div><div class="msg-meta">${time}</div>`;
             }
             $("list").appendChild(div);
         });
     });
 
-    // 生存確認更新（トリップ付きの名前を保持）
-    const upd = () => set(myPres, { nEnc: enc(name, pass), last: serverTimestamp() });
+    const upd = () => set(myPres, { 
+        nEnc: enc(name, pass), 
+        tEnc: enc(trip, pass),
+        last: serverTimestamp() 
+    });
     upd(); 
     setInterval(upd, 15000); 
 }
 
 const sendMsg = async () => {
     const v = $("mi").value.trim(); if(!v||Date.now()-lastT<300) return;
-    lastT=Date.now(); await push(ref(db, `chat/${curR}`), { nEnc:enc(curN,curP), text:enc(v,curP), time:serverTimestamp() });
+    lastT=Date.now(); 
+    await push(ref(db, `chat/${curR}`), { 
+        nEnc: enc(curN, curP), 
+        tEnc: enc(curT, curP),
+        text: enc(v, curP), 
+        time: serverTimestamp() 
+    });
     $("mi").value = ""; $("mi").style.height="42px"; 
     scrollUp();
 };
@@ -226,7 +250,7 @@ $("exitBtn").onclick = async () => {
         await remove(ref(db, `chat/${curR}`));
         await remove(ref(db, `presence/${curR}`));
     } else {
-        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}さんが退出しました`, curP), time: serverTimestamp() });
+        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}${curT}さんが退出しました`, curP), time: serverTimestamp() });
         await remove(ref(db, `presence/${curR}/${uid}`));
     }
     location.reload();
@@ -238,11 +262,12 @@ $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
 $("mi").onfocus = scrollUp;
 
 $("enterBtn").onclick = () => {
+    $("errMsg").style.display = "none";
     const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し", tp=$("tp").innerText;
     if(r&&p){ 
         localStorage.setItem("nez_n", n); 
         localStorage.setItem("nez_t", $("tk").value); 
-        join(r, p, n + tp); 
+        join(r, p, n, tp); 
     }
     else alert("部屋IDおよびパスワードの入力が必要です。");
 };
