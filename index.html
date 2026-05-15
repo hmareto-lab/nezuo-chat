@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-    <title>NEZUO ONETIME CHAT</title>
+    <title>NEZU ONETIME CHAT</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -59,7 +59,7 @@
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
         <div style="text-align:center;">
-            <h2 style="color:var(--primary);margin:0;font-size:24px;">NEZUO ONETIME CHAT</h2>
+            <h2 style="color:var(--primary);margin:0;font-size:24px;">NEZU ONETIME CHAT</h2>
             <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#999;">誰でも簡単に使える、安心な消えるチャット</p>
         </div>
         <div class="info-box">
@@ -135,20 +135,16 @@ async function join(rID, pass, name, trip) {
     const usersExist = snap.val() || {};
     let isRe入室 = false;
 
-    // 重複入室チェックの強化
     for (const key in usersExist) {
         const existN = dec(usersExist[key].nEnc, pass);
         const existT = dec(usersExist[key].tEnc, pass) || "";
         
         if (existN === name && existT === trip) {
-            // 名前もトリップも一致（再入室）
             isRe入室 = true; await remove(ref(db, `presence/${curR}/${key}`));
         } else if (existN === name) {
-            // 名前だけ一致（トリップ違い）
             $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
             $("errMsg").style.display = "block"; return;
         } else if (existT !== "" && existT === trip) {
-            // トリップだけ一致（名前違い）
             $("errMsg").innerText = "そのトリップは既に別の名前で使用されています。";
             $("errMsg").style.display = "block"; return;
         }
@@ -167,7 +163,7 @@ async function join(rID, pass, name, trip) {
                 span.innerText = n + (dec(u[k].tEnc, curP)||""); list.appendChild(span); 
             }
         });
-        userCount = count; // グローバル変数に保持
+        userCount = count;
         $("presenceCount").innerText = `(${count}名)`;
     });
 
