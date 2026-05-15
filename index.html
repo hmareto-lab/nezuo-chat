@@ -17,248 +17,271 @@
         textarea{ flex:1; height:42px; min-height:42px; max-height:120px; padding:10px 15px; border:none; outline:none; resize:none; background:#f1f3f5; border-radius:20px; font-size:16px; line-height:1.4; overflow-y:hidden; }
         #sendBtn{ width:70px; height:42px; border:none; border-radius:20px; background:var(--primary); color:#fff; font-weight:800; cursor:pointer; }
         #sendBtn:disabled{ background:#ccc; }
-        .room-info-bar{ display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-top:1px solid #f6f6f6; background:#fcfcfc; }
+        .room-info-bar{ display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-top:1px solid #f6f6f6; background:#fcfcfc; min-height:35px; }
         .info-item{ background:#f1f1f1; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; color:#666; }
-        #presenceList{ display:flex; gap:5px; overflow-x:auto; }
-        .user-chip{ white-space:nowrap; font-size:10px; font-weight:700; color:var(--primary); background:#e1eeff; padding:2px 8px; border-radius:10px; }
+        #presenceList{ display:flex; gap:5px; overflow-x:auto; margin-left:10px; flex:1; scrollbar-width:none; }
+        #presenceList::-webkit-scrollbar{ display:none; }
+        .user-chip{ font-size:10px; font-weight:700; color:var(--primary); background:#e1eeff; padding:2px 8px; border-radius:10px; white-space:nowrap; }
         #chatWrap{ flex:1; overflow-y:auto; padding:15px 12px; background:#f7f8fa; display:flex; flex-direction:column; }
         #list{ display:flex; flex-direction:column-reverse; gap:12px; }
-        .msg-wrap{ display: flex; flex-direction: column; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .msg-wrap{ display:flex; flex-direction:column; animation:fadeIn .2s ease; }
+        @keyframes fadeIn{ from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
         .msg{ background:#fff; border-radius:18px; padding:8px 14px; max-width:85%; box-shadow:0 1px 2px rgba(0,0,0,.05); }
         .msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
-        .msg-text a { color: var(--primary); text-decoration: underline; }
         .msg-meta{ font-size:10px; color:#999; margin:4px 0 0 8px; }
-        .sys-msg { align-self: center; color: #aaa; font-size: 11px; font-weight: bold; margin: 5px 0; }
+        .sys-msg{ align-self:center; color:#aaa; font-size:11px; font-weight:bold; margin:5px 0; }
         #footer{ background:#fff; border-top:1px solid #ececec; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
-        .footer-nav{ display:grid; grid-template-columns: 60px 44px 44px 1.2fr 80px; gap:8px; align-items: center; }
-        .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; text-align:center; line-height:1.1; }
-        #lobby{ position:fixed; inset:0; justify-content:center; align-items:center; background:linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); z-index:1000; }
-        .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,0.15); }
+        .footer-nav{ display:grid; grid-template-columns: 60px 44px 44px 1.2fr 80px; gap:8px; align-items:center; }
+        .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; font-size:11px; transition: background 0.3s ease; white-space: nowrap; overflow: hidden; }
+        #lobby{ position:fixed; inset:0; justify-content:center; align-items:center; background:linear-gradient(135deg,#f5f7fa,#c3cfe2); z-index:1000; display:flex; }
+        .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,.15); }
         .lobby-input{ width:100%; height:44px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; margin-bottom:12px; }
+        
+        /* モーダル用CSS（スクロールなし調整） */
+        #guideModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; justify-content:center; align-items:center; padding:15px; }
+        .modal-body { background:#fff; width:100%; max-width:360px; border-radius:24px; padding:20px; box-shadow:0 20px 40px rgba(0,0,0,0.2); }
+        .modal-body h3 { color:var(--primary); margin:0 0 12px; font-size:18px; text-align:center; }
+        .guide-item { margin-bottom:12px; font-size:13px; line-height:1.4; color:#444; display:flex; gap:10px; }
+        .guide-item span { font-size:18px; }
+        .modal-close-btn { width:100%; height:44px; background:var(--primary); color:#fff; border:none; border-radius:12px; font-weight:bold; font-size:15px; margin-top:10px; cursor:pointer; }
     </style>
 </head>
 <body>
 
 <div id="lobby">
     <div class="lobby-content">
-        <h2 style="text-align:center; color:var(--primary); margin:0 0 15px;">NEZUO ONETIME CHAT</h2>
+        <h2 style="text-align:center;color:var(--primary);margin:0 0 15px;">NEZUO ONETIME CHAT</h2>
         <input id="ni" class="lobby-input" maxlength="10" placeholder="名前">
         <input id="tk" class="lobby-input" placeholder="なりすまし防止コード">
-        <div id="tp" style="font-size:10px; color:var(--accent); text-align:right; margin-top:-10px; height:15px;"></div>
+        <div id="tp" style="font-size:10px;color:var(--accent);text-align:right;margin-top:-10px;height:15px;"></div>
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="パスワード">
-        <button id="masterGenBtn" style="width:100%; height:40px; background:none; border:1px dashed var(--primary); border-radius:12px; color:var(--primary); margin-bottom:10px;">🎲 自動生成</button>
-        <button id="enterBtn" style="width:100%; height:50px; border:none; border-radius:15px; background:var(--primary); color:#fff; font-size:18px; font-weight:900;">入室</button>
+        <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:none;border-radius:12px;color:var(--primary);margin-bottom:8px; cursor:pointer;">🎲 自動生成</button>
+        
+        <button id="guideBtn" style="width:100%;height:30px;border:none;background:none;color:#888;font-size:12px;text-decoration:underline;margin-bottom:12px;cursor:pointer;">🛡️ 安心・安全ガイド(利用規約)</button>
+        
+        <button id="enterBtn" style="width:100%;height:50px;border:none;border-radius:15px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;cursor:pointer;">入室</button>
+    </div>
+</div>
+
+<!-- スクロール不要の凝縮版ガイド -->
+<div id="guideModal">
+    <div class="modal-body">
+        <h3>🛡️ 安心・安全ガイド</h3>
+        
+        <div class="guide-item">
+            <span>🔒</span>
+            <div><strong>管理者も閲覧不可</strong><br>ブラウザで暗号化してから送信。サーバーには解読不能なデータしか残りません。</div>
+        </div>
+        
+        <div class="guide-item">
+            <span>⏳</span>
+            <div><strong>自動消滅ルール</strong><br>30分の無操作で退室。誰もいない部屋やログは24h以内に完全に消去されます。</div>
+        </div>
+        
+        <div class="guide-item">
+            <span>⚠️</span>
+            <div><strong>ご利用の注意</strong><br>パスワード漏洩に注意。一度消えたログは二度と復元できません。</div>
+        </div>
+        
+        <button id="closeGuideBtn" class="modal-close-btn">理解しました</button>
     </div>
 </div>
 
 <div id="mainApp">
     <header id="header">
         <div class="app-header-top">
-            <textarea id="mi" rows="1" placeholder="メッセージ..." maxlength="500"></textarea>
+            <textarea id="mi" placeholder="メッセージ..." maxlength="500"></textarea>
             <button id="sendBtn">送信</button>
         </div>
-        <div class="room-info-bar"><div id="roomDisplay" class="info-item"></div><div id="presenceList"></div></div>
+        <div class="room-info-bar">
+            <div id="roomDisplay" class="info-item"></div>
+            <div id="presenceList"></div>
+        </div>
     </header>
     <main id="chatWrap"><div id="list"></div></main>
     <footer id="footer">
         <div class="footer-nav">
-            <button id="focusBtn" class="btn" style="background:var(--primary); color:#fff; font-size:20px;">⌨️</button>
+            <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
             <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
             <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
-            <button id="copyBtn" class="btn" style="background:var(--dark); color:#fff; font-size:9px;">招待URL<br>コピー</button>
-            <button id="exitBtn" class="btn" style="background:#fff0f0; color:var(--danger); font-size:12px;">退室</button>
+            <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URLコピー</button>
+            <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退室</button>
         </div>
     </footer>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, remove, onDisconnect, query, onChildAdded, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, set, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-const db = getDatabase(initializeApp({ apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezubo2-default-rtdb.firebaseio.com" }));
+const conf = { 
+    apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", 
+    databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app" 
+};
+
+const app = initializeApp(conf);
+const db = getDatabase(app);
 const uid = localStorage.getItem("nezu_uid") || crypto.randomUUID();
 localStorage.setItem("nezu_uid", uid);
 
 const $ = id => document.getElementById(id);
-let curR, curP, curN, lastT = 0;
-const EXPIRE_MS = 30 * 60 * 1000; 
+let curR = null, curP = null, curN = null, lastT = 0, rawR = "";
+const EXPIRE_MS = 30 * 60 * 1000;
 
 const hash = t => CryptoJS.SHA256(t).toString();
-const enc = (t, k) => CryptoJS.AES.encrypt(t, k).toString();
-const dec = (c, k) => { try { return CryptoJS.AES.decrypt(c, k).toString(CryptoJS.enc.Utf8) || "???"; } catch(e) { return "不可"; } };
-const esc = t => (t||"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const enc = (t,k)=>CryptoJS.AES.encrypt(t,k).toString();
+const dec = (c,k)=>{try{const d=CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8); return d||"???";}catch{return"不可";}};
+const esc = t=>(t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-async function checkAndCleanup(roomId) {
-    const lastRef = ref(db, `last_activity/${roomId}`);
-    const snap = await get(lastRef);
-    if (snap.exists() && Date.now() - snap.val() > EXPIRE_MS) {
-        await remove(ref(db, `chat/${roomId}`));
-        await remove(ref(db, `presence/${roomId}`));
-        await remove(lastRef);
-        return true;
-    }
-    return false;
-}
-
-function renderMsg(m, p) {
-    const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+function renderMsg(m,p){
+    const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const div = document.createElement("div");
-    div.className = "msg-wrap";
-    if(m.type === "sys") {
-        div.innerHTML = `<div class="sys-msg">${esc(dec(m.text, p))} (${time})</div>`;
-    } else {
-        div.innerHTML = `<div style="margin-left:10px;margin-bottom:2px;"><span style="font-size:11px;font-weight:800;color:#666;">${esc(dec(m.nEnc, p))}</span></div>
-            <div class="msg"><div class="msg-text">${esc(dec(m.text, p)).replace(/(https?:\/\/[\w\/:%#\$&\?\(\)~\.=\+\-]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')}</div></div>
-            <div class="msg-meta">${time}</div>`;
+    div.className="msg-wrap";
+    if(m.type==="sys"){
+        div.innerHTML = `<div class="sys-msg">${esc(dec(m.text,p))} (${time})</div>`;
+    }else{
+        div.innerHTML = `<div style="margin-left:10px;font-size:11px;font-weight:800;color:#666;">${esc(dec(m.nEnc,p))}</div>
+         <div class="msg"><div class="msg-text">${esc(dec(m.text,p)).replace(/(https?:\/\/[\w\/:%#\$&\?\(\)~\.=\+\-]+)/g,'<a target="_blank" href="$1">$1</a>')}</div></div>
+         <div class="msg-meta">${time}</div>`;
     }
     $("list").appendChild(div);
 }
 
-async function join(r, p, n, skip = false) {
-    if(!r || !p) return;
-    curR = hash(r); curP = p; curN = n;
-    
-    // 既存データの確認
-    const lastRef = ref(db, `last_activity/${curR}`);
-    const snapActivity = await get(lastRef);
-    const isNewRoom = !snapActivity.exists();
+async function join(rID,pass,name,skip=false){
+    rawR = rID; curR = hash(rID); curP = pass; curN = name;
+    $("roomDisplay").innerText = rID;
+    $("lobby").style.display="none"; $("mainApp").style.display="flex";
 
-    if (await checkAndCleanup(curR)) {
-        if(!skip) alert("この部屋は30分間動きがなかったため消滅しました。");
-        sessionStorage.clear(); location.reload(); return;
+    const chatRef = ref(db,`chat/${curR}`);
+    const presRef = ref(db,`presence/${curR}`);
+    const myPres = ref(db,`presence/${curR}/${uid}`);
+
+    if(!skip){
+        const snap = await get(chatRef);
+        if(!snap.exists()){
+            await push(chatRef,{ type:"sys", text:enc(`${name}さんが部屋を作成しました`,pass), time:Date.now() });
+        }else{
+            await push(chatRef,{ type:"sys", text:enc(`${name}さんが入室しました`,pass), time:Date.now() });
+        }
     }
 
-    const pRef = ref(db, `presence/${curR}/${uid}`);
-    set(pRef, { nEnc: enc(n.split('◆')[0], p), last: Date.now() });
-    onDisconnect(pRef).remove();
-    
-    if(!skip) {
-        const displayName = n.split('◆')[0];
-        // 部屋が新規作成なら「作成しました」、既存なら「入室しました」
-        const sysMsg = isNewRoom ? `${displayName} が部屋を作成しました` : `${displayName} が入室しました`;
-        push(ref(db, `chat/${curR}`), { type: "sys", text: enc(sysMsg, p), time: Date.now() });
-        sessionStorage.setItem("nezu_active_session", JSON.stringify({ r, p, n }));
-        set(lastRef, Date.now());
-    }
-
-    $("roomDisplay").innerText = r;
-    $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
-    
-    let lastKey = "";
-    const chatRef = ref(db, `chat/${curR}`);
-    const snapChat = await get(chatRef);
-    if (snapChat.exists()) {
-        const msgs = snapChat.val();
-        Object.keys(msgs).forEach(k => { renderMsg(msgs[k], p); lastKey = k; });
-        $("chatWrap").scrollTop = 0;
-    }
-
-    onChildAdded(chatRef, s => {
-        if (s.key > lastKey) { renderMsg(s.val(), p); $("chatWrap").scrollTop = 0; }
+    onValue(chatRef, snap => {
+        $("list").innerHTML = "";
+        if(snap.exists()) Object.values(snap.val()).forEach(m => renderMsg(m, pass));
     });
 
-    onValue(ref(db, `presence/${curR}`), s => {
-        const now = Date.now(), data = s.val() || {};
-        $("presenceList").innerHTML = Object.values(data).filter(u => now - u.last < EXPIRE_MS).map(u => `<span class="user-chip">● ${esc(dec(u.nEnc, p))}</span>`).join("");
+    const update=()=>set(myPres,{nEnc:enc(name,pass),last:Date.now()});
+    update(); setInterval(update, 45000);
+    onDisconnect(myPres).remove();
+
+    onValue(presRef,s=>{
+        const now=Date.now(); $("presenceList").innerHTML="";
+        Object.values(s.val()||{}).forEach(u=>{
+            if(now-u.last<EXPIRE_MS){
+                const chip=document.createElement("span"); chip.className="user-chip";
+                chip.innerText="● "+dec(u.nEnc,pass); $("presenceList").appendChild(chip);
+            }
+        });
     });
-
-    setInterval(async () => {
-        if(!curR) return;
-        set(pRef, { nEnc: enc(curN.split('◆')[0], curP), last: Date.now() });
-        if (await checkAndCleanup(curR)) {
-            alert("30分間動きがなかったため、部屋を閉じました。");
-            sessionStorage.clear(); location.reload();
-        }
-    }, 60000);
 }
 
-async function send() {
-    const now = Date.now(), m = $("mi").value.trim();
-    if(!m || !curR || now - lastT < 500) return;
-    lastT = now;
-    $("sendBtn").disabled = true;
-    setTimeout(() => $("sendBtn").disabled = false, 500);
-    await push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), text: enc(m, curP), time: now });
-    set(ref(db, `last_activity/${curR}`), now);
-    set(ref(db, `presence/${curR}/${uid}`), { nEnc: enc(curN.split('◆')[0], curP), last: now });
-    $("mi").value = ""; $("mi").style.height = "42px";
-}
-
-$("mi").onkeydown = e => { if(e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } };
-$("sendBtn").onclick = send;
-
-const updateTrip = async () => {
-    if(!$("tk").value) return $("tp").innerText = "";
-    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode($("tk").value));
-    $("tp").innerText = "◆" + Array.from(new Uint8Array(b)).map(x => x.toString(36)).join("").substring(2, 8);
+const doSend = async ()=>{
+    const val=$("mi").value.trim();
+    if(!val||!curR||Date.now()-lastT<500) return;
+    lastT=Date.now(); $("sendBtn").disabled=true;
+    try{
+        await push(ref(db,`chat/${curR}`),{ nEnc:enc(curN,curP), text:enc(val,curP), time:Date.now() });
+        $("mi").value=""; 
+        $("mi").style.height="42px";
+    }catch(e){ alert("送信失敗"); }
+    $("sendBtn").disabled=false;
 };
-$("tk").oninput = updateTrip;
 
-$("enterBtn").onclick = () => {
-    const r = $("ri").value.trim(), p = $("pi").value.trim(), n = $("ni").value.trim() || "名無し";
-    if(r && p) {
-        localStorage.setItem("nezu_name", $("ni").value);
-        localStorage.setItem("nezu_tk", $("tk").value);
-        join(r, p, n + $("tp").innerText);
-    } else { alert("部屋IDとパスワードを入力してください。"); }
-};
-$("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2, 10); $("pi").value = Math.random().toString(36).slice(2, 12); };
-
-// コピー機能：表示・挙動を戻し、かつ確実に動作するようtextareaフォールバックを維持
-$("copyBtn").onclick = async () => {
-    const rVal = $("ri").value.trim() || (curR ? $("roomDisplay").innerText : "");
-    const pVal = $("pi").value.trim() || curP;
-    if(!rVal || !pVal) return alert("情報がありません。");
-    const secret = btoa(encodeURIComponent(rVal + ":" + pVal));
-    const url = `${location.origin}${location.pathname}?s=${secret}`;
+$("copyBtn").onclick=()=>{
+    const r = rawR || $("roomDisplay").innerText;
+    if(!r || !curP) return;
+    const url = `${location.origin}${location.pathname}?s=${btoa(encodeURIComponent(r+":"+curP))}`;
+    const temp = document.createElement("textarea");
+    temp.value = url; document.body.appendChild(temp);
+    temp.select(); document.execCommand("copy");
+    document.body.removeChild(temp);
     
-    try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(url);
-        } else {
-            throw new Error();
-        }
-    } catch(e) {
-        const ta = document.createElement("textarea");
-        ta.value = url;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-    }
-    alert("招待URLをコピーしました！");
+    $("copyBtn").innerText = "コピー完了！";
+    $("copyBtn").style.background = "var(--accent)";
+    
+    setTimeout(()=>{ 
+        $("copyBtn").innerText = "招待URLコピー"; 
+        $("copyBtn").style.background = "var(--dark)"; 
+    }, 1500);
 };
 
-$("exitBtn").onclick = async () => {
-    if(curR) {
-        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN.split('◆')[0]} が退室しました`, curP), time: Date.now() });
-        await remove(ref(db, `presence/${curR}/${uid}`));
+$("exitBtn").onclick=async()=>{
+    if(curR){
+        await push(ref(db,`chat/${curR}`),{ type:"sys", text:enc(`${curN}さんが退室しました`,curP), time:Date.now() });
+        await remove(ref(db,`presence/${curR}/${uid}`));
     }
-    sessionStorage.clear(); location.href = location.origin + location.pathname;
+    location.href=location.origin+location.pathname;
 };
-$("toBottomBtn").onclick = () => $("chatWrap").scrollTop = $("chatWrap").scrollHeight;
-$("toTopBtn").onclick = () => $("chatWrap").scrollTop = 0;
-$("focusBtn").onclick = () => { $("mi").focus(); };
 
-window.onload = async () => {
-    $("ni").value = localStorage.getItem("nezu_name") || "";
-    $("tk").value = localStorage.getItem("nezu_tk") || "";
-    await updateTrip();
-    const p = new URLSearchParams(window.location.search);
-    const s = p.get('s');
-    if (s) {
+$("masterGenBtn").onclick=()=>{
+    $("ri").value=Math.random().toString(36).slice(2,10);
+    $("pi").value=Math.random().toString(36).slice(2,12);
+};
+
+$("enterBtn").onclick=()=>{
+    const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し";
+    if(r&&p){
+        localStorage.setItem("nezu_name",n);
+        localStorage.setItem("nezu_tk",$("tk").value);
+        join(r,p,n+$("tp").innerText);
+    }
+};
+
+$("tk").oninput = async () => {
+    const val = $("tk").value;
+    if(!val) { $("tp").innerText = ""; return; }
+    const buf = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(val));
+    $("tp").innerText="◆"+Array.from(new Uint8Array(buf)).map(x=>x.toString(36)).join("").slice(2,8);
+};
+
+$("mi").oninput=function(){
+    this.style.height="42px";
+    this.style.height=this.scrollHeight+"px";
+};
+
+$("mi").onkeydown=e=>{ 
+    if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ 
+        e.preventDefault(); 
+        doSend(); 
+    }
+};
+
+$("toBottomBtn").onclick=()=>$("chatWrap").scrollTop=$("chatWrap").scrollHeight;
+$("toTopBtn").onclick=()=>$("chatWrap").scrollTop=0;
+$("focusBtn").onclick=()=>$("mi").focus();
+
+// モーダル制御
+$("guideBtn").onclick = () => $("guideModal").style.display = "flex";
+$("closeGuideBtn").onclick = () => $("guideModal").style.display = "none";
+window.onclick = (e) => { if (e.target == $("guideModal")) $("guideModal").style.display = "none"; };
+
+window.onload = () => {
+    const s = new URLSearchParams(window.location.search).get('s');
+    if(s) {
         try {
-            const decoded = decodeURIComponent(atob(s)).split(':');
-            $("ri").value = decoded[0]; $("pi").value = decoded[1];
-            if($("ni").value) join(decoded[0], decoded[1], $("ni").value + $("tp").innerText);
-            else $("lobby").style.display = "flex";
-        } catch(e) { $("lobby").style.display = "flex"; }
-    } else {
-        const active = sessionStorage.getItem("nezu_active_session");
-        if(active) { const d = JSON.parse(active); join(d.r, d.p, d.n, true); } else { $("lobby").style.display = "flex"; }
+            const decoded = decodeURIComponent(atob(s));
+            const parts = decoded.split(':');
+            if(parts.length >= 2){
+                $("ri").value = parts[0]; 
+                $("pi").value = parts[1];
+            }
+        } catch(e) { console.error("URL解析失敗"); }
     }
+    const savedN = localStorage.getItem("nezu_name");
+    if(savedN) $("ni").value = savedN;
+    const savedTK = localStorage.getItem("nezu_tk");
+    if(savedTK) { $("tk").value = savedTK; $("tk").dispatchEvent(new Event('input')); }
 };
 </script>
 </body>
