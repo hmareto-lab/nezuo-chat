@@ -124,14 +124,13 @@ let curR, curP, curN, rawR, lastT=0;
 let userCount = 0;
 
 const scrollUp = () => $("chatWrap").scrollTo({top: 0, behavior: 'smooth'});
-
 const hash = t => CryptoJS.SHA256(t).toString();
 const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
 const dec = (c,k) => { try { return CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
 const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
 window.showRules = () => {
-    $("modalText").innerText = "【利用規約および運用ポリシー】\n\n1. データの消滅について\n当システムは揮発性の高い環境で運用されています。滞在者が0名となった時点で、データベース上の全暗号化ログは即時に完全抹消されます。\n\n2. セキュリティと機密保持\nすべての通信内容は、エンドユーザーの端末上でAES-256暗号化処理が行われます。パスワードの保持者以外、第三者が内容を閲覧することは技術的に不可能です。\n\n3. 禁止事項\n法令に抵触する情報の交換、誹謗中傷、本サービスの運営を妨害する行為を固く禁じます。\n\n4. 免責事項\n本サービスの利用により発生したいかなる紛争、損害についても、提供者は一切の責任を負わないものとします。";
+    $("modalText").innerText = "【利用規約および運用ポリシー】\n\n1. データの消滅について\n当システムは揮発性の高い環境で運用されています。滞在者が0名となった時点で、データベース上の全暗号化ログは即時に完全抹消されます。\n\n2. セキュリティと機密保持\nすべての通信内容は、エンドユーザーの端末上でAES-256暗号化処理が行われます。パスワードの保持者以外、第三者が内容を閲覧することは技術的に不可能です。";
     $("modal").style.display = "flex";
 };
 
@@ -141,8 +140,10 @@ async function join(rID, pass, name) {
     
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
     
+    // 入室通知
     await push(chatRef, { type: "sys", text: enc(`${name}さんが入室しました`, pass), time: serverTimestamp() });
     
+    // ロジック：タブを閉じた際に即座に在室リストから削除
     onDisconnect(myPres).remove();
 
     onValue(presRef, s => {
@@ -155,10 +156,12 @@ async function join(rID, pass, name) {
         });
         $("presenceCount").innerText = `(${userCount}名)`;
         
+        // ロジック：最後の一人なら、接続が切れたときに部屋ごと消去するように予約
         if (userCount <= 1) {
             onDisconnect(chatRef).remove();
             onDisconnect(presRef).remove();
         } else {
+            // 他に人がいるなら自分の退出通知だけ予約（実際はボタンから行うのが確実）
             onDisconnect(chatRef).cancel();
             onDisconnect(presRef).cancel();
         }
@@ -183,6 +186,7 @@ async function join(rID, pass, name) {
     upd(); setInterval(upd, 20000);
 }
 
+// 送信ロジック
 const sendMsg = async () => {
     const v = $("mi").value.trim(); if(!v||Date.now()-lastT<300) return;
     lastT=Date.now(); await push(ref(db, `chat/${curR}`), { nEnc:enc(curN,curP), text:enc(v,curP), time:serverTimestamp() });
@@ -190,9 +194,23 @@ const sendMsg = async () => {
     scrollUp();
 };
 
+// 退出・部屋削除ロジック
+$("exitBtn").onclick = async () => {
+    if(userCount <= 1) {
+        if(!confirm("あなたが最後の一人です。退出すると全データが消滅しますがよろしいですか？")) return;
+        // 最後の一人の場合はデータごと消す
+        await remove(ref(db, `chat/${curR}`));
+        await remove(ref(db, `presence/${curR}`));
+    } else {
+        // 他に人がいる場合は退出通知だけ送って自分の presence を消す
+        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}さんが退出しました`, curP), time: serverTimestamp() });
+        await remove(ref(db, `presence/${curR}/${uid}`));
+    }
+    location.reload(); // ロビーへ
+};
+
 $("sendBtn").onclick = sendMsg;
 $("mi").onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMsg(); } };
-
 $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
 $("mi").onfocus = scrollUp;
 
@@ -221,21 +239,12 @@ $("copyBtn").onclick = async () => {
 
     let done = false;
     if (navigator.clipboard && navigator.clipboard.writeText) {
-        try {
-            await navigator.clipboard.writeText(url);
-            done = true;
-        } catch (err) { done = copyToClipboard(url); }
-    } else {
-        done = copyToClipboard(url);
-    }
+        try { await navigator.clipboard.writeText(url); done = true; } catch (err) { done = copyToClipboard(url); }
+    } else { done = copyToClipboard(url); }
 
     if (done) {
-        const b = $("copyBtn");
-        const old = b.innerText;
-        b.innerText = "コピー完了";
-        setTimeout(() => b.innerText = old, 1500);
-    } else {
-        alert("コピーに失敗しました。ブラウザの設定を確認してください。");
+        const b = $("copyBtn"); b.innerText = "コピー完了";
+        setTimeout(() => b.innerText = "招待URLのコピー", 1500);
     }
 };
 
@@ -243,18 +252,6 @@ $("toTopBtn").onclick = scrollUp;
 $("toBottomBtn").onclick = () => $("chatWrap").scrollTo({top: $("chatWrap").scrollHeight, behavior: 'smooth'});
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").focus(); };
 $("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2,10); $("pi").value = Math.random().toString(36).slice(2,12); };
-
-$("exitBtn").onclick = async () => {
-    if(userCount <= 1) {
-        if(!confirm("あなたが最後の一人です。退出すると全データが消滅しますがよろしいですか？")) return;
-        await remove(ref(db, `chat/${curR}`));
-        await remove(ref(db, `presence/${curR}`));
-    } else {
-        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}さんが退出しました`, curP), time: serverTimestamp() });
-        await remove(ref(db, `presence/${curR}/${uid}`));
-    }
-    location.href = location.origin + location.pathname;
-};
 
 $("tk").oninput = async (e) => {
     const v = e.target.value.trim(); if(!v) { $("tp").innerText = ""; return; }
