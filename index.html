@@ -28,20 +28,13 @@
         .msg{ background:#fff; border-radius:18px; padding:8px 14px; max-width:85%; box-shadow:0 1px 2px rgba(0,0,0,.05); }
         .msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
         .msg-meta{ font-size:10px; color:#999; margin:4px 0 0 8px; }
-        .sys-msg{ align-self:center; color:#aaa; font-size:11px; font-weight:bold; margin:5px 0; }
+        .sys-msg{ align-self:center; color:#555; font-size:11px; font-weight:bold; margin:5px 0; background:#e9ecef; padding:3px 12px; border-radius:12px; }
         #footer{ background:#fff; border-top:1px solid #ececec; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
         .footer-nav{ display:grid; grid-template-columns: 60px 44px 44px 1.2fr 80px; gap:8px; align-items:center; }
         .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; font-size:11px; transition: background 0.3s ease; white-space: nowrap; overflow: hidden; }
         #lobby{ position:fixed; inset:0; justify-content:center; align-items:center; background:linear-gradient(135deg,#f5f7fa,#c3cfe2); z-index:1000; display:flex; }
         .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,.15); }
         .lobby-input{ width:100%; height:44px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; margin-bottom:12px; }
-        
-        /* モーダル用CSS */
-        #guideModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000; justify-content:center; align-items:center; padding:15px; }
-        .modal-body { background:#fff; width:100%; max-width:360px; border-radius:24px; padding:20px; }
-        .modal-body h3 { color:var(--primary); margin:0 0 12px; font-size:18px; text-align:center; }
-        .guide-item { margin-bottom:12px; font-size:13px; line-height:1.4; color:#444; display:flex; gap:10px; }
-        .modal-close-btn { width:100%; height:44px; background:var(--primary); color:#fff; border:none; border-radius:12px; font-weight:bold; font-size:15px; margin-top:10px; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -54,19 +47,8 @@
         <div id="tp" style="font-size:10px;color:var(--accent);text-align:right;margin-top:-10px;height:15px;"></div>
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="パスワード">
-        <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:none;border-radius:12px;color:var(--primary);margin-bottom:8px; cursor:pointer;">🎲 自動生成</button>
-        <button id="guideBtn" style="width:100%;height:30px;border:none;background:none;color:#888;font-size:12px;text-decoration:underline;margin-bottom:12px;cursor:pointer;">🛡️ 安心・安全ガイド(利用規約)</button>
+        <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:none;border-radius:12px;color:var(--primary);margin-bottom:8px; cursor:pointer;">🎲 部屋情報を自動生成</button>
         <button id="enterBtn" style="width:100%;height:50px;border:none;border-radius:15px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;cursor:pointer;">入室</button>
-    </div>
-</div>
-
-<div id="guideModal">
-    <div class="modal-body">
-        <h3>🛡️ 安心・安全ガイド</h3>
-        <div class="guide-item"><span>🔒</span><div><strong>管理者も閲覧不可</strong><br>ブラウザで暗号化。サーバーには解読不能なデータしか残りません。</div></div>
-        <div class="guide-item"><span>⏳</span><div><strong>自動消滅ルール</strong><br>30分の無操作で退室。ログは24h以内に完全に消去されます。</div></div>
-        <div class="guide-item"><span>⚠️</span><div><strong>ご利用の注意</strong><br>パスワード漏洩に注意。一度消えたログは二度と戻りません。</div></div>
-        <button id="closeGuideBtn" class="modal-close-btn">理解しました</button>
     </div>
 </div>
 
@@ -97,78 +79,129 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, set, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
-const conf = { apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app" };
-const app = initializeApp(conf);
+// nezuochat プロジェクトの設定
+const firebaseConfig = {
+  apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
+  databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+
+const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const uid = localStorage.getItem("nezu_uid") || crypto.randomUUID();
-localStorage.setItem("nezu_uid", uid);
+const uid = crypto.randomUUID(); // セッションごとに使い捨て
 
 const $ = id => document.getElementById(id);
 let curR=null, curP=null, curN=null, lastT=0, rawR="";
-const EXPIRE_MS = 30 * 60 * 1000;
+const EXPIRE_MS = 15 * 60 * 1000;
 
 const hash = t => CryptoJS.SHA256(t).toString();
 const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
-const dec = (c,k) => { try{const d=CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8); return d||"???";}catch{return"不可";}};
+const dec = (c,k) => { 
+    try {
+        const d = CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8); 
+        return d || null;
+    } catch { return null; }
+};
 const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
 function renderMsg(m,p){
+    const decodedText = dec(m.text, p);
+    if (!decodedText) return; // 復号できない場合は無視
+
     const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
     const div = document.createElement("div"); div.className="msg-wrap";
+    
     if(m.type==="sys"){
-        div.innerHTML = `<div class="sys-msg">${esc(dec(m.text,p))} (${time})</div>`;
+        div.innerHTML = `<div class="sys-msg">${esc(decodedText)} (${time})</div>`;
     }else{
-        div.innerHTML = `<div style="margin-left:10px;font-size:11px;font-weight:800;color:#666;">${esc(dec(m.nEnc,p))}</div>
-         <div class="msg"><div class="msg-text">${esc(dec(m.text,p)).replace(/(https?:\/\/[\w\/:%#\$&\?\(\)~\.=\+\-]+)/g,'<a target="_blank" href="$1">$1</a>')}</div></div>
+        const decodedName = dec(m.nEnc, p) || "???";
+        div.innerHTML = `<div style="margin-left:10px;font-size:11px;font-weight:800;color:#666;">${esc(decodedName)}</div>
+         <div class="msg"><div class="msg-text">${esc(decodedText).replace(/(https?:\/\/[\w\/:%#\$&\?\(\)~\.=\+\-]+)/g,'<a target="_blank" href="$1">$1</a>')}</div></div>
          <div class="msg-meta">${time}</div>`;
     }
     $("list").appendChild(div);
 }
 
-async function join(rID,pass,name,skip=false){
+async function quitChat(isAuto = false) {
+    if(!curR) return;
+    const chatRef = ref(db, `chat/${curR}`);
+    const myPres = ref(db, `presence/${curR}/${uid}`);
+    
+    const msg = isAuto ? `${curN}さんが自動退出(または切断)しました` : `${curN}さんが退室しました`;
+    await push(chatRef, { type: "sys", text: enc(msg, curP), time: Date.now() });
+    await remove(myPres);
+}
+
+window.addEventListener('beforeunload', () => { quitChat(true); });
+
+async function join(rID,pass,name){
     rawR=rID; curR=hash(rID); curP=pass; curN=name;
     $("roomDisplay").innerText=rID; $("lobby").style.display="none"; $("mainApp").style.display="flex";
+    
     const chatRef=ref(db,`chat/${curR}`), presRef=ref(db,`presence/${curR}`), myPres=ref(db,`presence/${curR}/${uid}`);
-    if(!skip){
-        const snap=await get(chatRef);
-        await push(chatRef,{ type:"sys", text:enc(`${name}さんが${snap.exists()?'入室':'部屋を作成'}しました`,pass), time:Date.now() });
-    }
+
+    const snap=await get(chatRef);
+    await push(chatRef,{ type:"sys", text:enc(`${name}さんが${snap.exists()?'入室':'部屋を作成'}しました`,pass), time:Date.now() });
+
+    onDisconnect(myPres).remove();
+    const discLog = push(chatRef);
+    onDisconnect(discLog).set({ type:"sys", text:enc(`${name}さんが自動退出(または切断)しました`,pass), time:Date.now() });
+
     onValue(chatRef, s => { $("list").innerHTML=""; if(s.exists()) Object.values(s.val()).forEach(m=>renderMsg(m,pass)); });
+
     const update=()=>set(myPres,{nEnc:enc(name,pass),last:Date.now()});
-    update(); setInterval(update, 45000); onDisconnect(myPres).remove();
-    onValue(presRef, s => {
-        const now=Date.now(); $("presenceList").innerHTML="";
-        Object.values(s.val()||{}).forEach(u=>{ if(now-u.last<EXPIRE_MS){
-            const c=document.createElement("span"); c.className="user-chip"; c.innerText="● "+dec(u.nEnc,pass); $("presenceList").appendChild(c);
-        }});
+    update(); 
+    const timer = setInterval(update, 30000); 
+
+    onValue(presRef, async (s) => {
+        const now=Date.now();
+        $("presenceList").innerHTML="";
+        const users = s.val() || {};
+        const activeUserIDs = Object.keys(users).filter(k => now - users[k].last < EXPIRE_MS);
+
+        activeUserIDs.forEach(k => {
+            const u = users[k];
+            const dName = dec(u.nEnc, pass);
+            if(dName){
+                const c = document.createElement("span");
+                c.className = "user-chip";
+                c.innerText = "● " + dName;
+                $("presenceList").appendChild(c);
+            }
+        });
+
+        const cSnap = await get(chatRef);
+        if(cSnap.exists()){
+            const msgs = Object.values(cSnap.val());
+            const lastMsg = msgs[msgs.length - 1];
+            const isNoTalk = (now - lastMsg.time) > EXPIRE_MS;
+
+            if(activeUserIDs.length === 0 || isNoTalk){
+                await remove(chatRef); await remove(presRef); clearInterval(timer);
+                alert(isNoTalk ? "15分間発言がなかったため部屋が消滅しました。" : "全員が退出したため、部屋を削除しました。");
+                location.href = location.origin + location.pathname;
+            }
+        }
     });
 }
 
+$("exitBtn").onclick=async()=>{ await quitChat(false); location.href=location.origin+location.pathname; };
 const doSend = async () => {
     const v=$("mi").value.trim(); if(!v||!curR||Date.now()-lastT<500) return;
     lastT=Date.now(); $("sendBtn").disabled=true;
     try{ await push(ref(db,`chat/${curR}`),{ nEnc:enc(curN,curP), text:enc(v,curP), time:Date.now() }); $("mi").value=""; $("mi").style.height="42px"; }catch(e){ alert("失敗"); }
     $("sendBtn").disabled=false;
 };
-
 $("copyBtn").onclick=()=>{
     const r=rawR||$("roomDisplay").innerText; if(!r||!curP) return;
-    // URLを?r=...&p=... 形式にして短縮
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(r)}&p=${encodeURIComponent(curP)}`;
     const t=document.createElement("textarea"); t.value=url; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t);
     $("copyBtn").innerText="OK!"; $("copyBtn").style.background="var(--accent)";
     setTimeout(()=>{ $("copyBtn").innerText="URLコピー"; $("copyBtn").style.background="var(--dark)"; },1500);
 };
-
-$("exitBtn").onclick=async()=>{
-    if(curR){ await push(ref(db,`chat/${curR}`),{ type:"sys", text:enc(`${curN}さんが退室しました`,curP), time:Date.now() }); await remove(ref(db,`presence/${curR}/${uid}`)); }
-    location.href=location.origin+location.pathname;
-};
-
 $("masterGenBtn").onclick=()=>{ $("ri").value=Math.random().toString(36).slice(2,10); $("pi").value=Math.random().toString(36).slice(2,12); };
 $("enterBtn").onclick=()=>{
     const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim()||"名無し";
-    if(r&&p){ localStorage.setItem("nezu_name",n); localStorage.setItem("nezu_tk",$("tk").value); join(r,p,n+$("tp").innerText); }
+    if(r&&p){ join(r,p,n+$("tp").innerText); }
 };
 $("tk").oninput=async()=>{
     const v=$("tk").value; if(!v){$("tp").innerText="";return;}
@@ -180,14 +213,10 @@ $("mi").onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preve
 $("toBottomBtn").onclick=()=>$("chatWrap").scrollTop=$("chatWrap").scrollHeight;
 $("toTopBtn").onclick=()=>$("chatWrap").scrollTop=0;
 $("focusBtn").onclick=()=>$("mi").focus();
-$("guideBtn").onclick=()=>$("guideModal").style.display="flex";
-$("closeGuideBtn").onclick=()=>$("guideModal").style.display="none";
 
 window.onload=()=>{
     const u=new URLSearchParams(window.location.search), r=u.get('r'), p=u.get('p');
     if(r&&p){ $("ri").value=r; $("pi").value=p; }
-    const sn=localStorage.getItem("nezu_name"), st=localStorage.getItem("nezu_tk");
-    if(sn)$("ni").value=sn; if(st){$("tk").value=st;$("tk").dispatchEvent(new Event('input'));}
 };
 </script>
 </body>
