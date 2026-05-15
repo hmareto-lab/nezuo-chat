@@ -103,7 +103,7 @@ async function checkAndCleanup(roomId) {
 }
 
 function renderMsg(m, p) {
-    const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
     const div = document.createElement("div");
     div.className = "msg-wrap";
     if(m.type === "sys") {
@@ -120,6 +120,11 @@ async function join(r, p, n, skip = false) {
     if(!r || !p) return;
     curR = hash(r); curP = p; curN = n;
     
+    // 既存データの確認
+    const lastRef = ref(db, `last_activity/${curR}`);
+    const snapActivity = await get(lastRef);
+    const isNewRoom = !snapActivity.exists();
+
     if (await checkAndCleanup(curR)) {
         if(!skip) alert("この部屋は30分間動きがなかったため消滅しました。");
         sessionStorage.clear(); location.reload(); return;
@@ -130,9 +135,12 @@ async function join(r, p, n, skip = false) {
     onDisconnect(pRef).remove();
     
     if(!skip) {
-        push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${n.split('◆')[0]} が入室`, p), time: Date.now() });
+        const displayName = n.split('◆')[0];
+        // 部屋が新規作成なら「作成しました」、既存なら「入室しました」
+        const sysMsg = isNewRoom ? `${displayName} が部屋を作成しました` : `${displayName} が入室しました`;
+        push(ref(db, `chat/${curR}`), { type: "sys", text: enc(sysMsg, p), time: Date.now() });
         sessionStorage.setItem("nezu_active_session", JSON.stringify({ r, p, n }));
-        set(ref(db, `last_activity/${curR}`), Date.now());
+        set(lastRef, Date.now());
     }
 
     $("roomDisplay").innerText = r;
@@ -140,21 +148,15 @@ async function join(r, p, n, skip = false) {
     
     let lastKey = "";
     const chatRef = ref(db, `chat/${curR}`);
-    const snap = await get(chatRef);
-    if (snap.exists()) {
-        const msgs = snap.val();
-        Object.keys(msgs).forEach(k => {
-            renderMsg(msgs[k], p);
-            lastKey = k;
-        });
+    const snapChat = await get(chatRef);
+    if (snapChat.exists()) {
+        const msgs = snapChat.val();
+        Object.keys(msgs).forEach(k => { renderMsg(msgs[k], p); lastKey = k; });
         $("chatWrap").scrollTop = 0;
     }
 
     onChildAdded(chatRef, s => {
-        if (s.key > lastKey) {
-            renderMsg(s.val(), p);
-            $("chatWrap").scrollTop = 0;
-        }
+        if (s.key > lastKey) { renderMsg(s.val(), p); $("chatWrap").scrollTop = 0; }
     });
 
     onValue(ref(db, `presence/${curR}`), s => {
@@ -165,6 +167,10 @@ async function join(r, p, n, skip = false) {
     setInterval(async () => {
         if(!curR) return;
         set(pRef, { nEnc: enc(curN.split('◆')[0], curP), last: Date.now() });
+        if (await checkAndCleanup(curR)) {
+            alert("30分間動きがなかったため、部屋を閉じました。");
+            sessionStorage.clear(); location.reload();
+        }
     }, 60000);
 }
 
@@ -178,11 +184,11 @@ async function send() {
     set(ref(db, `last_activity/${curR}`), now);
     set(ref(db, `presence/${curR}/${uid}`), { nEnc: enc(curN.split('◆')[0], curP), last: now });
     $("mi").value = ""; $("mi").style.height = "42px";
-    $("chatWrap").scrollTop = 0;
 }
 
 $("mi").onkeydown = e => { if(e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } };
 $("sendBtn").onclick = send;
+
 const updateTrip = async () => {
     if(!$("tk").value) return $("tp").innerText = "";
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode($("tk").value));
@@ -196,84 +202,62 @@ $("enterBtn").onclick = () => {
         localStorage.setItem("nezu_name", $("ni").value);
         localStorage.setItem("nezu_tk", $("tk").value);
         join(r, p, n + $("tp").innerText);
-    } else {
-        alert("部屋IDとパスワードを入力してください。");
-    }
+    } else { alert("部屋IDとパスワードを入力してください。"); }
 };
 $("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2, 10); $("pi").value = Math.random().toString(36).slice(2, 12); };
 
-// 【修正箇所】招待URLを難読化してコピー
+// コピー機能：表示・挙動を戻し、かつ確実に動作するようtextareaフォールバックを維持
 $("copyBtn").onclick = async () => {
     const rVal = $("ri").value.trim() || (curR ? $("roomDisplay").innerText : "");
     const pVal = $("pi").value.trim() || curP;
-    if(!rVal || !pVal) return alert("部屋情報がありません。");
-
-    // IDとパスワードをBase64で難読化 (r:p 形式)
+    if(!rVal || !pVal) return alert("情報がありません。");
     const secret = btoa(encodeURIComponent(rVal + ":" + pVal));
     const url = `${location.origin}${location.pathname}?s=${secret}`;
     
-    let success = false;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        try { await navigator.clipboard.writeText(url); success = true; } catch(e) {}
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(url);
+        } else {
+            throw new Error();
+        }
+    } catch(e) {
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
     }
-    if (!success) {
-        const ta = document.createElement("textarea"); ta.value = url;
-        ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta);
-        ta.focus(); ta.select(); success = document.execCommand('copy'); document.body.removeChild(ta);
-    }
-
-    if (success) {
-        const b = $("copyBtn"); const old = b.innerHTML;
-        b.innerText = "完了！"; b.style.background = "var(--accent)";
-        setTimeout(() => { b.innerHTML = old; b.style.background = "var(--dark)"; }, 2000);
-    } else {
-        alert("URL: " + url);
-    }
+    alert("招待URLをコピーしました！");
 };
 
 $("exitBtn").onclick = async () => {
     if(curR) {
-        try {
-            await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN.split('◆')[0]} が退室`, curP), time: Date.now() });
-            await remove(ref(db, `presence/${curR}/${uid}`));
-        } catch(e) {}
+        await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN.split('◆')[0]} が退室しました`, curP), time: Date.now() });
+        await remove(ref(db, `presence/${curR}/${uid}`));
     }
     sessionStorage.clear(); location.href = location.origin + location.pathname;
 };
 $("toBottomBtn").onclick = () => $("chatWrap").scrollTop = $("chatWrap").scrollHeight;
 $("toTopBtn").onclick = () => $("chatWrap").scrollTop = 0;
-$("focusBtn").onclick = () => { $("chatWrap").scrollTop = 0; $("mi").focus(); };
+$("focusBtn").onclick = () => { $("mi").focus(); };
 
 window.onload = async () => {
     $("ni").value = localStorage.getItem("nezu_name") || "";
     $("tk").value = localStorage.getItem("nezu_tk") || "";
     await updateTrip();
-    
     const p = new URLSearchParams(window.location.search);
-    const s = p.get('s'); // 難読化パラメータ
-
+    const s = p.get('s');
     if (s) {
         try {
-            // Base64をデコードして入室
             const decoded = decodeURIComponent(atob(s)).split(':');
-            $("ri").value = decoded[0];
-            $("pi").value = decoded[1];
-            // 名前があれば自動入室、なければロビーを表示
-            if($("ni").value) {
-                join(decoded[0], decoded[1], $("ni").value + $("tp").innerText);
-            } else {
-                $("lobby").style.display = "flex";
-            }
-        } catch(e) {
-            $("lobby").style.display = "flex";
-        }
+            $("ri").value = decoded[0]; $("pi").value = decoded[1];
+            if($("ni").value) join(decoded[0], decoded[1], $("ni").value + $("tp").innerText);
+            else $("lobby").style.display = "flex";
+        } catch(e) { $("lobby").style.display = "flex"; }
     } else {
         const active = sessionStorage.getItem("nezu_active_session");
-        if(active) { 
-            const d = JSON.parse(active); join(d.r, d.p, d.n, true); 
-        } else {
-            $("lobby").style.display = "flex";
-        }
+        if(active) { const d = JSON.parse(active); join(d.r, d.p, d.n, true); } else { $("lobby").style.display = "flex"; }
     }
 };
 </script>
