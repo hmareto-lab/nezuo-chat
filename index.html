@@ -157,7 +157,8 @@ async function join(rID, pass, name, trip) {
         $("list").innerHTML = "";
         s.forEach(c => {
             const m = c.val(), txt = dec(m.text, curP); if(!txt) return;
-            const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+            // ここで秒数まで表示するように修正しました
+            const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
             const div = document.createElement("div"); div.className = "msg-wrap";
             if(m.type === "sys") div.innerHTML = `<div class="sys-msg">${esc(txt)}</div>`;
             else div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(dec(m.nEnc,curP))}${esc(dec(m.tEnc,curP))}</div><div class="msg"><div class="msg-text">${esc(txt)}</div></div><div class="msg-meta">${time}</div>`;
