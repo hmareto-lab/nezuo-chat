@@ -34,6 +34,8 @@
         #presenceList { display:flex; flex-wrap:wrap; gap:4px; flex:1; max-height:56px; overflow-y:auto; scrollbar-width:none; }
         #presenceList::-webkit-scrollbar { display:none; }
         .user-chip { background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; font-size:10px; white-space:nowrap; height:18px; display:inline-flex; align-items:center; }
+        /* 【追加】自分（Myチップ）専用のスタイル */
+        .user-chip.me { background:var(--accent); font-weight:bold; }
         #chatWrap{ flex:1; overflow-y:auto; padding:15px 12px; background:#f7f8fa; display:flex; flex-direction:column; }
         #list { display:flex; flex-direction:column-reverse; gap:12px; }
         .msg-wrap{ display:flex; flex-direction:column; }
@@ -134,53 +136,85 @@ async function join(rID, pass, name, trip) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
 
-    // --- 【修正】まず自分自身の古いプレゼンスを完全に削除（クリーンアップ） ---
-    await remove(myPres);
+    const targetTrip = trip || "";
 
-    // 最新の入室状況を再取得
     const snap = await get(presRef);
     const usersExist = snap.val() || {};
-    let isRe入室 = false;
+    
+    let isReEnter = false;
+    let isNameDup = false;
+    let isTripDup = false;
 
     for (const key in usersExist) {
-        // 自分（UID一致）は既に消したので、ここに来るのは「他人」または「別端末の自分」
+        if (key === uid) {
+            isReEnter = true; 
+            continue;
+        }
+
         const existN = dec(usersExist[key].nEnc, pass);
         const existT = dec(usersExist[key].tEnc, pass) || "";
-        
-        // 名前とトリップが完全一致する場合のみ「本人（再入室）」とみなす
-        if (existN === name && existT === trip) {
-            isRe入室 = true; 
-            await remove(ref(db, `presence/${curR}/${key}`)); // 別端末の情報を消す
-            continue; 
-        }
 
-        // なりすまし防止判定
+        if (!existN) continue; 
+
         if (existN === name) {
-            $("errMsg").innerText = "その名前は既に別のトリップで使用されています。";
-            $("errMsg").style.display = "block"; return;
+            isNameDup = true;
         }
-        if (trip !== "" && existT === trip) {
-            $("errMsg").innerText = "そのトリップは既に別の名前で使用されています。";
-            $("errMsg").style.display = "block"; return;
+        if (targetTrip !== "" && existT === targetTrip) {
+            isTripDup = true;
         }
     }
 
-    // UI切り替え
+    if (!isReEnter) {
+        if (isNameDup) {
+            $("errMsg").innerText = "その名前は既に部屋内で使用されています。";
+            $("errMsg").style.display = "block";
+            return;
+        }
+        if (isTripDup) {
+            $("errMsg").innerText = "その本人確認キー(トリップ)は既に別の名前で使用されています。";
+            $("errMsg").style.display = "block";
+            return;
+        }
+    }
+
+    await remove(myPres);
+
     $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
     
-    // 完全一致での再入室でない場合のみログ送信
-    if (!isRe入室) {
-        await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
+    if (!isReEnter) {
+        await push(chatRef, { type: "sys", text: enc(`${name}${targetTrip}さんが入室しました`, pass), time: serverTimestamp() });
     }
     
+    // --- 【修正】リアルタイム入室者リスト監視（自分を先頭にソート） ---
     onValue(presRef, s => {
-        const u = s.val() || {}; const list = $("presenceList"); list.innerHTML = "";
+        const u = s.val() || {}; 
+        const list = $("presenceList"); 
+        list.innerHTML = "";
+        
         let count = 0;
-        Object.keys(u).forEach(k => {
+        
+        // オブジェクトのキーを「自分が先頭」になるように並び替え
+        const sortedKeys = Object.keys(u).sort((a, b) => {
+            if (a === uid) return -1; // 自分のUID(a)を前に
+            if (b === uid) return 1;  // 自分のUID(b)を前に
+            return 0;                 // 他人同士は順不同
+        });
+
+        sortedKeys.forEach(k => {
             const n = dec(u[k].nEnc, curP);
             if(n) { 
-                count++; const span = document.createElement("span"); span.className="user-chip"; 
-                span.innerText = n + (dec(u[k].tEnc, curP)||""); list.appendChild(span); 
+                count++; 
+                const span = document.createElement("span"); 
+                
+                // 自分のチップかどうかの判定
+                if (k === uid) {
+                    span.className = "user-chip me"; // 緑色の専用クラスを付与
+                    span.innerText = n + (dec(u[k].tEnc, curP)||"") + " (あなた)";
+                } else {
+                    span.className = "user-chip";
+                    span.innerText = n + (dec(u[k].tEnc, curP)||""); 
+                }
+                list.appendChild(span); 
             }
         });
         userCount = count;
@@ -201,7 +235,7 @@ async function join(rID, pass, name, trip) {
 
     const upd = async () => {
         const now = Date.now();
-        await set(myPres, { nEnc: enc(name, pass), tEnc: enc(trip, pass), last: now });
+        await set(myPres, { nEnc: enc(name, pass), tEnc: enc(targetTrip, pass), last: now });
         const [pS, cS] = await Promise.all([get(presRef), get(query(chatRef, orderByChild("time"), limitToLast(1)))]);
         const us = pS.val() || {}, ms = cS.val() || {};
         Object.keys(us).forEach(async k => { 
