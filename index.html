@@ -512,29 +512,16 @@ async function join(rID, pass, name, trip) {
     let isReEntry = false;
 
     try {
-        const snap = await get(presRef);
-        if (snap.exists()) {
-            const users = snap.val() || {};
-            const NOW = Date.now();
-            
-            if (users[uid]) {
-                const oldN = dec(users[uid].nEnc, pass);
-                const oldT = dec(users[uid].tEnc, pass) || "";
-                if (oldN === name && oldT === trip) {
-                    isReEntry = true;
-                } else {
-                    showLobby("以前の接続情報（名前・本人確認キー）と一致しません");
-                    return;
-                }
-            }
-            
-            for (const k in users) {
-                if (k === uid) continue;
-                const lastSeen = users[k].lastSeen || NOW;
-                if (NOW - lastSeen > USER_TIMEOUT) continue;
-
-                if (dec(users[k].nEnc, pass) === name) { showLobby("その名前は既に使用されています"); return; }
-                if ((dec(users[k].tEnc, pass) || "") === trip) { showLobby("そのキーは既に使用されています"); return; }
+        // 【爆速化】認証時は、自分の過去データが存在するか（再入室か）の検証のみに絞る（全件ダウンロードを廃止）
+        const mySnap = await get(myRef);
+        if (mySnap.exists()) {
+            const oldN = dec(mySnap.val().nEnc, pass);
+            const oldT = dec(mySnap.val().tEnc, pass) || "";
+            if (oldN === name && oldT === trip) {
+                isReEntry = true;
+            } else {
+                showLobby("以前の接続情報（名前・本人確認キー）と一致しません");
+                return;
             }
         }
     } catch (e) {
@@ -547,25 +534,27 @@ async function join(rID, pass, name, trip) {
     $("mainApp").style.display = "flex";
 
     try {
-        const rSnap = await get(roomRef);
-        if (!rSnap.exists()) {
-            await set(roomRef, { deleteAt: Date.now() + ROOM_LIFETIME });
-        }
+        // 【爆速化】サーバーへの通信を Promise.all で完全並列化（通信の往復待ちをカット）
+        const tasks = [
+            set(myRef, {
+                nEnc: enc(name, pass),
+                tEnc: enc(trip, pass),
+                lastSeen: serverTimestamp()
+            }),
+            set(roomRef, { deleteAt: Date.now() + ROOM_LIFETIME })
+        ];
 
-        await set(myRef, {
-            nEnc: enc(name, pass),
-            tEnc: enc(trip, pass),
-            lastSeen: serverTimestamp()
-        });
-        // 【重要】onDisconnect を削除し、10分放置されるまでリストに残り続けるように変更
+        // 【仕様固定】onDisconnect().remove() を排除し、10分のタイムアウトまで強制残存
 
         if (!isReEntry) {
-            await push(chatRef, {
+            tasks.push(push(chatRef, {
                 type: "sys",
                 text: enc(`${name}${trip}さんが入室しました`, pass),
                 time: serverTimestamp()
-            });
+            }));
         }
+
+        await Promise.all(tasks);
     } catch (e) {
         console.error(e);
         showLobby("サーバーへの初期書き込みに失敗しました。");
@@ -786,7 +775,8 @@ $("enterBtn").onclick = async () => {
     localStorage.setItem("nez_n", n);
     localStorage.setItem("nez_t", tk);
 
-    const tpString = await generateTripString(n, tk);
+    // 【爆速化】すでに画面上にプレビュー生成されているトリップ文字列をそのまま使うことで、入室時の再計算タイムを削減
+    const tpString = $("tp").innerText || "";
     join(r, p, n, tpString);
 };
 
