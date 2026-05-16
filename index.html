@@ -1,316 +1,772 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-    <title>NEZU ONETIME CHAT</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <style>
-        *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        :root{ --primary:#007aff; --bg:#f2f4f7; --accent:#28a745; --danger:#d9363e; --dark:#2c3e50; }
-        html,body{ margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); font-family:-apple-system,sans-serif; }
-        body{ display:flex; justify-content:center; } 
-        #lobby, #mainApp { display:none; }
-        #mainApp{ flex-direction:column; width:100%; height:100svh; max-width:800px; background:#fff; position:relative; }
-        #lobby{ position:fixed; inset:0; justify-content:center; align-items:center; background:linear-gradient(135deg,#f5f7fa,#c3cfe2); z-index:1000; display:flex; }
-        .lobby-content{ width:90%; max-width:380px; background:#fff; border-radius:28px; padding:25px; box-shadow:0 20px 40px rgba(0,0,0,.15); display:flex; flex-direction:column; gap:12px; max-height: 95vh; overflow-y: auto; }
-        .lobby-input{ width:100%; height:46px; border:1px solid #eee; border-radius:12px; background:#f9fbff; padding:0 15px; font-size:16px; outline:none; }
-        .error-msg { color: var(--danger); font-size: 12px; font-weight: bold; text-align: center; display: none; background: #fff0f0; padding: 10px; border-radius: 12px; border: 1px solid #ffdada; margin-bottom: 5px; }
-        .info-box { background:#f8f9fa; border-radius:16px; padding:15px; font-size:12px; line-height:1.6; color:#495057; border:1px solid #efefef; }
-        .info-title { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:bold; color:var(--dark); }
-        .info-title span { color:var(--primary); font-size:16px; }
-        .rules-link { font-size:12px; text-align:center; margin:5px 0; color:var(--primary); text-decoration:underline; cursor:pointer; font-weight:bold; }
-        #modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(5px); padding:20px; }
-        .modal-content { width:100%; max-width:360px; background:#fff; border-radius:24px; padding:20px; max-height:90vh; position:relative; }
-        .modal-body { font-size:12px; color:#555; white-space:pre-wrap; line-height:1.5; }
-        .modal-btn-close { width:100%; height:44px; background:var(--primary); color:#fff; border:none; border-radius:12px; margin-top:15px; font-weight:bold; cursor:pointer; }
-        #header{ background:#fff; border-bottom:1px solid #ececec; padding-top:env(safe-area-inset-top); z-index: 10; }
-        .app-header-top{ display:flex; align-items:flex-end; gap:0; padding:12px; }
-        textarea{ flex:1; height:42px; min-height:42px; max-height:120px; padding:10px 15px; background:#f1f3f5; border-radius:20px 0 0 20px; font-size:16px; border:none; outline:none; scrollbar-width:none; overflow-y:auto; margin-right:-1px; resize:none; }
-        #clearBtn { width:36px; height:42px; background:#f1f3f5; border:none; color:#adb5bd; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-right:-1px; }
-        #sendBtn{ width:70px; height:42px; border:none; border-radius: 0 20px 20px 0; background:var(--primary); color:#fff; font-weight:800; cursor:pointer; }
-        .room-info-bar{ display:flex; justify-content:space-between; align-items:flex-start; padding:6px 12px; border-top:1px solid #f6f6f6; background:#fcfcfc; gap:10px; }
-        .info-item{ background:#f1f1f1; padding:3px 8px; border-radius:5px; font-size:10px; font-weight:700; color:#666; white-space:nowrap; }
-        #presenceList { display:flex; flex-wrap:wrap; gap:4px; flex:1; max-height:56px; overflow-y:auto; scrollbar-width:none; }
-        #presenceList::-webkit-scrollbar { display:none; }
-        .user-chip { background:var(--primary); color:#fff; padding:2px 8px; border-radius:10px; font-size:10px; white-space:nowrap; height:18px; display:inline-flex; align-items:center; }
-        .user-chip.me { background:var(--accent); font-weight:bold; }
-        #chatWrap{ flex:1; overflow-y:auto; padding:15px 12px; background:#f7f8fa; display:flex; flex-direction:column; }
-        #list { display:flex; flex-direction:column-reverse; gap:12px; }
-        .msg-wrap{ display:flex; flex-direction:column; }
-        .msg{ background:#fff; border-radius:18px; padding:8px 14px; max-width:85%; box-shadow:0 1px 2px rgba(0,0,0,.05); align-self:flex-start; }
-        .msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
-        .msg-text a { color: var(--primary); text-decoration: underline; }
-        .msg-meta{ font-size:10px; color:#999; margin:4px 0 0 8px; }
-        .sys-msg{ align-self:center; color:#555; font-size:11px; font-weight:bold; margin:10px 0; background:#e9ecef; padding:4px 12px; border-radius:12px; }
-        #footer{ background:#fff; border-top:1px solid #ececec; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); }
-        .footer-nav{ display:grid; grid-template-columns: 50px 44px 44px 1fr 70px; gap:8px; align-items:center; }
-        .btn{ border:none; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; height:42px; cursor:pointer; font-size:11px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>NEZU ONETIME CHAT</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+:root{
+    --primary:#007aff;
+    --bg:#f2f4f7;
+    --accent:#28a745;
+    --danger:#d9363e;
+    --dark:#2c3e50;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:var(--bg);
+    font-family:-apple-system,sans-serif;
+}
+
+body{
+    display:flex;
+    justify-content:center;
+}
+
+#lobby,#mainApp{
+    display:none;
+}
+
+#mainApp{
+    flex-direction:column;
+    width:100%;
+    height:100svh;
+    max-width:800px;
+    background:#fff;
+    position:relative;
+}
+
+#lobby{
+    position:fixed;
+    inset:0;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#f5f7fa,#c3cfe2);
+    z-index:1000;
+    display:flex;
+}
+
+.lobby-content{
+    width:90%;
+    max-width:380px;
+    background:#fff;
+    border-radius:28px;
+    padding:25px;
+    box-shadow:0 20px 40px rgba(0,0,0,.15);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    max-height:95vh;
+    overflow-y:auto;
+}
+
+.lobby-input{
+    width:100%;
+    height:46px;
+    border:1px solid #eee;
+    border-radius:12px;
+    background:#f9fbff;
+    padding:0 15px;
+    font-size:16px;
+    outline:none;
+}
+
+.error-msg{
+    color:var(--danger);
+    font-size:12px;
+    font-weight:bold;
+    text-align:center;
+    display:none;
+    background:#fff0f0;
+    padding:10px;
+    border-radius:12px;
+    border:1px solid #ffdada;
+}
+
+.info-box{
+    background:#f8f9fa;
+    border-radius:16px;
+    padding:15px;
+    font-size:12px;
+    line-height:1.6;
+    color:#495057;
+    border:1px solid #efefef;
+}
+
+.info-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:6px;
+    font-weight:bold;
+    color:var(--dark);
+}
+
+#header{
+    background:#fff;
+    border-bottom:1px solid #ececec;
+    padding-top:env(safe-area-inset-top);
+}
+
+.app-header-top{
+    display:flex;
+    align-items:flex-end;
+    padding:12px;
+}
+
+textarea{
+    flex:1;
+    height:42px;
+    min-height:42px;
+    max-height:120px;
+    padding:10px 15px;
+    background:#f1f3f5;
+    border-radius:20px 0 0 20px;
+    font-size:16px;
+    border:none;
+    outline:none;
+    resize:none;
+    overflow-y:auto;
+    margin-right:-1px;
+}
+
+#clearBtn{
+    width:36px;
+    height:42px;
+    background:#f1f3f5;
+    border:none;
+    color:#adb5bd;
+    font-size:20px;
+    margin-right:-1px;
+}
+
+#sendBtn{
+    width:70px;
+    height:42px;
+    border:none;
+    border-radius:0 20px 20px 0;
+    background:var(--primary);
+    color:#fff;
+    font-weight:800;
+}
+
+.room-info-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    padding:6px 12px;
+    border-top:1px solid #f6f6f6;
+    background:#fcfcfc;
+    gap:8px;
+}
+
+.info-item{
+    background:#f1f1f1;
+    padding:3px 8px;
+    border-radius:5px;
+    font-size:10px;
+    font-weight:700;
+    color:#666;
+    white-space:nowrap;
+}
+
+#presenceList{
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px;
+    flex:1;
+    max-height:56px;
+    overflow-y:auto;
+    scrollbar-width:none;
+}
+
+#presenceList::-webkit-scrollbar{
+    display:none;
+}
+
+.user-chip{
+    background:var(--primary);
+    color:#fff;
+    padding:2px 8px;
+    border-radius:10px;
+    font-size:10px;
+    white-space:nowrap;
+    height:18px;
+    display:inline-flex;
+    align-items:center;
+}
+
+#chatWrap{
+    flex:1;
+    overflow-y:auto;
+    padding:15px 12px;
+    background:#f7f8fa;
+    display:flex;
+    flex-direction:column;
+}
+
+#list{
+    display:flex;
+    flex-direction:column-reverse;
+    gap:12px;
+}
+
+.msg-wrap{
+    display:flex;
+    flex-direction:column;
+}
+
+.msg{
+    background:#fff;
+    border-radius:18px;
+    padding:8px 14px;
+    max-width:85%;
+    box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+
+.msg-text{
+    font-size:15px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    word-break:break-word;
+}
+
+.msg-text a{
+    color:var(--primary);
+}
+
+.msg-meta{
+    font-size:10px;
+    color:#999;
+    margin:4px 0 0 8px;
+}
+
+.sys-msg{
+    align-self:center;
+    color:#555;
+    font-size:11px;
+    font-weight:bold;
+    margin:10px 0;
+    background:#e9ecef;
+    padding:4px 12px;
+    border-radius:12px;
+}
+
+#footer{
+    background:#fff;
+    border-top:1px solid #ececec;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+}
+
+.footer-nav{
+    display:grid;
+    grid-template-columns:50px 44px 44px 1fr 70px;
+    gap:8px;
+    align-items:center;
+}
+
+.btn{
+    border:none;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    height:42px;
+    cursor:pointer;
+    font-size:11px;
+}
+</style>
 </head>
 <body>
 
-<div id="modal" onclick="this.style.display='none'">
-    <div class="modal-content">
-        <div id="modalText" class="modal-body"></div>
-        <button class="modal-btn-close">閉じる</button>
-    </div>
-</div>
-
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
+
         <div style="text-align:center;">
             <h2 style="color:var(--primary);margin:0;font-size:24px;">NEZU ONETIME CHAT</h2>
-            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#999;">誰でも簡単に使える、安心な消えるチャット</p>
+            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#999;">
+                誰でも簡単に使える、安心な消えるチャット
+            </p>
         </div>
+
         <div class="info-box">
-            <div class="info-title"><span>🔒</span>システム概要</div>
-            当ルームは、全利用者の退室に伴い通信履歴が自動消滅する一時的なチャットシステムです。AES-256規格による暗号化を実装しており、運営者を含む第三者による内容の傍受は不可能です。
+            <div class="info-title">🔒 システム概要</div>
+            最後の通常発言から30分経過すると、誰も部屋にいてもいなくてもサーバーからデータが即時完全消滅する暗号化チャットです。
         </div>
+
         <div id="errMsg" class="error-msg"></div>
-        <input id="ni" class="lobby-input" maxlength="10" placeholder="表示名（必須）">
-        <div>
-            <input id="tk" class="lobby-input" placeholder="本人確認用キー（必須）">
-            <div id="tp" style="font-size:11px;color:var(--accent);text-align:right;height:18px;font-weight:bold;margin-top:2px;"></div>
-        </div>
+
+        <input id="ni" class="lobby-input" maxlength="10" placeholder="表示名">
+        <input id="tk" class="lobby-input" placeholder="本人確認キー">
+        <div id="tp" style="font-size:11px;color:var(--accent);text-align:right;height:18px;font-weight:bold;"></div>
+
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="暗号化パスワード">
-        <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:#f0f7ff;border-radius:12px;color:var(--primary);cursor:pointer;font-weight:bold;font-size:12px;">🎲 認証情報の自動生成</button>
-        <div class="rules-link" onclick="showRules()">利用規約および免責事項を確認</div>
-        <button id="enterBtn" style="width:100%;height:60px;border:none;border-radius:20px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;cursor:pointer;">認証して入室</button>
+
+        <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:#f0f7ff;border-radius:12px;color:var(--primary);font-weight:bold;">
+            🎲 認証情報の自動生成
+        </button>
+
+        <button id="enterBtn" style="width:100%;height:60px;border:none;border-radius:20px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;margin-top:8px;">
+            認証して入室
+        </button>
+
     </div>
 </div>
 
 <div id="mainApp">
-    <header id="header">
-        <div class="app-header-top"><textarea id="mi" placeholder="メッセージを作成..." maxlength="500"></textarea><button id="clearBtn">×</button><button id="sendBtn">送信</button></div>
-        <div class="room-info-bar">
-            <div id="roomDisplay" class="info-item"></div>
-            <div id="presenceList"></div>
-            <div id="presenceCount" style="font-size:10px;color:#999;font-weight:bold;padding-top:3px;"></div>
-        </div>
-    </header>
-    <main id="chatWrap"><div id="list"></div></main>
-    <footer id="footer">
-        <div class="footer-nav">
-            <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
-            <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
-            <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
-            <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URL</button>
-            <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
-        </div>
-    </footer>
+
+<header id="header">
+
+    <div class="app-header-top">
+        <textarea id="mi" placeholder="メッセージを作成..." maxlength="500"></textarea>
+        <button id="clearBtn">×</button>
+        <button id="sendBtn">送信</button>
+    </div>
+
+    <div class="room-info-bar">
+        <div id="roomDisplay" class="info-item"></div>
+
+        <div id="presenceList"></div>
+
+        <div id="presenceCount" style="font-size:10px;color:#999;font-weight:bold;padding-top:3px;"></div>
+    </div>
+
+</header>
+
+<main id="chatWrap">
+    <div id="list"></div>
+</main>
+
+<footer id="footer">
+
+    <div class="footer-nav">
+
+        <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
+
+        <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
+
+        <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
+
+        <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URL</button>
+
+        <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
+
+    </div>
+
+</footer>
+
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, set, remove, serverTimestamp, query, orderByChild, get, limitToLast } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+import {
+initializeApp
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+
+import {
+getDatabase,
+ref,
+push,
+onValue,
+set,
+remove,
+serverTimestamp,
+query,
+orderByChild,
+get,
+limitToLast,
+update,
+onDisconnect
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
-const db = getDatabase(initializeApp({apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ", databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"}));
+
+const firebaseApp = initializeApp({
+    apiKey:"AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
+    databaseURL:"https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
+});
+const db = getDatabase(firebaseApp);
 
 let uid = localStorage.getItem("nez_uid");
-if(!uid){ uid = crypto.randomUUID(); localStorage.setItem("nez_uid", uid); }
+if(!uid){
+    uid = crypto.randomUUID();
+    localStorage.setItem("nez_uid",uid);
+}
 
-let curR, curP, curN, curT, rawR, lastT=0, userCount=0;
+let curR,curP,curN,curT,rawR;
+let lastT = 0;
+let userCount = 0;
 
-const scrollUp = () => $("chatWrap").scrollTo({top: 0, behavior: 'smooth'});
+// データ寿命：30分（30 * 60 * 1000 ミリ秒）
+const ROOM_LIFETIME = 30 * 60 * 1000; 
+
+const scrollUp = () => {
+    const wrap = $("chatWrap");
+    if(wrap) {
+        wrap.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
+    }
+};
+
 const hash = t => CryptoJS.SHA256(t).toString();
 const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
-const dec = (c,k) => { try { return CryptoJS.AES.decrypt(c,k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
-const esc = t => (t||"").replace(/[&<>"']/g,c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const dec = (c,k) => {
+    try{
+        if(!c) return null;
+        const bytes = CryptoJS.AES.decrypt(c,k);
+        return bytes.toString(CryptoJS.enc.Utf8)||null;
+    }catch{
+        return null;
+    }
+};
+
+const esc = t =>
+(t||"").replace(/[&<>"']/g,c=>({
+"&":"&amp;",
+"<":"&lt;",
+">":"&gt;",
+'"':"&quot;",
+"'":"&#39;"
+}[c]));
 
 const linkify = t => {
     const escaped = esc(t);
-    const urlPattern = /(https?:\/\/[^\s]+)/g;
-    return escaped.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    return escaped.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank">$1</a>'
+    );
 };
 
-window.showRules = () => {
-    $("modalText").innerText = "【利用規約および運用ポリシー】\n\n1. データの消滅について\n当システムは揮発性の高い環境で運用されています。滞在者が0名となった時点で、データベース上の全暗号化ログは即時に完全抹消されます。\n\n2. セキュリティと機密保持\nすべての通信内容は、エンドユーザーの端末上でAES-256暗号化処理が行われます。パスワードの保持者以外、第三者が内容を閲覧することは技術的に不可能です。";
-    $("modal").style.display = "flex";
-};
+async function join(rID,pass,name,trip){
+    rawR = rID;
+    curR = hash(rID);
+    curP = pass;
+    curN = name;
+    curT = trip;
 
-async function join(rID, pass, name, trip) {
-    rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
-    const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), myPres = ref(db, `presence/${curR}/${uid}`);
+    const chatRef = ref(db,`chat/${curR}`);
+    const presRef = ref(db,`presence/${curR}`);
+    const roomRef = ref(db,`rooms/${curR}`);
+    const myRef = ref(db,`presence/${curR}/${uid}`);
 
-    const snap = await get(presRef);
-    const usersExist = snap.val() || {};
-    
-    let isReEnter = false;
-    let isNameDup = false;
-    let isTripDup = false;
+    try {
+        const snap = await get(presRef);
+        if(snap.exists()){
+            const users = snap.val() || {};
+            
+            if(users[uid]){
+                const oldN = dec(users[uid].nEnc, pass);
+                const oldT = dec(users[uid].tEnc, pass) || "";
+                if(!oldN || oldN !== name || oldT !== trip){
+                    $("errMsg").innerText = "同一端末では正しいパスワードと、同じ名前・キーでのみ再入室できます";
+                    $("errMsg").style.display = "block";
+                    return;
+                }
+            }
 
-    // データベース内に既に存在する「自分のセッション」を取得
-    const myOldSession = usersExist[uid];
+            for(const k in users){
+                if(k === uid) continue;
+                const n = dec(users[k].nEnc, pass);
+                const t = dec(users[k].tEnc, pass) || "";
 
-    if (myOldSession) {
-        // 【修正】同一UIDのデータがある場合、名前とトリップを復号
-        const oldN = dec(myOldSession.nEnc, pass);
-        const oldT = dec(myOldSession.tEnc, pass) || "";
-        
-        // 直前と「同じ名前」かつ「同じトリップ」の時だけシームレス復活を許可
-        if (oldN === name && oldT === trip) {
-            isReEnter = true;
-        } else {
-            // 名前かトリップが変わっていたら、なりすまし・不正とみなして弾く
-            $("errMsg").innerText = "一度入室した端末からは、同じ名前・同じキーでないと再入室できません。";
-            $("errMsg").style.display = "block";
-            return;
+                if(n && n === name){
+                    $("errMsg").innerText = "その名前は既に使用されています";
+                    $("errMsg").style.display = "block";
+                    return;
+                }
+                if(t && t === trip){
+                    $("errMsg").innerText = "そのキーは既に使用されています";
+                    $("errMsg").style.display = "block";
+                    return;
+                }
+            }
         }
+    } catch(e) {
+        console.error(e);
     }
 
-    // 他人の重複チェック
-    for (const key in usersExist) {
-        if (key === uid) continue; // 自分のUIDは上で処理済みなのでスキップ
+    $("roomDisplay").innerText = rID;
+    $("lobby").style.display = "none";
+    $("mainApp").style.display = "flex";
 
-        const existN = dec(usersExist[key].nEnc, pass);
-        const existT = dec(usersExist[key].tEnc, pass) || "";
+    await set(myRef,{
+        nEnc:enc(name,pass),
+        tEnc:enc(trip,pass),
+        lastSeen:Date.now()
+    });
 
-        if (!existN) continue; 
+    await push(chatRef,{
+        type:"sys",
+        text:enc(`${name}${trip}さんが入室しました`,pass),
+        time:serverTimestamp()
+    });
 
-        if (existN === name) { isNameDup = true; }
-        if (existT === trip) { isTripDup = true; }
-    }
+    onDisconnect(myRef).remove();
 
-    if (!isReEnter) {
-        if (isNameDup) {
-            $("errMsg").innerText = "その名前は既に部屋内で使用されています。";
-            $("errMsg").style.display = "block";
-            return;
-        }
-        if (isTripDup) {
-            $("errMsg").innerText = "その本人確認キー(トリップ)は既に別の名前で使用されています。";
-            $("errMsg").style.display = "block";
-            return;
-        }
-    }
-
-    await remove(myPres);
-
-    $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
-    
-    if (!isReEnter) {
-        await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: serverTimestamp() });
-    }
-    
-    onValue(presRef, s => {
-        const u = s.val() || {}; 
-        const list = $("presenceList"); 
+    onValue(presRef, s=>{
+        if(!curR) return;
+        const users = s.val() || {};
+        const list = $("presenceList");
         list.innerHTML = "";
         let count = 0;
-        
-        const sortedKeys = Object.keys(u).sort((a, b) => {
-            if (a === uid) return -1;
-            if (b === uid) return 1;
-            return 0;
+
+        Object.keys(users).forEach(k=>{
+            const n = dec(users[k].nEnc,curP);
+            const t = dec(users[k].tEnc,curP)||"";
+            if(!n) return;
+            count++;
+
+            const span = document.createElement("span");
+            span.className = "user-chip";
+            span.innerText = n + t;
+            list.appendChild(span);
         });
 
-        sortedKeys.forEach(k => {
-            const n = dec(u[k].nEnc, curP);
-            if(n) { 
-                count++; 
-                const span = document.createElement("span"); 
-                if (k === uid) {
-                    span.className = "user-chip me"; 
-                    span.innerText = n + (dec(u[k].tEnc, curP)||"") + " (あなた)";
-                } else {
-                    span.className = "user-chip";
-                    span.innerText = n + (dec(u[k].tEnc, curP)||""); 
-                }
-                list.appendChild(span); 
-            }
-        });
         userCount = count;
         $("presenceCount").innerText = `(${count}名)`;
     });
 
-    onValue(query(chatRef, orderByChild("time")), s => {
+    onValue(query(chatRef,orderByChild("time")),s=>{
         $("list").innerHTML = "";
-        s.forEach(c => {
-            const m = c.val(), txt = dec(m.text, curP); if(!txt) return;
-            const time = new Date(m.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-            const div = document.createElement("div"); div.className = "msg-wrap";
-            if(m.type === "sys") div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
-            else div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(dec(m.nEnc,curP))}${esc(dec(m.tEnc,curP))}</div><div class="msg"><div class="msg-text">${linkify(txt)}</div></div><div class="msg-meta">${time}</div>`;
+        s.forEach(c=>{
+            const m = c.val();
+            const txt = dec(m.text,curP);
+            if(!txt) return;
+
+            const div = document.createElement("div");
+            div.className = "msg-wrap";
+
+            const time = new Date(m.time).toLocaleTimeString([],{
+                hour:"2-digit",
+                minute:"2-digit",
+                second:"2-digit"
+            });
+
+            if(m.type === "sys"){
+                div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
+            }else{
+                const senderName = dec(m.nEnc,curP) || "???";
+                const senderTrip = dec(m.tEnc,curP) || "";
+                div.innerHTML =
+                `
+                <div style="margin-left:8px;font-size:10px;font-weight:bold;">
+                    ${esc(senderName)}${esc(senderTrip)}
+                </div>
+                <div class="msg">
+                    <div class="msg-text">${linkify(txt)}</div>
+                </div>
+                <div class="msg-meta">${time}</div>
+                `;
+            }
             $("list").appendChild(div);
         });
     });
 
-    const upd = async () => {
-        const now = Date.now();
-        await set(myPres, { nEnc: enc(name, pass), tEnc: enc(trip, pass), last: now });
-        const [pS, cS] = await Promise.all([get(presRef), get(query(chatRef, orderByChild("time"), limitToLast(1)))]);
-        const us = pS.val() || {}, ms = cS.val() || {};
-        Object.keys(us).forEach(async k => { 
-            if (us[k].last && (now - us[k].last > 600000)) { 
-                const tN = dec(us[k].nEnc, curP), tT = dec(us[k].tEnc, curP) || "";
-                await remove(ref(db, `presence/${curR}/${k}`));
-                if(tN) await push(chatRef, { type: "sys", text: enc(`${tN}${tT}さんは長時間操作がなかったため退出しました`, curP), time: serverTimestamp() });
-            } 
-        });
-        let lT = 0; if(ms) lT = Object.values(ms)[0].time || 0;
-        if (Object.keys(us).length === 0 || (lT > 0 && now - lT > 600000)) {
-            await remove(chatRef); await remove(presRef);
+    // 1分ごとに動作する部屋のデータ寿命チェック
+    const updater = async()=>{
+        if(!curR) return;
+        
+        // 自身のオンライン状態維持用
+        await update(myRef,{ lastSeen:Date.now() });
+
+        const roomSnap = await get(roomRef);
+        if(roomSnap.exists()){
+            const rData = roomSnap.val();
+            // 最後の通常発言から30分を過ぎていた場合、一斉に完全消去
+            if(rData.deleteAt && Date.now() > rData.deleteAt){
+                curR = null; 
+                await remove(chatRef);
+                await remove(presRef);
+                await remove(roomRef);
+                alert("最後の発言から30分が経過したため、部屋が自動消滅しました。");
+                location.reload();
+                return;
+            }
+        }
+
+        // 消し忘れ防止（バックアップ）：会話が一切始まっておらず、かつ誰もいなくなった場合のみ削除
+        // ※一度でも会話が始まっていれば、deleteAt があるため上記の発言30分判定が優先されます。
+        const pSnap = await get(presRef);
+        if(!pSnap.exists() || Object.keys(pSnap.val()).length === 0){
+            const cSnap = await get(chatRef);
+            if(!cSnap.exists()){
+                await remove(chatRef);
+                await remove(presRef);
+                await remove(roomRef);
+            }
         }
     };
-    upd(); setInterval(upd, 10000);
+
+    updater();
+    setInterval(updater,60000);
 }
 
-const sendMsg = async () => {
-    const v = $("mi").value.trim(); if(!v||Date.now()-lastT<300) return;
-    lastT=Date.now(); 
-    await push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: serverTimestamp() });
-    $("mi").value = ""; $("mi").style.height="42px"; scrollUp();
-};
+const sendMsg = async()=>{
+    const v = $("mi").value.trim();
+    if(!v) return;
+    if(Date.now() - lastT < 300) return;
+    lastT = Date.now();
 
-$("exitBtn").onclick = async () => {
-    const confirmMsg = (userCount === 1) ? "あなたが退出するとこの部屋の履歴はすべて消滅します。よろしいですか？" : "退出しますか？";
-    if (!confirm(confirmMsg)) return;
-    await push(ref(db, `chat/${curR}`), { type: "sys", text: enc(`${curN}${curT}さんが退出しました`, curP), time: serverTimestamp() });
-    await remove(ref(db, `presence/${curR}/${uid}`));
-    location.reload();
+    try {
+        await push(ref(db,`chat/${curR}`),{
+            nEnc:enc(curN,curP),
+            tEnc:enc(curT,curP),
+            text:enc(v,curP),
+            time:serverTimestamp()
+        });
+
+        // 発言した瞬間に、寿命を「現在の端末時間 + 30分」にリセット更新
+        await set(ref(db,`rooms/${curR}`),{ 
+            deleteAt: Date.now() + ROOM_LIFETIME 
+        });
+    } catch(e) {
+        console.error(e);
+    }
+
+    $("mi").value = "";
+    $("mi").style.height = "42px"; 
+    scrollUp();
 };
 
 $("sendBtn").onclick = sendMsg;
-$("mi").onkeydown = (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMsg(); } };
-$("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
-$("clearBtn").onclick = () => { $("mi").value = ""; $("mi").focus(); };
 
-$("enterBtn").onclick = () => {
-    $("errMsg").style.display = "none";
-    const r=$("ri").value.trim(), p=$("pi").value.trim(), n=$("ni").value.trim(), tk=$("tk").value.trim(), tp=$("tp").innerText;
-    
-    if (!n) { $("errMsg").innerText = "名前を入力してください。"; $("errMsg").style.display = "block"; return; }
-    // 【修正】本人確認キー（トリップ）の入力必須チェック
-    if (!tk) { $("errMsg").innerText = "本人確認用キーを入力してください（必須）。"; $("errMsg").style.display = "block"; return; }
-    
-    if(r&&p){ localStorage.setItem("nez_n", n); localStorage.setItem("nez_t", $("tk").value); join(r, p, n, tp); }
-    else { $("errMsg").innerText = "部屋IDとパスワードを入力してください。"; $("errMsg").style.display = "block"; }
+$("mi").onkeydown = e=>{
+    if(e.key === "Enter" && !e.shiftKey && !e.isComposing){
+        e.preventDefault();
+        sendMsg();
+    }
 };
 
-$("copyBtn").onclick = async () => {
+$("mi").oninput = e => {
+    e.target.style.height = "42px";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+};
+
+$("focusBtn").onclick = ()=>{
+    $("mi").focus();
+    scrollUp();
+};
+
+$("clearBtn").onclick = ()=>{
+    $("mi").value = "";
+    $("mi").style.height = "42px";
+    $("mi").focus(); 
+};
+
+// 【完全修正】退出ボタンを押してもチャットデータは即削除しない仕様へ変更
+$("exitBtn").onclick = async()=>{
+    if(!confirm("退出しますか？")) return;
+
+    const rTmp = curR;
+    const pTmp = curP;
+    const nTmp = curN;
+    const tTmp = curT;
+    curR = null; 
+
+    // 切断時の自動削除登録をキャンセル
+    onDisconnect(ref(db,`presence/${rTmp}/${uid}`)).cancel();
+
+    // 誰がいようがいまいが、チャットデータ(chatRef)は削除せず、
+    // 退出する自分の生存情報（presence）だけを削除する
+    await push(ref(db,`chat/${rTmp}`),{
+        type:"sys",
+        text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
+        time:serverTimestamp()
+    });
+    
+    await remove(ref(db,`presence/${rTmp}/${uid}`));
+
+    location.reload();
+};
+
+$("enterBtn").onclick = ()=>{
+    $("errMsg").style.display = "none";
+
+    const r = $("ri").value.trim();
+    const p = $("pi").value.trim();
+    const n = $("ni").value.trim();
+    const tk = $("tk").value.trim();
+    const tp = $("tp").innerText;
+
+    if(!n){ $("errMsg").innerText = "名前を入力してください"; $("errMsg").style.display = "block"; return; }
+    if(!tk){ $("errMsg").innerText = "本人確認キーを入力してください"; $("errMsg").style.display = "block"; return; }
+    if(!r || !p){ $("errMsg").innerText = "部屋IDとパスワードを入力してください"; $("errMsg").style.display = "block"; return; }
+
+    localStorage.setItem("nez_n",n);
+    localStorage.setItem("nez_t",tk);
+
+    join(r,p,n,tp);
+};
+
+$("copyBtn").onclick = async()=>{
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
-    try { await navigator.clipboard.writeText(url); alert("コピーしました"); } catch (err) { alert(url); }
+    try{
+        await navigator.clipboard.writeText(url);
+        alert("コピーしました");
+    }catch{
+        alert(url);
+    }
 };
 
 $("toTopBtn").onclick = scrollUp;
-$("toBottomBtn").onclick = () => $("chatWrap").scrollTo({top: $("chatWrap").scrollHeight, behavior: 'smooth'});
-$("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2,10); $("pi").value = Math.random().toString(36).slice(2,12); };
 
-$("tk").oninput = async (e) => {
-    const v = e.target.value.trim(); if(!v) { $("tp").innerText = ""; return; }
+$("toBottomBtn").onclick = ()=>{
+    const wrap = $("chatWrap");
+    if(wrap) {
+        wrap.scrollTo({
+            top: wrap.scrollHeight,
+            behavior: "smooth"
+        });
+    }
+};
+
+$("masterGenBtn").onclick = ()=>{
+    $("ri").value = Math.random().toString(36).slice(2,10);
+    $("pi").value = Math.random().toString(36).slice(2,12);
+};
+
+$("tk").oninput = async e=>{
+    const v = e.target.value.trim();
+    if(!v){
+        $("tp").innerText = "";
+        return;
+    }
+
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
-    $("tp").innerText = "◆" + Array.from(new Uint8Array(b)).map(x=>x.toString(36)).join("").slice(2,8);
+    $("tp").innerText = "◆" + Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,6);
 };
 
-window.onload = () => {
-    const sN = localStorage.getItem("nez_n"), sT = localStorage.getItem("nez_t");
-    if(sN) $("ni").value = sN; if(sT) { $("tk").value = sT; $("tk").dispatchEvent(new Event('input')); }
-    const u = new URLSearchParams(window.location.search);
-    if(u.get('r') && u.get('p')) { $("ri").value = u.get('r'); $("pi").value = u.get('p'); }
+window.onload = ()=>{
+    const sN = localStorage.getItem("nez_n");
+    const sT = localStorage.getItem("nez_t");
+
+    if(sN) $("ni").value = sN;
+    if(sT){
+        $("tk").value = sT;
+        $("tk").dispatchEvent(new Event("input"));
+    }
+
+    const u = new URLSearchParams(location.search);
+    if(u.get("r")) $("ri").value = u.get("r");
+    if(u.get("p")) $("pi").value = u.get("p");
 };
+
 </script>
 </body>
 </html>
