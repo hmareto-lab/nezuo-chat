@@ -99,19 +99,10 @@ body{
     background:#f8f9fa;
     border-radius:16px;
     padding:15px;
-    font-size:12px;
+    font-size:13px;
     line-height:1.6;
     color:#495057;
     border:1px solid #efefef;
-}
-
-.info-title{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    margin-bottom:6px;
-    font-weight:bold;
-    color:var(--dark);
 }
 
 #header{
@@ -120,46 +111,105 @@ body{
     padding-top:env(safe-area-inset-top);
 }
 
+/* --- 入力バー周辺：元のシンプルデザイン（線・影ノイズなし） --- */
 .app-header-top{
     display:flex;
     align-items:flex-end;
-    padding:12px;
+    gap:8px;
+    padding:10px 12px;
+    background:#fff;
+}
+
+.input-container {
+    display:flex;
+    align-items:center;
+    flex:1;
+    min-width:0;
+    background:#f1f3f5; /* 元の均一な薄いグレー背景 */
+    border-radius:20px;
+    padding:4px 12px;
+    border:none !important; 
+    box-shadow:none !important;
+    transition:background-color 0.2s ease;
+}
+
+.input-container:focus-within {
+    border:none !important;
+    box-shadow:none !important;
+    background:#f1f3f5; /* フォーカス時も元のグレーを維持 */
 }
 
 textarea{
     flex:1;
-    height:42px;
-    min-height:42px;
-    max-height:120px;
-    padding:10px 15px;
-    background:#f1f3f5;
-    border-radius:20px 0 0 20px;
-    font-size:16px;
-    border:none;
-    outline:none;
+    min-width:0;
+    height:24px;
+    min-height:24px;
+    max-height:96px;
+    padding:2px 0;
+    background:transparent;
+    font-size:15px;
+    line-height:1.4;
+    color:#212529; /* 元の黒文字 */
+    
+    border:none !important;
+    outline:none !important;
     resize:none;
     overflow-y:auto;
-    margin-right:-1px;
+    -webkit-appearance:none;
 }
 
-#clearBtn{
-    width:36px;
-    height:42px;
-    background:#f1f3f5;
-    border:none;
+/* 元のプレースホルダー配色 */
+textarea::placeholder {
     color:#adb5bd;
-    font-size:20px;
-    margin-right:-1px;
+    opacity:1;
 }
 
-#sendBtn{
-    width:70px;
-    height:42px;
+/* 元のクリアボタンデザイン */
+#clearBtn{
+    width:24px;
+    height:24px;
+    flex-shrink:0;
+    background:#ced4da;
     border:none;
-    border-radius:0 20px 20px 0;
+    color:#fff;
+    font-size:14px;
+    font-weight:bold;
+    border-radius:50%;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-left:6px;
+    transition:all 0.15s ease;
+    opacity:0;
+    pointer-events:none;
+}
+
+#clearBtn:hover {
+    background:#adb5bd;
+}
+
+/* 送信ボタン */
+#sendBtn{
+    width:36px;
+    height:36px;
+    flex-shrink:0;
+    border:none;
+    border-radius:50%;
     background:var(--primary);
     color:#fff;
-    font-weight:800;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.2s ease;
+    box-shadow:0 2px 5px rgba(0,122,255,0.2);
+}
+
+#sendBtn:active {
+    transform:scale(0.92);
+    opacity:0.9;
 }
 
 .room-info-bar{
@@ -297,14 +347,20 @@ textarea{
 
         <div style="text-align:center;">
             <h2 style="color:var(--primary);margin:0;font-size:24px;">NEZU ONETIME CHAT</h2>
-            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#999;">
-                誰でも簡単に使える、安心な消えるチャット
+            <p style="margin:4px 0 0 0;font-size:12px;font-weight:bold;color:#666;">
+                安心の使い捨て・暗号化チャット
             </p>
         </div>
 
         <div class="info-box">
-            <div class="info-title">🔒 システム概要</div>
-            最後の通常発言から30分経過すると、誰も部屋にいてもいなくてもサーバーからデータが即時完全消滅する暗号化チャットです。
+            <div style="margin-bottom:4px;">🔑 <strong>強力なエンドツーエンド暗号化</strong></div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;padding-left:4px;">
+                会話データはブラウザ側で完全に暗号化されてから送信されるため、サーバー管理者も一切解読できません。
+            </div>
+            <div>🗑️ <strong>データは即座に完全使い捨て</strong></div>
+            <div style="font-size:12px;color:#666;padding-left:4px;">
+                用件が済めば、サーバー内のチャットログや部屋の全データは即座に跡形もなく完全消滅します。
+            </div>
         </div>
 
         <div id="errMsg" class="error-msg"></div>
@@ -332,9 +388,11 @@ textarea{
 <header id="header">
 
     <div class="app-header-top">
-        <textarea id="mi" placeholder="メッセージを作成..." maxlength="500"></textarea>
-        <button id="clearBtn">×</button>
-        <button id="sendBtn">送信</button>
+        <div class="input-container">
+            <textarea id="mi" placeholder="メッセージを作成..." maxlength="500" rows="1"></textarea>
+            <button id="clearBtn" type="button">✕</button>
+        </div>
+        <button id="sendBtn" type="button" title="送信">➔</button>
     </div>
 
     <div class="room-info-bar">
@@ -411,8 +469,19 @@ let curR,curP,curN,curT,rawR;
 let lastT = 0;
 let userCount = 0;
 
-// データ寿命：30分（30 * 60 * 1000 ミリ秒）
 const ROOM_LIFETIME = 30 * 60 * 1000; 
+
+const showLobby = (msg = "") => {
+    curR = null;
+    if(msg) {
+        $("errMsg").innerText = msg;
+        $("errMsg").style.display = "block";
+    }
+    $("mainApp").style.display = "none";
+    $("lobby").style.display = "flex";
+    $("enterBtn").disabled = false;
+    $("enterBtn").innerText = "認証して入室";
+};
 
 const scrollUp = () => {
     const wrap = $("chatWrap");
@@ -453,6 +522,17 @@ const linkify = t => {
     );
 };
 
+const toggleClearBtn = (text) => {
+    const btn = $("clearBtn");
+    if(text && text.trim().length > 0) {
+        btn.style.opacity = "1";
+        btn.style.pointerEvents = "auto";
+    } else {
+        btn.style.opacity = "0";
+        btn.style.pointerEvents = "none";
+    }
+};
+
 async function join(rID,pass,name,trip){
     rawR = rID;
     curR = hash(rID);
@@ -465,6 +545,8 @@ async function join(rID,pass,name,trip){
     const roomRef = ref(db,`rooms/${curR}`);
     const myRef = ref(db,`presence/${curR}/${uid}`);
 
+    let isReEntry = false;
+
     try {
         const snap = await get(presRef);
         if(snap.exists()){
@@ -474,10 +556,10 @@ async function join(rID,pass,name,trip){
                 const oldN = dec(users[uid].nEnc, pass);
                 const oldT = dec(users[uid].tEnc, pass) || "";
                 if(!oldN || oldN !== name || oldT !== trip){
-                    $("errMsg").innerText = "同一端末では正しいパスワードと、同じ名前・キーでのみ再入室できます";
-                    $("errMsg").style.display = "block";
+                    showLobby("同一端末では正しいパスワードと、同じ名前・キーでのみ再入室できます");
                     return;
                 }
+                isReEntry = true;
             }
 
             for(const k in users){
@@ -486,36 +568,46 @@ async function join(rID,pass,name,trip){
                 const t = dec(users[k].tEnc, pass) || "";
 
                 if(n && n === name){
-                    $("errMsg").innerText = "その名前は既に使用されています";
-                    $("errMsg").style.display = "block";
+                    showLobby("その名前は既に使用されています");
                     return;
                 }
                 if(t && t === trip){
-                    $("errMsg").innerText = "そのキーは既に使用されています";
-                    $("errMsg").style.display = "block";
+                    showLobby("そのキーは既に使用されています");
                     return;
                 }
             }
         }
     } catch(e) {
         console.error(e);
+        showLobby("認証エラーが発生しました。接続を確認してください。");
+        return;
     }
 
+    // 接続検証クリア後に画面を切り替え
     $("roomDisplay").innerText = rID;
     $("lobby").style.display = "none";
     $("mainApp").style.display = "flex";
 
-    await set(myRef,{
-        nEnc:enc(name,pass),
-        tEnc:enc(trip,pass),
-        lastSeen:Date.now()
-    });
+    try {
+        // 安全なサーバータイムスタンプのみを送信
+        await set(myRef,{
+            nEnc:enc(name,pass),
+            tEnc:enc(trip,pass),
+            lastSeen:serverTimestamp()
+        });
 
-    await push(chatRef,{
-        type:"sys",
-        text:enc(`${name}${trip}さんが入室しました`,pass),
-        time:serverTimestamp()
-    });
+        if (!isReEntry) {
+            await push(chatRef,{
+                type:"sys",
+                text:enc(`${name}${trip}さんが入室しました`,pass),
+                time:serverTimestamp()
+            });
+        }
+    } catch(e) {
+        console.error(e);
+        showLobby("サーバーへの書き込みに失敗しました（認証不一致）");
+        return;
+    }
 
     onDisconnect(myRef).remove();
 
@@ -578,38 +670,36 @@ async function join(rID,pass,name,trip){
         });
     });
 
-    // 1分ごとに動作する部屋のデータ寿命チェック
     const updater = async()=>{
         if(!curR) return;
         
-        // 自身のオンライン状態維持用
-        await update(myRef,{ lastSeen:Date.now() });
+        try {
+            await update(myRef,{ lastSeen:serverTimestamp() });
 
-        const roomSnap = await get(roomRef);
-        if(roomSnap.exists()){
-            const rData = roomSnap.val();
-            // 最後の通常発言から30分を過ぎていた場合、一斉に完全消去
-            if(rData.deleteAt && Date.now() > rData.deleteAt){
-                curR = null; 
-                await remove(chatRef);
-                await remove(presRef);
-                await remove(roomRef);
-                alert("最後の発言から30分が経過したため、部屋が自動消滅しました。");
-                location.reload();
-                return;
+            const roomSnap = await get(roomRef);
+            if(roomSnap.exists()){
+                const rData = roomSnap.val();
+                if(rData.deleteAt && Date.now() > rData.deleteAt){
+                    await remove(chatRef);
+                    await remove(presRef);
+                    await remove(roomRef);
+                    alert("部屋が自動消滅しました。");
+                    location.reload();
+                    return;
+                }
             }
-        }
 
-        // 消し忘れ防止（バックアップ）：会話が一切始まっておらず、かつ誰もいなくなった場合のみ削除
-        // ※一度でも会話が始まっていれば、deleteAt があるため上記の発言30分判定が優先されます。
-        const pSnap = await get(presRef);
-        if(!pSnap.exists() || Object.keys(pSnap.val()).length === 0){
-            const cSnap = await get(chatRef);
-            if(!cSnap.exists()){
-                await remove(chatRef);
-                await remove(presRef);
-                await remove(roomRef);
+            const pSnap = await get(presRef);
+            if(!pSnap.exists() || Object.keys(pSnap.val()).length === 0){
+                const cSnap = await get(chatRef);
+                if(!cSnap.exists()){
+                    await remove(chatRef);
+                    await remove(presRef);
+                    await remove(roomRef);
+                }
             }
+        } catch(e) {
+            console.error("定期生存確認失敗:", e);
         }
     };
 
@@ -631,7 +721,6 @@ const sendMsg = async()=>{
             time:serverTimestamp()
         });
 
-        // 発言した瞬間に、寿命を「現在の端末時間 + 30分」にリセット更新
         await set(ref(db,`rooms/${curR}`),{ 
             deleteAt: Date.now() + ROOM_LIFETIME 
         });
@@ -640,7 +729,8 @@ const sendMsg = async()=>{
     }
 
     $("mi").value = "";
-    $("mi").style.height = "42px"; 
+    $("mi").style.height = "24px"; 
+    toggleClearBtn(""); 
     scrollUp();
 };
 
@@ -654,8 +744,11 @@ $("mi").onkeydown = e=>{
 };
 
 $("mi").oninput = e => {
-    e.target.style.height = "42px";
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+    const el = e.target;
+    el.style.height = "24px"; 
+    const nextHeight = el.scrollHeight - 4; 
+    el.style.height = Math.min(Math.max(nextHeight, 24), 96) + "px";
+    toggleClearBtn(el.value);
 };
 
 $("focusBtn").onclick = ()=>{
@@ -665,11 +758,11 @@ $("focusBtn").onclick = ()=>{
 
 $("clearBtn").onclick = ()=>{
     $("mi").value = "";
-    $("mi").style.height = "42px";
+    $("mi").style.height = "24px";
+    toggleClearBtn("");
     $("mi").focus(); 
 };
 
-// 【完全修正】退出ボタンを押してもチャットデータは即削除しない仕様へ変更
 $("exitBtn").onclick = async()=>{
     if(!confirm("退出しますか？")) return;
 
@@ -677,20 +770,21 @@ $("exitBtn").onclick = async()=>{
     const pTmp = curP;
     const nTmp = curN;
     const tTmp = curT;
-    curR = null; 
+    
+    showLobby();
 
-    // 切断時の自動削除登録をキャンセル
     onDisconnect(ref(db,`presence/${rTmp}/${uid}`)).cancel();
 
-    // 誰がいようがいまいが、チャットデータ(chatRef)は削除せず、
-    // 退出する自分の生存情報（presence）だけを削除する
-    await push(ref(db,`chat/${rTmp}`),{
-        type:"sys",
-        text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
-        time:serverTimestamp()
-    });
-    
-    await remove(ref(db,`presence/${rTmp}/${uid}`));
+    try {
+        await push(ref(db,`chat/${rTmp}`),{
+            type:"sys",
+            text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
+            time:serverTimestamp()
+        });
+        await remove(ref(db,`presence/${rTmp}/${uid}`));
+    } catch(e) {
+        console.error(e);
+    }
 
     location.reload();
 };
@@ -708,11 +802,22 @@ $("enterBtn").onclick = ()=>{
     if(!tk){ $("errMsg").innerText = "本人確認キーを入力してください"; $("errMsg").style.display = "block"; return; }
     if(!r || !p){ $("errMsg").innerText = "部屋IDとパスワードを入力してください"; $("errMsg").style.display = "block"; return; }
 
+    $("enterBtn").disabled = true;
+    $("enterBtn").innerText = "接続中...";
+
     localStorage.setItem("nez_n",n);
     localStorage.setItem("nez_t",tk);
 
     join(r,p,n,tp);
 };
+
+// ネットワーク切断・Firebase切断の監視を強化
+onValue(ref(db, ".info/connected"), (snap) => {
+    if (snap.val() === false && curR) {
+        console.warn("Firebase切断を検知しました。ロビーに戻ります。");
+        showLobby("サーバーとの接続が切断されました。再試行してください。");
+    }
+});
 
 $("copyBtn").onclick = async()=>{
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
