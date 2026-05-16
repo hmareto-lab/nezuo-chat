@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>NEZU ONETIME CHAT</title>
 
+<!-- 暗号化ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
 <style>
@@ -360,13 +361,12 @@ textarea::placeholder {
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="暗号化パスワード">
 
-        <!-- 【範囲修正】入室制限のセレクトボックスを2人〜10人に限定 -->
         <div style="display:flex; align-items:center; gap:8px;">
             <label for="maxUsers" style="font-size:13px; font-weight:bold; color:#555; white-space:nowrap;">👥 入室制限数:</label>
             <select id="maxUsers" class="lobby-input" style="flex:1; padding:0 10px; cursor:pointer;">
                 <option value="2">2人まで</option>
                 <option value="3">3人まで</option>
-                <option value="4" selected>4人まで</option> <!-- デフォルトを4人に設定 -->
+                <option value="4" selected>4人まで</option>
                 <option value="5">5人まで</option>
                 <option value="6">6人まで</option>
                 <option value="7">7人まで</option>
@@ -422,7 +422,7 @@ textarea::placeholder {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
     getDatabase, ref, push, onValue, set, remove, serverTimestamp,
-    query, orderByChild, get, update
+    query, orderByChild, get, update, onDisconnect
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
@@ -438,12 +438,11 @@ localStorage.setItem("nez_uid", uid);
 
 let curR, curP, curN, curT, rawR;
 let lastT = 0;
-let userCount = 0;
 let unsubscribeChat = null;
 let unsubscribePres = null;
 
 const ROOM_LIFETIME = 10 * 60 * 1000; 
-const USER_TIMEOUT = 10 * 60 * 1000;
+const USER_TIMEOUT = 35 * 1000; // 生存スパン(30秒)に合わせ幽霊部員を素早く排除
 
 const showLobby = (msg = "") => {
     curR = null;
@@ -545,6 +544,12 @@ async function join(rID, pass, name, trip, maxLimit) {
             }
         }
 
+        let finalMax = maxLimit;
+        if (roomSnap.exists() && roomSnap.val().max !== undefined) {
+            finalMax = Number(roomSnap.val().max);
+        }
+        if (finalMax < 2 || finalMax > 10) finalMax = 4;
+
         if (!isReEntry && presSnap.exists()) {
             const users = presSnap.val() || {};
             const NOW = Date.now();
@@ -557,37 +562,18 @@ async function join(rID, pass, name, trip, maxLimit) {
                 }
             });
 
-            let finalMax = maxLimit;
-            if (roomSnap.exists() && roomSnap.val().max !== undefined) {
-                finalMax = Number(roomSnap.val().max);
-            }
-
-            // 安全性のためのフォールバックガード（2〜10の範囲外は自動で4に丸める）
-            if (finalMax < 2 || finalMax > 10) finalMax = 4;
-
             if (currentActiveCount >= finalMax) {
                 showLobby(`この部屋は満員です（上限 ${finalMax} 名）`);
                 return;
             }
         }
-    } catch (e) {
-        showLobby("認証・満員チェック中にエラーが発生しました。");
-        return;
-    }
 
-    $("roomDisplay").innerText = rID;
-    $("lobby").style.display = "none";
-    $("mainApp").style.display = "flex";
+        // ブラウザが閉じられたら自動でサーバー上の入室情報を削除する設定
+        await onDisconnect(myRef).remove();
 
-    try {
-        const roomCheck = await get(roomRef);
-        let targetMax = maxLimit;
-        if (roomCheck.exists() && roomCheck.val().max !== undefined) {
-            targetMax = Number(roomCheck.val().max);
-        }
-
-        // 安全性のためのガード
-        if (targetMax < 2 || targetMax > 10) targetMax = 4;
+        $("roomDisplay").innerText = rID;
+        $("lobby").style.display = "none";
+        $("mainApp").style.display = "flex";
 
         const tasks = [
             set(myRef, {
@@ -597,7 +583,7 @@ async function join(rID, pass, name, trip, maxLimit) {
             }),
             set(roomRef, { 
                 deleteAt: Date.now() + ROOM_LIFETIME,
-                max: targetMax
+                max: finalMax
             })
         ];
 
@@ -612,10 +598,11 @@ async function join(rID, pass, name, trip, maxLimit) {
         await Promise.all(tasks);
     } catch (e) {
         console.error(e);
-        showLobby("サーバーへの初期書き込みに失敗しました。");
+        showLobby("認証・満員チェック中にエラーが発生しました。");
         return;
     }
 
+    // リアルタイム同期監視
     unsubscribePres = onValue(presRef, async s => {
         if (!curR) return;
         const users = s.val() || {};
@@ -638,20 +625,20 @@ async function join(rID, pass, name, trip, maxLimit) {
             frag.appendChild(span);
         });
 
-        userCount = count;
         $("presenceList").innerHTML = "";
         $("presenceList").appendChild(frag);
 
+        let rMax = 4;
         try {
             const rSnap = await get(roomRef);
-            const rMax = (rSnap.exists() && rSnap.val().max) ? Number(rSnap.val().max) : 4;
-            $("presenceCount").innerText = `(${count}/${rMax}名)`;
-        } catch {
-            $("presenceCount").innerText = `(${count}名)`;
-        }
+            rMax = (rSnap.exists() && rSnap.val().max) ? Number(rSnap.val().max) : 4;
+        } catch {}
+        $("presenceCount").innerText = `(${count}/${rMax}名)`;
 
+        // アクティブユーザーが完全に0人になったら部屋を即座に削除
         if (count === 0) {
             await deleteRoomData(curR);
+            if (unsubscribeChat) showLobby("部屋の利用者がいなくなったため、データが自動消滅しました。");
         }
     });
 
@@ -686,24 +673,28 @@ async function join(rID, pass, name, trip, maxLimit) {
         $("list").innerHTML = "";
         $("list").appendChild(frag);
     });
-
-    const updater = async () => {
-        if (!curR) return;
-        try {
-            await update(myRef, { lastSeen: serverTimestamp() });
-            
-            const roomSnap = await get(roomRef);
-            if (roomSnap.exists() && roomSnap.val().deleteAt && Date.now() > roomSnap.val().deleteAt) {
-                await deleteRoomData(curR);
-                alert("10分間発言がなかったため、部屋が自動消滅しました。");
-                location.reload();
-            }
-        } catch (e) {
-            console.error("生存確認確認エラー:", e);
-        }
-    };
-    setInterval(updater, 30000);
 }
+
+// 30秒ごとの生存確認と10分の部屋期限切れチェック
+const updater = async () => {
+    if (!curR) return;
+    try {
+        const myRef = ref(db, `presence/${curR}/${uid}`);
+        const roomRef = ref(db, `rooms/${curR}`);
+
+        await update(myRef, { lastSeen: serverTimestamp() });
+        
+        const roomSnap = await get(roomRef);
+        if (roomSnap.exists() && roomSnap.val().deleteAt && Date.now() > roomSnap.val().deleteAt) {
+            await deleteRoomData(curR);
+            alert("10分間発言がなかったため、部屋が自動消滅しました。");
+            location.reload();
+        }
+    } catch (e) {
+        console.error("生存確認エラー:", e);
+    }
+};
+setInterval(updater, 30000);
 
 const sendMsg = async () => {
     const inputEl = $("mi");
@@ -756,6 +747,7 @@ $("mi").oninput = e => {
 $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "24px"; toggleClearBtn(""); $("mi").focus(); };
 
+// 退出処理の最適化
 $("exitBtn").onclick = async () => {
     if (!confirm("退出しますか？")) return;
 
@@ -768,6 +760,7 @@ $("exitBtn").onclick = async () => {
     if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
 
     try {
+        await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
         await remove(ref(db, `presence/${rTmp}/${uid}`));
 
         const pSnap = await get(ref(db, `presence/${rTmp}`));
@@ -777,6 +770,7 @@ $("exitBtn").onclick = async () => {
         if (pSnap.exists()) {
             const users = pSnap.val() || {};
             Object.keys(users).forEach(k => {
+                if (k === uid) return;
                 const lastSeen = users[k].lastSeen || NOW;
                 if (NOW - lastSeen <= USER_TIMEOUT) activeCount++;
             });
@@ -810,7 +804,7 @@ let isInitialConnect = true;
 onValue(ref(db, ".info/connected"), (snap) => {
     if (isInitialConnect) { isInitialConnect = false; return; }
     if (snap.val() === false && curR) {
-        showLobby("サーバーとの接続が切断されました。");
+        showLobby("サーバーとの接続が切断されました。再接続を試みてください。");
     }
 });
 
@@ -845,7 +839,7 @@ $("enterBtn").onclick = async () => {
     localStorage.setItem("nez_t", tk);
 
     const tpString = $("tp").innerText || "";
-    join(r, p, n, tpString, maxLimit);
+    await join(r, p, n, tpString, maxLimit);
 };
 
 window.onload = async () => {
