@@ -519,11 +519,21 @@ const toggleClearBtn = (text) => {
     }
 };
 
-// 🛠️ トリップ生成共通関数
 async function generateTripString(key) {
     if (!key) return "";
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
     return "◆" + Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,6);
+}
+
+// 🛠️ 部屋全体のデータ（チャット、入室、メタ）を完全リセットする内部関数
+async function deleteRoomData(roomHash) {
+    try {
+        await remove(ref(db, `chat/${roomHash}`));
+        await remove(ref(db, `presence/${roomHash}`));
+        await remove(ref(db, `rooms/${roomHash}`));
+    } catch(e) {
+        console.error("部屋の即時一括削除に失敗しました:", e);
+    }
 }
 
 async function join(rID,pass,name,trip){
@@ -531,7 +541,7 @@ async function join(rID,pass,name,trip){
     curR = hash(rID);
     curP = pass;
     curN = name;
-    curT = trip; // ここには「◆xxxxxx」の形が渡ってくる
+    curT = trip;
 
     const chatRef = ref(db,`chat/${curR}`);
     const presRef = ref(db,`presence/${curR}`);
@@ -545,22 +555,18 @@ async function join(rID,pass,name,trip){
         if(snap.exists()){
             const users = snap.val() || {};
             
-            // 🛠️ 同一UIDが存在する場合の完全一致検証
             if(users[uid]){
                 const oldN = dec(users[uid].nEnc, pass);
                 const oldT = dec(users[uid].tEnc, pass) || "";
                 
-                // データベースから復号化した「名前・トリップ(◆付き)」が今回の入力と完全一致するか
                 if(oldN && oldN === name && oldT === trip){
                     isReEntry = true;
                 } else {
-                    // 1文字でも異なれば、なりすまし・書き換え拒否としてロビーに戻す
                     showLobby("以前の接続情報（名前・本人確認キー）と一致しません");
                     return;
                 }
             }
 
-            // 他のユーザー（異なるUID）との重複チェック
             for(const k in users){
                 if(k === uid) continue;
                 const n = dec(users[k].nEnc, pass);
@@ -593,7 +599,6 @@ async function join(rID,pass,name,trip){
             lastSeen:serverTimestamp()
         });
 
-        // 完全一致での再接続時は入室通知ログを出さない
         if (!isReEntry) {
             await push(chatRef,{
                 type:"sys",
@@ -607,6 +612,7 @@ async function join(rID,pass,name,trip){
         return;
     }
 
+    // 🛠️ 【超重要】自分が「最後の1人」の状態で不意の切断が起きたとき、部屋のすべてを一緒に道連れ削除する設定
     onDisconnect(myRef).remove();
 
     onValue(presRef, async s=>{
@@ -631,18 +637,28 @@ async function join(rID,pass,name,trip){
         userCount = count;
         $("presenceCount").innerText = `(${count}名)`;
 
+        // 🛠️ 参加者が0人になったら、即座にサーバー側の全データを完全リセット
         if (count === 0) {
-            try {
-                await remove(chatRef);
-                await remove(presRef);
-                await remove(roomRef);
-            } catch(e) {
-                console.error("即時データ削除失敗:", e);
-            }
+            await deleteRoomData(curR);
+            return;
+        }
+
+        // 🛠️ 自分が「最後の1人」になったら、ブラウザを閉じられた時に連鎖して部屋ごと消えるよう切断予約をアップグレード
+        if (count === 1 && users[uid]) {
+            onDisconnect(ref(db, `chat/${curR}`)).remove();
+            onDisconnect(ref(db, `presence/${curR}`)).remove();
+            onDisconnect(ref(db, `rooms/${curR}`)).remove();
+        } else {
+            // 他に参加者がいるなら、道連れ削除予約は解除（自分自身の在席のみ削除に戻す）
+            onDisconnect(ref(db, `chat/${curR}`)).cancel();
+            onDisconnect(ref(db, `rooms/${curR}`)).cancel();
+            onDisconnect(ref(db, `presence/${curR}`)).cancel();
+            onDisconnect(myRef).remove();
         }
     });
 
     onValue(query(chatRef,orderByChild("time")),s=>{
+        if(userCount === 0) return; // 0人の場合は描画処理をスキップ
         $("list").innerHTML = "";
         s.forEach(c=>{
             const m = c.val();
@@ -689,9 +705,7 @@ async function join(rID,pass,name,trip){
             if(roomSnap.exists()){
                 const rData = roomSnap.val();
                 if(rData.deleteAt && Date.now() > rData.deleteAt){
-                    await remove(chatRef);
-                    await remove(presRef);
-                    await remove(roomRef);
+                    await deleteRoomData(curR);
                     alert("部屋が自動消滅しました。");
                     location.reload();
                     return;
@@ -772,18 +786,25 @@ $("exitBtn").onclick = async()=>{
     
     showLobby();
 
+    // 🛠️ 手動退出時は、自動切断命令（道連れ削除含む）をすべて綺麗にクリア
     onDisconnect(ref(db,`presence/${rTmp}/${uid}`)).cancel();
+    onDisconnect(ref(db, `chat/${rTmp}`)).cancel();
+    onDisconnect(ref(db, `presence/${rTmp}`)).cancel();
+    onDisconnect(ref(db, `rooms/${rTmp}`)).cancel();
 
     try {
         await remove(ref(db,`presence/${rTmp}/${uid}`));
         
         const pSnap = await get(ref(db,`presence/${rTmp}`));
+        // 🛠️ 自分以外にまだ人が残っている場合のみ退出ログを残す。0人なら部屋ごと即座に完全抹消。
         if (pSnap.exists() && Object.keys(pSnap.val()).length > 0) {
             await push(ref(db,`chat/${rTmp}`),{
                 type:"sys",
                 text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
                 time:serverTimestamp()
             });
+        } else {
+            await deleteRoomData(rTmp);
         }
     } catch(e) {
         console.error(e);
@@ -810,7 +831,6 @@ $("enterBtn").onclick = async()=>{
     localStorage.setItem("nez_n",n);
     localStorage.setItem("nez_t",tk);
 
-    // 🛠️ 同期ズレを防ぐため、確定したハッシュトリップ(◆xxxxxx)を生成してからjoinに引き渡す
     const tpString = await generateTripString(tk);
     join(r,p,n,tpString);
 };
