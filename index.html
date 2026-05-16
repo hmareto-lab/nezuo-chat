@@ -360,6 +360,22 @@ textarea::placeholder {
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="暗号化パスワード">
 
+        <!-- 【範囲修正】入室制限のセレクトボックスを2人〜10人に限定 -->
+        <div style="display:flex; align-items:center; gap:8px;">
+            <label for="maxUsers" style="font-size:13px; font-weight:bold; color:#555; white-space:nowrap;">👥 入室制限数:</label>
+            <select id="maxUsers" class="lobby-input" style="flex:1; padding:0 10px; cursor:pointer;">
+                <option value="2">2人まで</option>
+                <option value="3">3人まで</option>
+                <option value="4" selected>4人まで</option> <!-- デフォルトを4人に設定 -->
+                <option value="5">5人まで</option>
+                <option value="6">6人まで</option>
+                <option value="7">7人まで</option>
+                <option value="8">8人まで</option>
+                <option value="9">9人まで</option>
+                <option value="10">10人まで</option>
+            </select>
+        </div>
+
         <button id="masterGenBtn" style="width:100%;height:40px;border:1px dashed var(--primary);background:#f0f7ff;border-radius:12px;color:var(--primary);font-weight:bold;">
             🎲 認証情報の自動生成
         </button>
@@ -497,7 +513,7 @@ async function deleteRoomData(roomHash) {
     }
 }
 
-async function join(rID, pass, name, trip) {
+async function join(rID, pass, name, trip, maxLimit) {
     rawR = rID;
     curR = hash(rID);
     curP = pass;
@@ -512,8 +528,12 @@ async function join(rID, pass, name, trip) {
     let isReEntry = false;
 
     try {
-        // 【爆速化】認証時は、自分の過去データが存在するか（再入室か）の検証のみに絞る（全件ダウンロードを廃止）
-        const mySnap = await get(myRef);
+        const [mySnap, presSnap, roomSnap] = await Promise.all([
+            get(myRef),
+            get(presRef),
+            get(roomRef)
+        ]);
+
         if (mySnap.exists()) {
             const oldN = dec(mySnap.val().nEnc, pass);
             const oldT = dec(mySnap.val().tEnc, pass) || "";
@@ -524,8 +544,34 @@ async function join(rID, pass, name, trip) {
                 return;
             }
         }
+
+        if (!isReEntry && presSnap.exists()) {
+            const users = presSnap.val() || {};
+            const NOW = Date.now();
+            let currentActiveCount = 0;
+
+            Object.keys(users).forEach(k => {
+                const lastSeen = users[k].lastSeen || NOW;
+                if (NOW - lastSeen <= USER_TIMEOUT) {
+                    currentActiveCount++;
+                }
+            });
+
+            let finalMax = maxLimit;
+            if (roomSnap.exists() && roomSnap.val().max !== undefined) {
+                finalMax = Number(roomSnap.val().max);
+            }
+
+            // 安全性のためのフォールバックガード（2〜10の範囲外は自動で4に丸める）
+            if (finalMax < 2 || finalMax > 10) finalMax = 4;
+
+            if (currentActiveCount >= finalMax) {
+                showLobby(`この部屋は満員です（上限 ${finalMax} 名）`);
+                return;
+            }
+        }
     } catch (e) {
-        showLobby("認証エラーが発生しました。");
+        showLobby("認証・満員チェック中にエラーが発生しました。");
         return;
     }
 
@@ -534,17 +580,26 @@ async function join(rID, pass, name, trip) {
     $("mainApp").style.display = "flex";
 
     try {
-        // 【爆速化】サーバーへの通信を Promise.all で完全並列化（通信の往復待ちをカット）
+        const roomCheck = await get(roomRef);
+        let targetMax = maxLimit;
+        if (roomCheck.exists() && roomCheck.val().max !== undefined) {
+            targetMax = Number(roomCheck.val().max);
+        }
+
+        // 安全性のためのガード
+        if (targetMax < 2 || targetMax > 10) targetMax = 4;
+
         const tasks = [
             set(myRef, {
                 nEnc: enc(name, pass),
                 tEnc: enc(trip, pass),
                 lastSeen: serverTimestamp()
             }),
-            set(roomRef, { deleteAt: Date.now() + ROOM_LIFETIME })
+            set(roomRef, { 
+                deleteAt: Date.now() + ROOM_LIFETIME,
+                max: targetMax
+            })
         ];
-
-        // 【仕様固定】onDisconnect().remove() を排除し、10分のタイムアウトまで強制残存
 
         if (!isReEntry) {
             tasks.push(push(chatRef, {
@@ -586,7 +641,14 @@ async function join(rID, pass, name, trip) {
         userCount = count;
         $("presenceList").innerHTML = "";
         $("presenceList").appendChild(frag);
-        $("presenceCount").innerText = `(${count}名)`;
+
+        try {
+            const rSnap = await get(roomRef);
+            const rMax = (rSnap.exists() && rSnap.val().max) ? Number(rSnap.val().max) : 4;
+            $("presenceCount").innerText = `(${count}/${rMax}名)`;
+        } catch {
+            $("presenceCount").innerText = `(${count}名)`;
+        }
 
         if (count === 0) {
             await deleteRoomData(curR);
@@ -655,6 +717,9 @@ const sendMsg = async () => {
     scrollUp();
 
     try {
+        const roomSnap = await get(ref(db, `rooms/${curR}`));
+        const currentMax = (roomSnap.exists() && roomSnap.val().max !== undefined) ? Number(roomSnap.val().max) : 4;
+
         await Promise.all([
             push(ref(db, `chat/${curR}`), {
                 nEnc: enc(curN, curP),
@@ -662,7 +727,10 @@ const sendMsg = async () => {
                 text: enc(v, curP),
                 time: serverTimestamp()
             }),
-            set(ref(db, `rooms/${curR}`), { deleteAt: Date.now() + ROOM_LIFETIME })
+            set(ref(db, `rooms/${curR}`), { 
+                deleteAt: Date.now() + ROOM_LIFETIME,
+                max: currentMax
+            })
         ]);
     } catch (e) {
         console.error("送信エラー:", e);
@@ -764,6 +832,7 @@ $("enterBtn").onclick = async () => {
     const p = $("pi").value.trim();
     const n = $("ni").value.trim();
     const tk = $("tk").value.trim();
+    const maxLimit = Number($("maxUsers").value);
 
     if (!n) { $("errMsg").innerText = "名前を入力してください"; $("errMsg").style.display = "block"; return; }
     if (!tk) { $("errMsg").innerText = "本人確認キーを入力してください"; $("errMsg").style.display = "block"; return; }
@@ -775,9 +844,8 @@ $("enterBtn").onclick = async () => {
     localStorage.setItem("nez_n", n);
     localStorage.setItem("nez_t", tk);
 
-    // 【爆速化】すでに画面上にプレビュー生成されているトリップ文字列をそのまま使うことで、入室時の再計算タイムを削減
     const tpString = $("tp").innerText || "";
-    join(r, p, n, tpString);
+    join(r, p, n, tpString, maxLimit);
 };
 
 window.onload = async () => {
