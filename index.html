@@ -471,10 +471,20 @@ const toggleClearBtn = (text) => {
     btn.style.pointerEvents = hasText ? "auto" : "none";
 };
 
-async function generateTripString(key) {
-    if (!key) return "";
-    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+// 🚀 改修：名前＋本人確認キーのセットからトリップを生成
+async function generateTripString(name, key) {
+    if (!name || !key) return "";
+    // 「名前:キー」という文字列をハッシュ化のソルト（材料）にする
+    const salt = `${name}:${key}`;
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt));
     return "◆" + Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 6);
+}
+
+// ロビーのリアルタイムトリップ表示を更新する関数
+async function updateTripPreview() {
+    const n = $("ni").value.trim();
+    const tk = $("tk").value.trim();
+    $("tp").innerText = (n && tk) ? await generateTripString(n, tk) : "";
 }
 
 async function deleteRoomData(roomHash) {
@@ -505,11 +515,9 @@ async function join(rID, pass, name, trip) {
 
     try {
         const snap = await get(presRef);
-        // 部屋に誰かしらデータが存在する場合のみチェックを行う（新規部屋ならスルーして入室へ）
         if (snap.exists()) {
             const users = snap.val() || {};
             
-            // 同一UIDが既に部屋に存在する場合（リコンネクト）
             if (users[uid]) {
                 const oldN = dec(users[uid].nEnc, pass);
                 const oldT = dec(users[uid].tEnc, pass) || "";
@@ -521,7 +529,6 @@ async function join(rID, pass, name, trip) {
                 }
             }
             
-            // 他のユーザーとの重複チェック
             for (const k in users) {
                 if (k === uid) continue;
                 if (dec(users[k].nEnc, pass) === name) { showLobby("その名前は既に使用されています"); return; }
@@ -533,13 +540,11 @@ async function join(rID, pass, name, trip) {
         return;
     }
 
-    // 画面切り替え
     $("roomDisplay").innerText = rID;
     $("lobby").style.display = "none";
     $("mainApp").style.display = "flex";
 
     try {
-        // 自身の存在（プレゼンス）を書き込み
         await set(myRef, {
             nEnc: enc(name, pass),
             tEnc: enc(trip, pass),
@@ -547,7 +552,6 @@ async function join(rID, pass, name, trip) {
         });
         onDisconnect(myRef).remove();
 
-        // 新規入室時のみシステムメッセージを送信
         if (!isReEntry) {
             await push(chatRef, {
                 type: "sys",
@@ -561,7 +565,6 @@ async function join(rID, pass, name, trip) {
         return;
     }
 
-    // 在席メンバー（プレゼンス）同期
     unsubscribePres = onValue(presRef, async s => {
         if (!curR) return;
         const users = s.val() || {};
@@ -590,7 +593,6 @@ async function join(rID, pass, name, trip) {
         }
     });
 
-    // チャットログ同期
     unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
         const frag = document.createDocumentFragment();
 
@@ -722,10 +724,9 @@ $("masterGenBtn").onclick = () => {
     $("pi").value = Math.random().toString(36).slice(2, 12);
 };
 
-$("tk").oninput = async e => {
-    const v = e.target.value.trim();
-    $("tp").innerText = v ? await generateTripString(v) : "";
-};
+// 名前、または本人確認キーが変更されたらリアルタイムにトリップ表示を更新
+$("ni").oninput = updateTripPreview;
+$("tk").oninput = updateTripPreview;
 
 let isInitialConnect = true;
 onValue(ref(db, ".info/connected"), (snap) => {
@@ -764,19 +765,22 @@ $("enterBtn").onclick = async () => {
     localStorage.setItem("nez_n", n);
     localStorage.setItem("nez_t", tk);
 
-    const tpString = await generateTripString(tk);
+    const tpString = await generateTripString(n, tk);
     join(r, p, n, tpString);
 };
 
-window.onload = () => {
+window.onload = async () => {
     const sN = localStorage.getItem("nez_n");
     const sT = localStorage.getItem("nez_t");
     if (sN) $("ni").value = sN;
-    if (sT) { $("tk").value = sT; $("tk").dispatchEvent(new Event("input")); }
+    if (sT) $("tk").value = sT;
 
     const u = new URLSearchParams(location.search);
     if (u.get("r")) $("ri").value = u.get("r");
     if (u.get("p")) $("pi").value = u.get("p");
+
+    // 初期ロード時にもし名前とキーが残っていればトリップのプレビューを表示
+    await updateTripPreview();
 };
 </script>
 </body>
