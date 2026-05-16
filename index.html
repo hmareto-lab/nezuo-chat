@@ -406,7 +406,7 @@ textarea::placeholder {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
     getDatabase, ref, push, onValue, set, remove, serverTimestamp,
-    query, orderByChild, get, update, onDisconnect
+    query, orderByChild, get, update
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
@@ -426,7 +426,8 @@ let userCount = 0;
 let unsubscribeChat = null;
 let unsubscribePres = null;
 
-const ROOM_LIFETIME = 30 * 60 * 1000; 
+const ROOM_LIFETIME = 10 * 60 * 1000; 
+const USER_TIMEOUT = 10 * 60 * 1000;
 
 const showLobby = (msg = "") => {
     curR = null;
@@ -471,16 +472,13 @@ const toggleClearBtn = (text) => {
     btn.style.pointerEvents = hasText ? "auto" : "none";
 };
 
-// 🚀 改修：名前＋本人確認キーのセットからトリップを生成
 async function generateTripString(name, key) {
     if (!name || !key) return "";
-    // 「名前:キー」という文字列をハッシュ化のソルト（材料）にする
     const salt = `${name}:${key}`;
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt));
     return "◆" + Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 6);
 }
 
-// ロビーのリアルタイムトリップ表示を更新する関数
 async function updateTripPreview() {
     const n = $("ni").value.trim();
     const tk = $("tk").value.trim();
@@ -517,6 +515,7 @@ async function join(rID, pass, name, trip) {
         const snap = await get(presRef);
         if (snap.exists()) {
             const users = snap.val() || {};
+            const NOW = Date.now();
             
             if (users[uid]) {
                 const oldN = dec(users[uid].nEnc, pass);
@@ -531,6 +530,9 @@ async function join(rID, pass, name, trip) {
             
             for (const k in users) {
                 if (k === uid) continue;
+                const lastSeen = users[k].lastSeen || NOW;
+                if (NOW - lastSeen > USER_TIMEOUT) continue;
+
                 if (dec(users[k].nEnc, pass) === name) { showLobby("その名前は既に使用されています"); return; }
                 if ((dec(users[k].tEnc, pass) || "") === trip) { showLobby("そのキーは既に使用されています"); return; }
             }
@@ -545,12 +547,17 @@ async function join(rID, pass, name, trip) {
     $("mainApp").style.display = "flex";
 
     try {
+        const rSnap = await get(roomRef);
+        if (!rSnap.exists()) {
+            await set(roomRef, { deleteAt: Date.now() + ROOM_LIFETIME });
+        }
+
         await set(myRef, {
             nEnc: enc(name, pass),
             tEnc: enc(trip, pass),
             lastSeen: serverTimestamp()
         });
-        onDisconnect(myRef).remove();
+        // 【重要】onDisconnect を削除し、10分放置されるまでリストに残り続けるように変更
 
         if (!isReEntry) {
             await push(chatRef, {
@@ -570,13 +577,17 @@ async function join(rID, pass, name, trip) {
         const users = s.val() || {};
         const frag = document.createDocumentFragment();
         let count = 0;
+        const NOW = Date.now();
 
         Object.keys(users).forEach(k => {
             const n = dec(users[k].nEnc, curP);
             const t = dec(users[k].tEnc, curP) || "";
+            const lastSeen = users[k].lastSeen || NOW;
             if (!n) return;
-            count++;
 
+            if (NOW - lastSeen > USER_TIMEOUT) return;
+
+            count++;
             const span = document.createElement("span");
             span.className = "user-chip";
             span.innerText = n + t;
@@ -629,17 +640,18 @@ async function join(rID, pass, name, trip) {
         if (!curR) return;
         try {
             await update(myRef, { lastSeen: serverTimestamp() });
+            
             const roomSnap = await get(roomRef);
             if (roomSnap.exists() && roomSnap.val().deleteAt && Date.now() > roomSnap.val().deleteAt) {
                 await deleteRoomData(curR);
-                alert("部屋が自動消滅しました。");
+                alert("10分間発言がなかったため、部屋が自動消滅しました。");
                 location.reload();
             }
         } catch (e) {
             console.error("生存確認確認エラー:", e);
         }
     };
-    setInterval(updater, 60000);
+    setInterval(updater, 30000);
 }
 
 const sendMsg = async () => {
@@ -699,11 +711,21 @@ $("exitBtn").onclick = async () => {
     if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
 
     try {
-        await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
         await remove(ref(db, `presence/${rTmp}/${uid}`));
 
         const pSnap = await get(ref(db, `presence/${rTmp}`));
-        if (pSnap.exists() && Object.keys(pSnap.val()).length > 0) {
+        let activeCount = 0;
+        const NOW = Date.now();
+
+        if (pSnap.exists()) {
+            const users = pSnap.val() || {};
+            Object.keys(users).forEach(k => {
+                const lastSeen = users[k].lastSeen || NOW;
+                if (NOW - lastSeen <= USER_TIMEOUT) activeCount++;
+            });
+        }
+
+        if (activeCount > 0) {
             await push(ref(db, `chat/${rTmp}`), {
                 type: "sys",
                 text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp),
@@ -724,7 +746,6 @@ $("masterGenBtn").onclick = () => {
     $("pi").value = Math.random().toString(36).slice(2, 12);
 };
 
-// 名前、または本人確認キーが変更されたらリアルタイムにトリップ表示を更新
 $("ni").oninput = updateTripPreview;
 $("tk").oninput = updateTripPreview;
 
@@ -779,7 +800,6 @@ window.onload = async () => {
     if (u.get("r")) $("ri").value = u.get("r");
     if (u.get("p")) $("pi").value = u.get("p");
 
-    // 初期ロード時にもし名前とキーが残っていればトリップのプレビューを表示
     await updateTripPreview();
 };
 </script>
