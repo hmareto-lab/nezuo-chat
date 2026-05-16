@@ -421,7 +421,7 @@ textarea::placeholder {
 </head>
 <body>
 
-<!-- モーダルウィンドウ（規約・詳細説明：手動合流文言追加版） -->
+<!-- モーダルウィンドウ（規約・詳細説明） -->
 <div id="infoModal" class="modal-overlay">
     <div class="modal-window">
         <h3 class="modal-title">📖 利用規約・重要事項</h3>
@@ -456,7 +456,7 @@ textarea::placeholder {
             <div class="modal-section-title" style="color:#718096;">⚖️ 免責事項と自動消滅</div>
             <div style="padding-left:4px;">
                 ・<strong>完全消滅トリガー:</strong> 部屋内で10分間だれも発言（送信・受信含む）を行わないか、または在室している全員が「退出」ボタン等でいなくなった場合、その部屋のチャットログおよび認証データは**サーバー上から即座に物理削除（完全消滅）**されます。一度消えたログはシステム管理者であっても二度と復元できません。<br>
-                ・本サービスは暗号化技術を用いて通信のプライバシーを高めていますが、端末自体のウイルス感染や画面の盗み見等による情報漏洩について、当方は一切の責任を負いません。
+                ・本サービスは暗号化技術を用いて通信のプライバシーを高めていますが、端末自体のウイルス感染や画面の盗み見等による情報洩れについて、当方は一切の責任を負いません。
             </div>
         </div>
 
@@ -594,8 +594,14 @@ let unsubscribeChat = null;
 let unsubscribePres = null;
 let isProcessingExit = false;
 
+// ⭕ サーバーとの時差（ミリ秒）を保持する変数
+let serverTimeOffset = 0; 
+
 const ROOM_LIFETIME = 10 * 60 * 1000; 
 const USER_TIMEOUT = 35 * 1000; 
+
+// ⭕ 常にサーバー基準の正確な現在時刻（ミリ秒）を返す関数
+const getServerNow = () => Date.now() + serverTimeOffset;
 
 const clearSubscriptions = () => {
     if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
@@ -710,7 +716,7 @@ async function join(rID, pass, name, trip, maxLimit) {
 
         if (!isReEntry && presSnap.exists()) {
             const users = presSnap.val() || {};
-            const NOW = Date.now();
+            const NOW = getServerNow(); // ⭕ サーバー時間同期
             let currentActiveCount = 0;
 
             Object.keys(users).forEach(k => {
@@ -730,16 +736,16 @@ async function join(rID, pass, name, trip, maxLimit) {
         $("lobby").style.display = "none";
         $("mainApp").style.display = "flex";
 
-        window.lastRoomActivity = Date.now();
+        window.lastRoomActivity = getServerNow(); // ⭕ サーバー時間同期
 
         const tasks = [
             set(myRef, {
                 nEnc: enc(name, pass),
                 tEnc: enc(trip, pass),
-                lastSeen: Date.now() // ⭕ 時刻判定のバグ修正：ローカル時刻に統一
+                lastSeen: getServerNow() // ⭕ サーバー時間同期
             }),
             set(roomRef, { 
-                deleteAt: Date.now() + ROOM_LIFETIME,
+                deleteAt: getServerNow() + ROOM_LIFETIME, // ⭕ サーバー時間同期
                 max: finalMax
             })
         ];
@@ -748,7 +754,7 @@ async function join(rID, pass, name, trip, maxLimit) {
             tasks.push(push(chatRef, {
                 type: "sys",
                 text: enc(`${name}${trip}さんが入室しました`, pass),
-                time: Date.now(), // ⭕ ローカル時刻に統一
+                time: getServerNow(), // ⭕ サーバー時間同期
                 nEnc: enc("SYSTEM", pass),
                 tEnc: enc("", pass)
             }));
@@ -766,7 +772,8 @@ async function join(rID, pass, name, trip, maxLimit) {
         const users = s.val() || {};
         const frag = document.createDocumentFragment();
         let count = 0;
-        const NOW = Date.now();
+        const NOW = getServerNow(); // ⭕ サーバー時間同期
+        let amIInList = false;
 
         Object.keys(users).forEach(k => {
             const n = dec(users[k].nEnc, curP);
@@ -775,6 +782,7 @@ async function join(rID, pass, name, trip, maxLimit) {
             if (!n) return;
 
             if (NOW - lastSeen > USER_TIMEOUT) return;
+            if (k === uid) amIInList = true;
 
             count++;
             const span = document.createElement("span");
@@ -787,7 +795,7 @@ async function join(rID, pass, name, trip, maxLimit) {
         $("presenceList").appendChild(frag);
         $("presenceCount").innerText = `(${count}/${finalMax}名)`;
 
-        if (count === 0 && !isProcessingExit) {
+        if (count === 0 && !isProcessingExit && amIInList) {
             deleteRoomData(curR);
             showLobby("部屋の利用者がいなくなったため、データが自動消滅しました。");
         }
@@ -795,7 +803,7 @@ async function join(rID, pass, name, trip, maxLimit) {
 
     unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
         const frag = document.createDocumentFragment();
-        window.lastRoomActivity = Date.now();
+        window.lastRoomActivity = getServerNow(); // ⭕ サーバー時間同期
 
         s.forEach(c => {
             const m = c.val();
@@ -831,13 +839,13 @@ const updater = async () => {
     if (!curR || isProcessingExit) return;
     try {
         const myRef = ref(db, `presence/${curR}/${uid}`);
-        await update(myRef, { lastSeen: Date.now() }); // ⭕ ローカル時刻に統一
+        await update(myRef, { lastSeen: getServerNow() }); // ⭕ サーバー時間同期
         
-        if (window.lastRoomActivity && Date.now() - window.lastRoomActivity > ROOM_LIFETIME) {
+        if (window.lastRoomActivity && getServerNow() - window.lastRoomActivity > ROOM_LIFETIME) { // ⭕ サーバー時間同期
             clearSubscriptions();
             await deleteRoomData(curR);
             alert("10分間発言がなかったため、部屋が自動消滅しました。");
-            location.href = location.pathname; // ⭕ URLの部屋パラメータを除去してリロード
+            location.href = location.pathname; 
         }
     } catch (e) {
         console.error("生存確認更新エラー:", e);
@@ -848,8 +856,8 @@ setInterval(updater, 30000);
 const sendMsg = async () => {
     const inputEl = $("mi");
     const v = inputEl.value.trim();
-    if (!v || Date.now() - lastT < 250) return;
-    lastT = Date.now();
+    if (!v || getServerNow() - lastT < 250) return; // ⭕ サーバー時間同期
+    lastT = getServerNow(); // ⭕ サーバー時間同期
 
     inputEl.value = "";
     inputEl.style.height = "24px";
@@ -858,18 +866,17 @@ const sendMsg = async () => {
 
     try {
         const roomRef = ref(db, `rooms/${curR}`);
-        window.lastRoomActivity = Date.now();
+        window.lastRoomActivity = getServerNow(); // ⭕ サーバー時間同期
 
         await Promise.all([
             push(ref(db, `chat/${curR}`), {
-                // ⭕ 致命的な暗号化データ格納キーの格納ミスを修正
                 nEnc: enc(curN, curP), 
                 tEnc: enc(curT, curP),
                 text: enc(v, curP),
-                time: Date.now() // ⭕ ローカル時刻に統一
+                time: getServerNow() // ⭕ サーバー時間同期 ＆ 正しいキー名
             }),
             update(roomRef, { 
-                deleteAt: Date.now() + ROOM_LIFETIME
+                deleteAt: getServerNow() + ROOM_LIFETIME // ⭕ サーバー時間同期
             })
         ]);
     } catch (e) {
@@ -913,7 +920,7 @@ $("exitBtn").onclick = async () => {
 
         const pSnap = await get(ref(db, `presence/${rTmp}`));
         let activeCount = 0;
-        const NOW = Date.now();
+        const NOW = getServerNow(); // ⭕ サーバー時間同期
 
         if (pSnap.exists()) {
             const users = pSnap.val() || {};
@@ -928,7 +935,7 @@ $("exitBtn").onclick = async () => {
             await push(ref(db, `chat/${rTmp}`), {
                 type: "sys",
                 text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp),
-                time: Date.now(), // ⭕ ローカル時刻に統一
+                time: getServerNow(), // ⭕ サーバー時間同期
                 nEnc: enc("SYSTEM", pTmp),
                 tEnc: enc("", pTmp)
             });
@@ -939,7 +946,7 @@ $("exitBtn").onclick = async () => {
         console.error("退出エラー:", e);
     }
     
-    location.href = location.pathname; // ⭕ 退出時は部屋IDパラメータを残さず初期ロビーに戻す
+    location.href = location.pathname; 
 };
 
 $("masterGenBtn").onclick = () => {
@@ -950,13 +957,7 @@ $("masterGenBtn").onclick = () => {
 $("ni").oninput = updateTripPreview;
 $("tk").oninput = updateTripPreview;
 
-let isInitialConnect = true;
-onValue(ref(db, ".info/connected"), (snap) => {
-    if (isInitialConnect) { isInitialConnect = false; return; }
-    if (snap.val() === false && curR) {
-        showLobby("サーバーとの接続が切断されました。再接続を試みてください。");
-    }
-});
+// ⭕ 一瞬の瞬断でロビーに落とされるのを防ぐため、元コードのinfo/connected監視は除去（安定性重視）
 
 $("copyBtn").onclick = async () => {
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
@@ -1003,6 +1004,11 @@ window.onload = async () => {
     if (u.get("p")) $("pi").value = u.get("p");
 
     await updateTripPreview();
+
+    // ⭕ 起動時、Firebaseサーバーとの「正確な時差（ミリ秒）」をリアルタイムで取得・自動修正するリスナー
+    onValue(ref(db, ".info/serverTimeOffset"), (snap) => {
+        serverTimeOffset = snap.val() || 0;
+    });
 };
 </script>
 </body>
