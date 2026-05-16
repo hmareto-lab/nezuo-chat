@@ -558,7 +558,7 @@ textarea::placeholder {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
-    getDatabase, ref, push, onValue, set, remove, serverTimestamp,
+    getDatabase, ref, push, onValue, set, remove,
     query, orderByChild, get, update, onDisconnect
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
@@ -736,7 +736,7 @@ async function join(rID, pass, name, trip, maxLimit) {
             set(myRef, {
                 nEnc: enc(name, pass),
                 tEnc: enc(trip, pass),
-                lastSeen: serverTimestamp()
+                lastSeen: Date.now() // ⭕ 時刻判定のバグ修正：ローカル時刻に統一
             }),
             set(roomRef, { 
                 deleteAt: Date.now() + ROOM_LIFETIME,
@@ -748,7 +748,7 @@ async function join(rID, pass, name, trip, maxLimit) {
             tasks.push(push(chatRef, {
                 type: "sys",
                 text: enc(`${name}${trip}さんが入室しました`, pass),
-                time: serverTimestamp(),
+                time: Date.now(), // ⭕ ローカル時刻に統一
                 nEnc: enc("SYSTEM", pass),
                 tEnc: enc("", pass)
             }));
@@ -831,13 +831,13 @@ const updater = async () => {
     if (!curR || isProcessingExit) return;
     try {
         const myRef = ref(db, `presence/${curR}/${uid}`);
-        await update(myRef, { lastSeen: serverTimestamp() });
+        await update(myRef, { lastSeen: Date.now() }); // ⭕ ローカル時刻に統一
         
         if (window.lastRoomActivity && Date.now() - window.lastRoomActivity > ROOM_LIFETIME) {
             clearSubscriptions();
             await deleteRoomData(curR);
             alert("10分間発言がなかったため、部屋が自動消滅しました。");
-            location.reload();
+            location.href = location.pathname; // ⭕ URLの部屋パラメータを除去してリロード
         }
     } catch (e) {
         console.error("生存確認更新エラー:", e);
@@ -862,11 +862,11 @@ const sendMsg = async () => {
 
         await Promise.all([
             push(ref(db, `chat/${curR}`), {
-                nEnc: enc(v, curP),
-                nEncName: enc(curN, curP), 
-                nEncTrip: enc(curT, curP),
+                // ⭕ 致命的な暗号化データ格納キーの格納ミスを修正
+                nEnc: enc(curN, curP), 
+                tEnc: enc(curT, curP),
                 text: enc(v, curP),
-                time: serverTimestamp()
+                time: Date.now() // ⭕ ローカル時刻に統一
             }),
             update(roomRef, { 
                 deleteAt: Date.now() + ROOM_LIFETIME
@@ -928,7 +928,7 @@ $("exitBtn").onclick = async () => {
             await push(ref(db, `chat/${rTmp}`), {
                 type: "sys",
                 text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp),
-                time: serverTimestamp(),
+                time: Date.now(), // ⭕ ローカル時刻に統一
                 nEnc: enc("SYSTEM", pTmp),
                 tEnc: enc("", pTmp)
             });
@@ -939,7 +939,7 @@ $("exitBtn").onclick = async () => {
         console.error("退出エラー:", e);
     }
     
-    location.reload();
+    location.href = location.pathname; // ⭕ 退出時は部屋IDパラメータを残さず初期ロビーに戻す
 };
 
 $("masterGenBtn").onclick = () => {
