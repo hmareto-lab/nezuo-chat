@@ -519,12 +519,19 @@ const toggleClearBtn = (text) => {
     }
 };
 
+// 🛠️ トリップ生成共通関数
+async function generateTripString(key) {
+    if (!key) return "";
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+    return "◆" + Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,6);
+}
+
 async function join(rID,pass,name,trip){
     rawR = rID;
     curR = hash(rID);
     curP = pass;
     curN = name;
-    curT = trip;
+    curT = trip; // ここには「◆xxxxxx」の形が渡ってくる
 
     const chatRef = ref(db,`chat/${curR}`);
     const presRef = ref(db,`presence/${curR}`);
@@ -538,13 +545,22 @@ async function join(rID,pass,name,trip){
         if(snap.exists()){
             const users = snap.val() || {};
             
-            // 🛠️ なりすまし対策を軽量化：同一UIDであれば無条件で「再入室(isReEntry)」扱いにする
-            // これにより、名前やキーを変更しての再入室でもロックアウトされなくなります
+            // 🛠️ 同一UIDが存在する場合の完全一致検証
             if(users[uid]){
-                isReEntry = true;
+                const oldN = dec(users[uid].nEnc, pass);
+                const oldT = dec(users[uid].tEnc, pass) || "";
+                
+                // データベースから復号化した「名前・トリップ(◆付き)」が今回の入力と完全一致するか
+                if(oldN && oldN === name && oldT === trip){
+                    isReEntry = true;
+                } else {
+                    // 1文字でも異なれば、なりすまし・書き換え拒否としてロビーに戻す
+                    showLobby("以前の接続情報（名前・本人確認キー）と一致しません");
+                    return;
+                }
             }
 
-            // 自分以外のユーザー（異なるUID）との「名前・キーの重複チェック」
+            // 他のユーザー（異なるUID）との重複チェック
             for(const k in users){
                 if(k === uid) continue;
                 const n = dec(users[k].nEnc, pass);
@@ -577,7 +593,7 @@ async function join(rID,pass,name,trip){
             lastSeen:serverTimestamp()
         });
 
-        // 🛠️ 同一UIDで戻った（isReEntry === true）なら、入室ログのプッシュをスキップする
+        // 完全一致での再接続時は入室通知ログを出さない
         if (!isReEntry) {
             await push(chatRef,{
                 type:"sys",
@@ -593,7 +609,7 @@ async function join(rID,pass,name,trip){
 
     onDisconnect(myRef).remove();
 
-    onValue(presRef, s=>{
+    onValue(presRef, async s=>{
         if(!curR) return;
         const users = s.val() || {};
         const list = $("presenceList");
@@ -614,6 +630,16 @@ async function join(rID,pass,name,trip){
 
         userCount = count;
         $("presenceCount").innerText = `(${count}名)`;
+
+        if (count === 0) {
+            try {
+                await remove(chatRef);
+                await remove(presRef);
+                await remove(roomRef);
+            } catch(e) {
+                console.error("即時データ削除失敗:", e);
+            }
+        }
     });
 
     onValue(query(chatRef,orderByChild("time")),s=>{
@@ -669,16 +695,6 @@ async function join(rID,pass,name,trip){
                     alert("部屋が自動消滅しました。");
                     location.reload();
                     return;
-                }
-            }
-
-            const pSnap = await get(presRef);
-            if(!pSnap.exists() || Object.keys(pSnap.val()).length === 0){
-                const cSnap = await get(chatRef);
-                if(!cSnap.exists()){
-                    await remove(chatRef);
-                    await remove(presRef);
-                    await remove(roomRef);
                 }
             }
         } catch(e) {
@@ -759,12 +775,16 @@ $("exitBtn").onclick = async()=>{
     onDisconnect(ref(db,`presence/${rTmp}/${uid}`)).cancel();
 
     try {
-        await push(ref(db,`chat/${rTmp}`),{
-            type:"sys",
-            text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
-            time:serverTimestamp()
-        });
         await remove(ref(db,`presence/${rTmp}/${uid}`));
+        
+        const pSnap = await get(ref(db,`presence/${rTmp}`));
+        if (pSnap.exists() && Object.keys(pSnap.val()).length > 0) {
+            await push(ref(db,`chat/${rTmp}`),{
+                type:"sys",
+                text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
+                time:serverTimestamp()
+            });
+        }
     } catch(e) {
         console.error(e);
     }
@@ -772,14 +792,13 @@ $("exitBtn").onclick = async()=>{
     location.reload();
 };
 
-$("enterBtn").onclick = ()=>{
+$("enterBtn").onclick = async()=>{
     $("errMsg").style.display = "none";
 
     const r = $("ri").value.trim();
     const p = $("pi").value.trim();
     const n = $("ni").value.trim();
     const tk = $("tk").value.trim();
-    const tp = $("tp").innerText;
 
     if(!n){ $("errMsg").innerText = "名前を入力してください"; $("errMsg").style.display = "block"; return; }
     if(!tk){ $("errMsg").innerText = "本人確認キーを入力してください"; $("errMsg").style.display = "block"; return; }
@@ -791,7 +810,9 @@ $("enterBtn").onclick = ()=>{
     localStorage.setItem("nez_n",n);
     localStorage.setItem("nez_t",tk);
 
-    join(r,p,n,tp);
+    // 🛠️ 同期ズレを防ぐため、確定したハッシュトリップ(◆xxxxxx)を生成してからjoinに引き渡す
+    const tpString = await generateTripString(tk);
+    join(r,p,n,tpString);
 };
 
 let isInitialConnect = true;
@@ -839,9 +860,7 @@ $("tk").oninput = async e=>{
         $("tp").innerText = "";
         return;
     }
-
-    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
-    $("tp").innerText = "◆" + Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,6);
+    $("tp").innerText = await generateTripString(v);
 };
 
 window.onload = ()=>{
