@@ -132,12 +132,6 @@ body{
     transition:background-color 0.2s ease;
 }
 
-.input-container:focus-within {
-    border:none !important;
-    box-shadow:none !important;
-    background:#f1f3f5;
-}
-
 textarea{
     flex:1;
     min-width:0;
@@ -339,7 +333,6 @@ textarea::placeholder {
 
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
-
         <div style="text-align:center;">
             <h2 style="color:var(--primary);margin:0;font-size:24px;">NEZU ONETIME CHAT</h2>
             <p style="margin:4px 0 0 0;font-size:12px;font-weight:bold;color:#666;">
@@ -374,92 +367,73 @@ textarea::placeholder {
         <button id="enterBtn" style="width:100%;height:60px;border:none;border-radius:20px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;margin-top:8px;">
             認証して入室
         </button>
-
     </div>
 </div>
 
 <div id="mainApp">
-
-<header id="header">
-
-    <div class="app-header-top">
-        <div class="input-container">
-            <textarea id="mi" placeholder="メッセージを作成..." maxlength="500" rows="1"></textarea>
-            <button id="clearBtn" type="button">✕</button>
+    <header id="header">
+        <div class="app-header-top">
+            <div class="input-container">
+                <textarea id="mi" placeholder="メッセージを作成..." maxlength="500" rows="1"></textarea>
+                <button id="clearBtn" type="button">✕</button>
+            </div>
+            <button id="sendBtn" type="button" title="送信">➔</button>
         </div>
-        <button id="sendBtn" type="button" title="送信">➔</button>
-    </div>
 
-    <div class="room-info-bar">
-        <div id="roomDisplay" class="info-item"></div>
-        <div id="presenceList"></div>
-        <div id="presenceCount" style="font-size:10px;color:#999;font-weight:bold;padding-top:3px;"></div>
-    </div>
+        <div class="room-info-bar">
+            <div id="roomDisplay" class="info-item"></div>
+            <div id="presenceList"></div>
+            <div id="presenceCount" style="font-size:10px;color:#999;font-weight:bold;padding-top:3px;"></div>
+        </div>
+    </header>
 
-</header>
+    <main id="chatWrap">
+        <div id="list"></div>
+    </main>
 
-<main id="chatWrap">
-    <div id="list"></div>
-</main>
-
-<footer id="footer">
-
-    <div class="footer-nav">
-        <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
-        <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
-        <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
-        <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URL</button>
-        <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
-    </div>
-
-</footer>
-
+    <footer id="footer">
+        <div class="footer-nav">
+            <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
+            <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
+            <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
+            <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URL</button>
+            <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
+        </div>
+    </footer>
 </div>
 
 <script type="module">
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
-initializeApp
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-
-import {
-getDatabase,
-ref,
-push,
-onValue,
-set,
-remove,
-serverTimestamp,
-query,
-orderByChild,
-get,
-update,
-onDisconnect
+    getDatabase, ref, push, onValue, set, remove, serverTimestamp,
+    query, orderByChild, get, update, onDisconnect
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const $ = id => document.getElementById(id);
 
 const firebaseApp = initializeApp({
-    apiKey:"AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
-    databaseURL:"https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
+    apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
+    databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
 });
 const db = getDatabase(firebaseApp);
 
-let uid = localStorage.getItem("nez_uid");
-if(!uid){
-    uid = crypto.randomUUID();
-    localStorage.setItem("nez_uid",uid);
-}
+let uid = localStorage.getItem("nez_uid") || crypto.randomUUID();
+localStorage.setItem("nez_uid", uid);
 
-let curR,curP,curN,curT,rawR;
+let curR, curP, curN, curT, rawR;
 let lastT = 0;
 let userCount = 0;
+let unsubscribeChat = null;
+let unsubscribePres = null;
 
 const ROOM_LIFETIME = 30 * 60 * 1000; 
 
 const showLobby = (msg = "") => {
     curR = null;
-    if(msg) {
+    if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+    if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
+    
+    if (msg) {
         $("errMsg").innerText = msg;
         $("errMsg").style.display = "block";
     }
@@ -470,287 +444,228 @@ const showLobby = (msg = "") => {
 };
 
 const scrollUp = () => {
-    const wrap = $("chatWrap");
-    if(wrap) {
-        wrap.scrollTo({
-            top: 0,
-            behavior: "smooth"
-        });
-    }
+    $("chatWrap")?.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 const hash = t => CryptoJS.SHA256(t).toString();
-const enc = (t,k) => CryptoJS.AES.encrypt(t,k).toString();
-const dec = (c,k) => {
-    try{
-        if(!c) return null;
-        const bytes = CryptoJS.AES.decrypt(c,k);
-        return bytes.toString(CryptoJS.enc.Utf8)||null;
-    }catch{
+const enc = (t, k) => CryptoJS.AES.encrypt(t, k).toString();
+const dec = (c, k) => {
+    try {
+        if (!c) return null;
+        return CryptoJS.AES.decrypt(c, k).toString(CryptoJS.enc.Utf8) || null;
+    } catch {
         return null;
     }
 };
 
-const esc = t =>
-(t||"").replace(/[&<>"']/g,c=>({
-"&":"&amp;",
-"<":"&lt;",
-">":"&gt;",
-'"':"&quot;",
-"'":"&#39;"
+const esc = t => (t || "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[c]));
 
-const linkify = t => {
-    const escaped = esc(t);
-    return escaped.replace(
-        /(https?:\/\/[^\s]+)/g,
-        '<a href="$1" target="_blank">$1</a>'
-    );
-};
+const linkify = t => esc(t).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
 
 const toggleClearBtn = (text) => {
     const btn = $("clearBtn");
-    if(text && text.trim().length > 0) {
-        btn.style.opacity = "1";
-        btn.style.pointerEvents = "auto";
-    } else {
-        btn.style.opacity = "0";
-        btn.style.pointerEvents = "none";
-    }
+    const hasText = !!(text && text.trim().length > 0);
+    btn.style.opacity = hasText ? "1" : "0";
+    btn.style.pointerEvents = hasText ? "auto" : "none";
 };
 
 async function generateTripString(key) {
     if (!key) return "";
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
-    return "◆" + Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("").slice(0,6);
+    return "◆" + Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 6);
 }
 
-// 🛠️ 部屋全体のデータ（チャット、入室、メタ）を完全リセットする内部関数
 async function deleteRoomData(roomHash) {
     try {
-        await remove(ref(db, `chat/${roomHash}`));
-        await remove(ref(db, `presence/${roomHash}`));
-        await remove(ref(db, `rooms/${roomHash}`));
-    } catch(e) {
-        console.error("部屋の即時一括削除に失敗しました:", e);
+        await Promise.all([
+            remove(ref(db, `chat/${roomHash}`)),
+            remove(ref(db, `presence/${roomHash}`)),
+            remove(ref(db, `rooms/${roomHash}`))
+        ]);
+    } catch (e) {
+        console.error("部屋データ削除失敗:", e);
     }
 }
 
-async function join(rID,pass,name,trip){
+async function join(rID, pass, name, trip) {
     rawR = rID;
     curR = hash(rID);
     curP = pass;
     curN = name;
     curT = trip;
 
-    const chatRef = ref(db,`chat/${curR}`);
-    const presRef = ref(db,`presence/${curR}`);
-    const roomRef = ref(db,`rooms/${curR}`);
-    const myRef = ref(db,`presence/${curR}/${uid}`);
+    const chatRef = ref(db, `chat/${curR}`);
+    const presRef = ref(db, `presence/${curR}`);
+    const roomRef = ref(db, `rooms/${curR}`);
+    const myRef = ref(db, `presence/${curR}/${uid}`);
 
     let isReEntry = false;
 
     try {
         const snap = await get(presRef);
-        if(snap.exists()){
+        if (snap.exists()) {
             const users = snap.val() || {};
-            
-            if(users[uid]){
+            if (users[uid]) {
                 const oldN = dec(users[uid].nEnc, pass);
                 const oldT = dec(users[uid].tEnc, pass) || "";
-                
-                if(oldN && oldN === name && oldT === trip){
+                if (oldN === name && oldT === trip) {
                     isReEntry = true;
                 } else {
                     showLobby("以前の接続情報（名前・本人確認キー）と一致しません");
                     return;
                 }
             }
-
-            for(const k in users){
-                if(k === uid) continue;
-                const n = dec(users[k].nEnc, pass);
-                const t = dec(users[k].tEnc, pass) || "";
-
-                if(n && n === name){
-                    showLobby("その名前は既に使用されています");
-                    return;
-                }
-                if(t && t === trip){
-                    showLobby("そのキーは既に使用されています");
-                    return;
-                }
+            for (const k in users) {
+                if (k === uid) continue;
+                if (dec(users[k].nEnc, pass) === name) { showLobby("その名前は既に使用されています"); return; }
+                if ((dec(users[k].tEnc, pass) || "") === trip) { showLobby("そのキーは既に使用されています"); return; }
             }
         }
-    } catch(e) {
-        console.error(e);
-        showLobby("認証エラーが発生しました。接続を確認してください。");
+    } catch (e) {
+        showLobby("認証エラーが発生しました。");
         return;
     }
 
+    // 🚀【画面遷移先行】通信のラグを体感させない最速切り替え
     $("roomDisplay").innerText = rID;
     $("lobby").style.display = "none";
     $("mainApp").style.display = "flex";
 
     try {
-        await set(myRef,{
-            nEnc:enc(name,pass),
-            tEnc:enc(trip,pass),
-            lastSeen:serverTimestamp()
+        // 在席データ送信と切断時の自動削除設定
+        await set(myRef, {
+            nEnc: enc(name, pass),
+            tEnc: enc(trip, pass),
+            lastSeen: serverTimestamp()
         });
+        onDisconnect(myRef).remove();
 
         if (!isReEntry) {
-            await push(chatRef,{
-                type:"sys",
-                text:enc(`${name}${trip}さんが入室しました`,pass),
-                time:serverTimestamp()
+            await push(chatRef, {
+                type: "sys",
+                text: enc(`${name}${trip}さんが入室しました`, pass),
+                time: serverTimestamp()
             });
         }
-    } catch(e) {
+    } catch (e) {
         console.error(e);
-        showLobby("サーバーへの書き込みに失敗しました（認証不一致）");
+        showLobby("サーバーへの初期書き込みに失敗しました。");
         return;
     }
 
-    // 🛠️ 【超重要】自分が「最後の1人」の状態で不意の切断が起きたとき、部屋のすべてを一緒に道連れ削除する設定
-    onDisconnect(myRef).remove();
-
-    onValue(presRef, async s=>{
-        if(!curR) return;
+    // 在席メンバー（プレゼンス）同期
+    unsubscribePres = onValue(presRef, async s => {
+        if (!curR) return;
         const users = s.val() || {};
-        const list = $("presenceList");
-        list.innerHTML = "";
+        const frag = document.createDocumentFragment();
         let count = 0;
 
-        Object.keys(users).forEach(k=>{
-            const n = dec(users[k].nEnc,curP);
-            const t = dec(users[k].tEnc,curP)||"";
-            if(!n) return;
+        Object.keys(users).forEach(k => {
+            const n = dec(users[k].nEnc, curP);
+            const t = dec(users[k].tEnc, curP) || "";
+            if (!n) return;
             count++;
 
             const span = document.createElement("span");
             span.className = "user-chip";
             span.innerText = n + t;
-            list.appendChild(span);
+            frag.appendChild(span);
         });
 
         userCount = count;
+        $("presenceList").innerHTML = "";
+        $("presenceList").appendChild(frag);
         $("presenceCount").innerText = `(${count}名)`;
 
-        // 🛠️ 参加者が0人になったら、即座にサーバー側の全データを完全リセット
+        // 誰一人いなくなったら即時に一括完全抹消
         if (count === 0) {
             await deleteRoomData(curR);
-            return;
-        }
-
-        // 🛠️ 自分が「最後の1人」になったら、ブラウザを閉じられた時に連鎖して部屋ごと消えるよう切断予約をアップグレード
-        if (count === 1 && users[uid]) {
-            onDisconnect(ref(db, `chat/${curR}`)).remove();
-            onDisconnect(ref(db, `presence/${curR}`)).remove();
-            onDisconnect(ref(db, `rooms/${curR}`)).remove();
-        } else {
-            // 他に参加者がいるなら、道連れ削除予約は解除（自分自身の在席のみ削除に戻す）
-            onDisconnect(ref(db, `chat/${curR}`)).cancel();
-            onDisconnect(ref(db, `rooms/${curR}`)).cancel();
-            onDisconnect(ref(db, `presence/${curR}`)).cancel();
-            onDisconnect(myRef).remove();
         }
     });
 
-    onValue(query(chatRef,orderByChild("time")),s=>{
-        if(userCount === 0) return; // 0人の場合は描画処理をスキップ
-        $("list").innerHTML = "";
-        s.forEach(c=>{
+    // チャットログ同期
+    unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
+        const frag = document.createDocumentFragment();
+
+        s.forEach(c => {
             const m = c.val();
-            const txt = dec(m.text,curP);
-            if(!txt) return;
+            const txt = dec(m.text, curP);
+            if (!txt) return;
 
             const div = document.createElement("div");
             div.className = "msg-wrap";
 
             const msgTime = m.time ? new Date(m.time) : new Date();
-            const time = msgTime.toLocaleTimeString([],{
-                hour:"2-digit",
-                minute:"2-digit",
-                second:"2-digit"
-            });
+            const time = msgTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-            if(m.type === "sys"){
+            if (m.type === "sys") {
                 div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
-            }else{
-                const senderName = dec(m.nEnc,curP) || "???";
-                const senderTrip = dec(m.tEnc,curP) || "";
-                div.innerHTML =
-                `
-                <div style="margin-left:8px;font-size:10px;font-weight:bold;">
-                    ${esc(senderName)}${esc(senderTrip)}
-                </div>
-                <div class="msg">
-                    <div class="msg-text">${linkify(txt)}</div>
-                </div>
-                <div class="msg-meta">${time}</div>
+            } else {
+                const sN = dec(m.nEnc, curP) || "???";
+                const sT = dec(m.tEnc, curP) || "";
+                div.innerHTML = `
+                    <div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(sN)}${esc(sT)}</div>
+                    <div class="msg"><div class="msg-text">${linkify(txt)}</div></div>
+                    <div class="msg-meta">${time}</div>
                 `;
             }
-            $("list").appendChild(div);
+            frag.appendChild(div);
         });
+
+        $("list").innerHTML = "";
+        $("list").appendChild(frag);
     });
 
-    const updater = async()=>{
-        if(!curR) return;
-        
+    const updater = async () => {
+        if (!curR) return;
         try {
-            await update(myRef,{ lastSeen:serverTimestamp() });
-
+            await update(myRef, { lastSeen: serverTimestamp() });
             const roomSnap = await get(roomRef);
-            if(roomSnap.exists()){
-                const rData = roomSnap.val();
-                if(rData.deleteAt && Date.now() > rData.deleteAt){
-                    await deleteRoomData(curR);
-                    alert("部屋が自動消滅しました。");
-                    location.reload();
-                    return;
-                }
+            if (roomSnap.exists() && roomSnap.val().deleteAt && Date.now() > roomSnap.val().deleteAt) {
+                await deleteRoomData(curR);
+                alert("部屋が自動消滅しました。");
+                location.reload();
             }
-        } catch(e) {
-            console.error("定期生存確認失敗:", e);
+        } catch (e) {
+            console.error("生存確認確認エラー:", e);
         }
     };
-
-    updater();
-    setInterval(updater,60000);
+    setInterval(updater, 60000);
 }
 
-const sendMsg = async()=>{
-    const v = $("mi").value.trim();
-    if(!v) return;
-    if(Date.now() - lastT < 300) return;
+const sendMsg = async () => {
+    const inputEl = $("mi");
+    const v = inputEl.value.trim();
+    if (!v || Date.now() - lastT < 250) return;
     lastT = Date.now();
 
-    try {
-        await push(ref(db,`chat/${curR}`),{
-            nEnc:enc(curN,curP),
-            tEnc:enc(curT,curP),
-            text:enc(v,curP),
-            time:serverTimestamp()
-        });
-
-        await set(ref(db,`rooms/${curR}`),{ 
-            deleteAt: Date.now() + ROOM_LIFETIME 
-        });
-    } catch(e) {
-        console.error(e);
-    }
-
-    $("mi").value = "";
-    $("mi").style.height = "24px"; 
-    toggleClearBtn(""); 
+    // 楽観的UI：通信ラグを感じさせない超高速クリア
+    inputEl.value = "";
+    inputEl.style.height = "24px";
+    toggleClearBtn("");
     scrollUp();
+
+    try {
+        await Promise.all([
+            push(ref(db, `chat/${curR}`), {
+                nEnc: enc(curN, curP),
+                tEnc: enc(curT, curP),
+                text: enc(v, curP),
+                time: serverTimestamp()
+            }),
+            set(ref(db, `rooms/${curR}`), { deleteAt: Date.now() + ROOM_LIFETIME })
+        ]);
+    } catch (e) {
+        console.error("送信エラー:", e);
+    }
 };
 
 $("sendBtn").onclick = sendMsg;
 
-$("mi").onkeydown = e=>{
-    if(e.key === "Enter" && !e.shiftKey && !e.isComposing){
+$("mi").onkeydown = e => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
         e.preventDefault();
         sendMsg();
     }
@@ -758,62 +673,74 @@ $("mi").onkeydown = e=>{
 
 $("mi").oninput = e => {
     const el = e.target;
-    el.style.height = "24px"; 
-    const nextHeight = el.scrollHeight - 4; 
-    el.style.height = Math.min(Math.max(nextHeight, 24), 96) + "px";
+    el.style.height = "24px";
+    el.style.height = Math.min(Math.max(el.scrollHeight - 4, 24), 96) + "px";
     toggleClearBtn(el.value);
 };
 
-$("focusBtn").onclick = ()=>{
-    $("mi").focus();
-    scrollUp();
-};
+$("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
+$("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "24px"; toggleClearBtn(""); $("mi").focus(); };
 
-$("clearBtn").onclick = ()=>{
-    $("mi").value = "";
-    $("mi").style.height = "24px";
-    toggleClearBtn("");
-    $("mi").focus(); 
-};
-
-$("exitBtn").onclick = async()=>{
-    if(!confirm("退出しますか？")) return;
+$("exitBtn").onclick = async () => {
+    if (!confirm("退出しますか？")) return;
 
     const rTmp = curR;
     const pTmp = curP;
     const nTmp = curN;
     const tTmp = curT;
-    
+
     showLobby();
 
-    // 🛠️ 手動退出時は、自動切断命令（道連れ削除含む）をすべて綺麗にクリア
-    onDisconnect(ref(db,`presence/${rTmp}/${uid}`)).cancel();
-    onDisconnect(ref(db, `chat/${rTmp}`)).cancel();
-    onDisconnect(ref(db, `presence/${rTmp}`)).cancel();
-    onDisconnect(ref(db, `rooms/${rTmp}`)).cancel();
-
     try {
-        await remove(ref(db,`presence/${rTmp}/${uid}`));
-        
-        const pSnap = await get(ref(db,`presence/${rTmp}`));
-        // 🛠️ 自分以外にまだ人が残っている場合のみ退出ログを残す。0人なら部屋ごと即座に完全抹消。
+        await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
+        await remove(ref(db, `presence/${rTmp}/${uid}`));
+
+        const pSnap = await get(ref(db, `presence/${rTmp}`));
         if (pSnap.exists() && Object.keys(pSnap.val()).length > 0) {
-            await push(ref(db,`chat/${rTmp}`),{
-                type:"sys",
-                text:enc(`${nTmp}${tTmp}さんが退出しました`,pTmp),
-                time:serverTimestamp()
+            await push(ref(db, `chat/${rTmp}`), {
+                type: "sys",
+                text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp),
+                time: serverTimestamp()
             });
         } else {
             await deleteRoomData(rTmp);
         }
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
-
     location.reload();
 };
 
-$("enterBtn").onclick = async()=>{
+$("masterGenBtn").onclick = () => {
+    $("ri").value = Math.random().toString(36).slice(2, 10);
+    $("pi").value = Math.random().toString(36).slice(2, 12);
+};
+
+$("tk").oninput = async e => {
+    const v = e.target.value.trim();
+    $("tp").innerText = v ? await generateTripString(v) : "";
+};
+
+let isInitialConnect = true;
+onValue(ref(db, ".info/connected"), (snap) => {
+    if (isInitialConnect) { isInitialConnect = false; return; }
+    if (snap.val() === false && curR) {
+        showLobby("サーバーとの接続が切断されました。");
+    }
+});
+
+$("copyBtn").onclick = async () => {
+    const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
+    try { await navigator.clipboard.writeText(url); alert("コピーしました"); } catch { alert(url); }
+};
+
+$("toTopBtn").onclick = scrollUp;
+$("toBottomBtn").onclick = () => {
+    const wrap = $("chatWrap");
+    if (wrap) wrap.scrollTo({ top: wrap.scrollHeight, behavior: "smooth" });
+};
+
+$("enterBtn").onclick = async () => {
     $("errMsg").style.display = "none";
 
     const r = $("ri").value.trim();
@@ -821,83 +748,30 @@ $("enterBtn").onclick = async()=>{
     const n = $("ni").value.trim();
     const tk = $("tk").value.trim();
 
-    if(!n){ $("errMsg").innerText = "名前を入力してください"; $("errMsg").style.display = "block"; return; }
-    if(!tk){ $("errMsg").innerText = "本人確認キーを入力してください"; $("errMsg").style.display = "block"; return; }
-    if(!r || !p){ $("errMsg").innerText = "部屋IDとパスワードを入力してください"; $("errMsg").style.display = "block"; return; }
+    if (!n) { $("errMsg").innerText = "名前を入力してください"; $("errMsg").style.display = "block"; return; }
+    if (!tk) { $("errMsg").innerText = "本人確認キーを入力してください"; $("errMsg").style.display = "block"; return; }
+    if (!r || !p) { $("errMsg").innerText = "部屋IDとパスワードを入力してください"; $("errMsg").style.display = "block"; return; }
 
     $("enterBtn").disabled = true;
     $("enterBtn").innerText = "接続中...";
 
-    localStorage.setItem("nez_n",n);
-    localStorage.setItem("nez_t",tk);
+    localStorage.setItem("nez_n", n);
+    localStorage.setItem("nez_t", tk);
 
     const tpString = await generateTripString(tk);
-    join(r,p,n,tpString);
+    join(r, p, n, tpString);
 };
 
-let isInitialConnect = true;
-onValue(ref(db, ".info/connected"), (snap) => {
-    if (isInitialConnect) {
-        isInitialConnect = false;
-        return;
-    }
-    if (snap.val() === false && curR) {
-        console.warn("Firebase切断を検知しました。ロビーに戻ります。");
-        showLobby("サーバーとの接続が切断されました。再試行してください。");
-    }
-});
-
-$("copyBtn").onclick = async()=>{
-    const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
-    try{
-        await navigator.clipboard.writeText(url);
-        alert("コピーしました");
-    }catch{
-        alert(url);
-    }
-};
-
-$("toTopBtn").onclick = scrollUp;
-
-$("toBottomBtn").onclick = ()=>{
-    const wrap = $("chatWrap");
-    if(wrap) {
-        wrap.scrollTo({
-            top: wrap.scrollHeight,
-            behavior: "smooth"
-        });
-    }
-};
-
-$("masterGenBtn").onclick = ()=>{
-    $("ri").value = Math.random().toString(36).slice(2,10);
-    $("pi").value = Math.random().toString(36).slice(2,12);
-};
-
-$("tk").oninput = async e=>{
-    const v = e.target.value.trim();
-    if(!v){
-        $("tp").innerText = "";
-        return;
-    }
-    $("tp").innerText = await generateTripString(v);
-};
-
-window.onload = ()=>{
+window.onload = () => {
     const sN = localStorage.getItem("nez_n");
     const sT = localStorage.getItem("nez_t");
-
-    if(sN) $("ni").value = sN;
-    if(sT){
-        $("tk").value = sT;
-        $("tk").dispatchEvent(new Event("input"));
-    }
+    if (sN) $("ni").value = sN;
+    if (sT) { $("tk").value = sT; $("tk").dispatchEvent(new Event("input")); }
 
     const u = new URLSearchParams(location.search);
-    if(u.get("r")) $("ri").value = u.get("r");
-    if(u.get("p")) $("pi").value = u.get("p");
+    if (u.get("r")) $("ri").value = u.get("r");
+    if (u.get("p")) $("pi").value = u.get("p");
 };
-
 </script>
 </body>
 </html>
