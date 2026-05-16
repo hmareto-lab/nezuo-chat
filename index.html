@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT</title>
+<title>NEZU ONETIME CHAT - Eco Edition</title>
 
 <!-- 暗号化ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -64,18 +64,18 @@ body{
     max-width:380px;
     background:#fff;
     border-radius:28px;
-    padding:25px;
+    padding:22px;
     box-shadow:0 20px 40px rgba(0,0,0,.15);
     display:flex;
     flex-direction:column;
-    gap:12px;
+    gap:10px;
     max-height:95vh;
     overflow-y:auto;
 }
 
 .lobby-input{
     width:100%;
-    height:46px;
+    height:44px;
     border:1px solid #eee;
     border-radius:12px;
     background:#f9fbff;
@@ -99,11 +99,100 @@ body{
 .info-box{
     background:#f8f9fa;
     border-radius:16px;
-    padding:15px;
+    padding:14px;
     font-size:13px;
-    line-height:1.6;
+    line-height:1.5;
     color:#495057;
     border:1px solid #efefef;
+}
+
+/* モーダル用CSSスタイル */
+.modal-overlay {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.5);
+    z-index:2000;
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+
+.modal-window {
+    width:92%;
+    max-width:350px;
+    background:#fff;
+    border-radius:24px;
+    padding:20px;
+    box-shadow:0 15px 30px rgba(0,0,0,0.25);
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    max-height:80vh;
+}
+
+.modal-title {
+    font-size:16px;
+    font-weight:bold;
+    color:var(--dark);
+    text-align:center;
+    margin:0;
+    flex-shrink:0;
+}
+
+.modal-body {
+    font-size:12px;
+    color:#555;
+    line-height:1.6;
+    overflow-y:auto;
+    padding-right:4px;
+}
+
+.modal-body::-webkit-scrollbar {
+    width:4px;
+}
+.modal-body::-webkit-scrollbar-thumb {
+    background:#ced4da;
+    border-radius:2px;
+}
+
+.modal-section-title {
+    font-weight:bold;
+    color:var(--dark);
+    margin:12px 0 4px 0;
+    display:flex;
+    align-items:center;
+    gap:4px;
+}
+.modal-section-title:first-child {
+    margin-top:0;
+}
+
+.modal-danger-box {
+    background:#fff3f3;
+    border:1px solid #fed7d7;
+    color:#c53030;
+    border-radius:12px;
+    padding:10px;
+    font-size:11.5px;
+    margin-bottom:6px;
+}
+
+.modal-close-btn {
+    width:100%;
+    height:44px;
+    border:none;
+    border-radius:12px;
+    background:var(--dark);
+    color:#fff;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:background 0.2s;
+    flex-shrink:0;
+}
+
+.modal-close-btn:active {
+    opacity:0.9;
 }
 
 #header{
@@ -332,23 +421,71 @@ textarea::placeholder {
 </head>
 <body>
 
+<!-- モーダルウィンドウ（規約・詳細説明：手動合流文言追加版） -->
+<div id="infoModal" class="modal-overlay">
+    <div class="modal-window">
+        <h3 class="modal-title">📖 利用規約・重要事項</h3>
+        
+        <div class="modal-body">
+            <!-- セキュリティ警告 -->
+            <div class="modal-danger-box">
+                ⚠️ <strong>招待URLの取り扱い注意</strong><br>
+                「招待URL」には、部屋の個別IDだけでなく、中に入るための<strong>暗号化パスワードも一緒に記録されています。</strong> そのため、このURLがSNSなどで第三者に知られると、<strong>誰でもあなたの部屋に入室できてしまいます。</strong> 共有する際は必ず信頼できる相手にのみ直接送信してください。
+            </div>
+
+            <!-- 利用方法 -->
+            <div class="modal-section-title" style="color:var(--primary);">💡 システムと使いかた</div>
+            <div style="padding-left:4px;">
+                ・<strong>部屋の作成方法:</strong> 独自の「部屋ID」と「暗号化パスワード」を入力します（🎲ボタンで強力なランダム文字列を自動生成できます）。<br>
+                ・<strong>入室手順:</strong> 「表示名」と「本人確認キー」を設定して入室します。<br>
+                ・<strong>URLなしでの合流方法:</strong> セキュリティの観点から招待URLを相手に送信したくない場合、URLを貼らなくても、<strong>ロビー画面で「部屋ID」と「暗号化パスワード」の2つが完全に一致すれば同じ部屋に合流できます。</strong> 信頼できる相手には、この2つの情報を個別に伝えて手動入力してもらう方法が最も安全です。
+            </div>
+
+            <!-- 禁止事項 -->
+            <div class="modal-section-title" style="color:var(--danger);">🚫 禁止事項</div>
+            <div style="padding-left:4px;">
+                利用者は、本サービスの利用にあたり、以下の行為を行ってはならないものとします。<br>
+                ・公序良俗に反する行為、または犯罪行為に結びつく行為<br>
+                ・他の利用者、第三者に対する誹謗中傷、脅迫、いやがらせ行為<br>
+                ・本サービスのサーバーやネットワーク機能に過度な負荷をかける行為<br>
+                ・複数端末から同一室へ不正に接続し、サービスの運営を妨害する行為<br>
+                ・その他、管理者が不適切と判断する行為
+            </div>
+
+            <!-- 免責事項 -->
+            <div class="modal-section-title" style="color:#718096;">⚖️ 免責事項と自動消滅</div>
+            <div style="padding-left:4px;">
+                ・<strong>完全消滅トリガー:</strong> 部屋内で10分間だれも発言（送信・受信含む）を行わないか、または在室している全員が「退出」ボタン等でいなくなった場合、その部屋のチャットログおよび認証データは**サーバー上から即座に物理削除（完全消滅）**されます。一度消えたログはシステム管理者であっても二度と復元できません。<br>
+                ・本サービスは暗号化技術を用いて通信のプライバシーを高めていますが、端末自体のウイルス感染や画面の盗み見等による情報漏洩について、当方は一切の責任を負いません。
+            </div>
+        </div>
+
+        <button id="closeModalBtn" class="modal-close-btn">閉じる</button>
+    </div>
+</div>
+
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
         <div style="text-align:center;">
             <h2 style="color:var(--primary);margin:0;font-size:24px;">NEZU ONETIME CHAT</h2>
             <p style="margin:4px 0 0 0;font-size:12px;font-weight:bold;color:#666;">
-                安心の使い捨て・暗号化チャット
+                通信量極小化・エコノミー版
             </p>
         </div>
 
         <div class="info-box">
-            <div style="margin-bottom:4px;">🔑 <strong>強力なエンドツーエンド暗号化</strong></div>
-            <div style="font-size:12px;color:#666;margin-bottom:8px;padding-left:4px;">
-                会話データはブラウザ側で完全に暗号化されてから送信されるため、サーバー管理者も一切解読できません。
+            <div style="font-weight:bold; color:var(--dark); margin-bottom:2px; display:flex; align-items:center; gap:6px;">
+                <span>🔒</span> 安全性について
             </div>
-            <div>🗑️ <strong>データは即座に完全使い捨て</strong></div>
-            <div style="font-size:12px;color:#666;padding-left:4px;">
-                用件が済めば、サーバー内のチャットログや部屋の全データは即座に跡形もなく完全消滅します。
+            <div style="font-size:11px; color:#666; margin-bottom:0; padding-left:18px; line-height:1.4;">
+                会話は端末間で直接暗号化されサーバーに残りません。10分間発言がないか、全員が退室すると部屋の全データが即座に完全消滅します。
+            </div>
+            
+            <!-- モーダル起動リンク -->
+            <div style="text-align:right; margin-top:6px;">
+                <span id="openModalLink" style="font-size:11px; color:var(--primary); font-weight:bold; cursor:pointer; text-decoration:underline;">
+                    👉 規約・禁止事項・URLのリスクを確認
+                </span>
             </div>
         </div>
 
@@ -380,7 +517,7 @@ textarea::placeholder {
             🎲 認証情報の自動生成
         </button>
 
-        <button id="enterBtn" style="width:100%;height:60px;border:none;border-radius:20px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;margin-top:8px;">
+        <button id="enterBtn" style="width:100%;height:60px;border:none;border-radius:20px;background:var(--primary);color:#fff;font-size:18px;font-weight:900;margin-top:2px;">
             認証して入室
         </button>
     </div>
@@ -433,21 +570,41 @@ const firebaseApp = initializeApp({
 });
 const db = getDatabase(firebaseApp);
 
-let uid = localStorage.getItem("nez_uid") || crypto.randomUUID();
-localStorage.setItem("nez_uid", uid);
+// --- モーダル制御ロジック ---
+const openModal = () => { $("infoModal").style.display = "flex"; };
+const closeModal = () => { $("infoModal").style.display = "none"; };
+
+$("openModalLink").onclick = openModal;
+$("closeModalBtn").onclick = closeModal;
+$("infoModal").onclick = (e) => { if (e.target === $("infoModal")) closeModal(); };
+
+
+const uid = (() => {
+    let id = localStorage.getItem("nez_uid");
+    if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("nez_uid", id);
+    }
+    return id;
+})();
 
 let curR, curP, curN, curT, rawR;
 let lastT = 0;
 let unsubscribeChat = null;
 let unsubscribePres = null;
+let isProcessingExit = false;
 
 const ROOM_LIFETIME = 10 * 60 * 1000; 
-const USER_TIMEOUT = 35 * 1000; // 死活監視タイムアウト（35秒）
+const USER_TIMEOUT = 35 * 1000; 
+
+const clearSubscriptions = () => {
+    if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+    if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
+};
 
 const showLobby = (msg = "") => {
     curR = null;
-    if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
-    if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
+    clearSubscriptions();
     
     if (msg) {
         $("errMsg").innerText = msg;
@@ -478,7 +635,7 @@ const esc = t => (t || "").replace(/[&<>"']/g, c => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[c]));
 
-const linkify = t => esc(t).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+const linkify = t => esc(t).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 
 const toggleClearBtn = (text) => {
     const btn = $("clearBtn");
@@ -500,20 +657,16 @@ async function updateTripPreview() {
     $("tp").innerText = (n && tk) ? await generateTripString(n, tk) : "";
 }
 
-// 厳格セキュリティルールに準拠したクリーンアップ関数
 async function deleteRoomData(roomHash) {
     try {
-        // セキュリティ制限をパスするため、まず自分のプレゼンスを削除し、完全に0人にする
         await remove(ref(db, `presence/${roomHash}/${uid}`));
-        
-        // サーバーが削除を許可する条件を満たした状態で一括削除を実行
         await Promise.all([
             remove(ref(db, `chat/${roomHash}`)),
             remove(ref(db, `presence/${roomHash}`)),
             remove(ref(db, `rooms/${roomHash}`))
         ]);
     } catch (e) {
-        console.error("部屋データ削除処理（制限付き）:", e);
+        console.error("データ自動消滅処理:", e);
     }
 }
 
@@ -562,9 +715,7 @@ async function join(rID, pass, name, trip, maxLimit) {
 
             Object.keys(users).forEach(k => {
                 const lastSeen = users[k].lastSeen || NOW;
-                if (NOW - lastSeen <= USER_TIMEOUT) {
-                    currentActiveCount++;
-                }
+                if (NOW - lastSeen <= USER_TIMEOUT) currentActiveCount++;
             });
 
             if (currentActiveCount >= finalMax) {
@@ -573,12 +724,13 @@ async function join(rID, pass, name, trip, maxLimit) {
             }
         }
 
-        // タブ閉じ・回線切断時に自動でプレゼンスを消去する予約
         await onDisconnect(myRef).remove();
 
         $("roomDisplay").innerText = rID;
         $("lobby").style.display = "none";
         $("mainApp").style.display = "flex";
+
+        window.lastRoomActivity = Date.now();
 
         const tasks = [
             set(myRef, {
@@ -605,12 +757,11 @@ async function join(rID, pass, name, trip, maxLimit) {
         await Promise.all(tasks);
     } catch (e) {
         console.error(e);
-        showLobby("認証・満員チェック中にエラーが発生しました。");
+        showLobby("認証・入室処理中にエラーが発生しました。");
         return;
     }
 
-    // 在室管理の同期
-    unsubscribePres = onValue(presRef, async s => {
+    unsubscribePres = onValue(presRef, s => {
         if (!curR) return;
         const users = s.val() || {};
         const frag = document.createDocumentFragment();
@@ -634,24 +785,17 @@ async function join(rID, pass, name, trip, maxLimit) {
 
         $("presenceList").innerHTML = "";
         $("presenceList").appendChild(frag);
+        $("presenceCount").innerText = `(${count}/${finalMax}名)`;
 
-        let rMax = 4;
-        try {
-            const rSnap = await get(roomRef);
-            rMax = (rSnap.exists() && rSnap.val().max) ? Number(rSnap.val().max) : 4;
-        } catch {}
-        $("presenceCount").innerText = `(${count}/${rMax}名)`;
-
-        // 厳格ルール対応：完全に0人判定になったらフロントからもクリーンアップを試みる
-        if (count === 0) {
-            await deleteRoomData(curR);
-            if (unsubscribeChat) showLobby("部屋の利用者がいなくなったため、データが自動消滅しました。");
+        if (count === 0 && !isProcessingExit) {
+            deleteRoomData(curR);
+            showLobby("部屋の利用者がいなくなったため、データが自動消滅しました。");
         }
     });
 
-    // チャットログの同期
     unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
         const frag = document.createDocumentFragment();
+        window.lastRoomActivity = Date.now();
 
         s.forEach(c => {
             const m = c.val();
@@ -683,17 +827,14 @@ async function join(rID, pass, name, trip, maxLimit) {
     });
 }
 
-// 30秒サイクルのハートビート送信及び10分自動消滅チェック
 const updater = async () => {
-    if (!curR) return;
+    if (!curR || isProcessingExit) return;
     try {
         const myRef = ref(db, `presence/${curR}/${uid}`);
-        const roomRef = ref(db, `rooms/${curR}`);
-
         await update(myRef, { lastSeen: serverTimestamp() });
         
-        const roomSnap = await get(roomRef);
-        if (roomSnap.exists() && roomSnap.val().deleteAt && Date.now() > roomSnap.val().deleteAt) {
+        if (window.lastRoomActivity && Date.now() - window.lastRoomActivity > ROOM_LIFETIME) {
+            clearSubscriptions();
             await deleteRoomData(curR);
             alert("10分間発言がなかったため、部屋が自動消滅しました。");
             location.reload();
@@ -716,19 +857,19 @@ const sendMsg = async () => {
     scrollUp();
 
     try {
-        const roomSnap = await get(ref(db, `rooms/${curR}`));
-        const currentMax = (roomSnap.exists() && roomSnap.val().max !== undefined) ? Number(roomSnap.val().max) : 4;
+        const roomRef = ref(db, `rooms/${curR}`);
+        window.lastRoomActivity = Date.now();
 
         await Promise.all([
             push(ref(db, `chat/${curR}`), {
-                nEnc: enc(curN, curP),
-                tEnc: enc(curT, curP),
+                nEnc: enc(v, curP),
+                nEncName: enc(curN, curP), 
+                nEncTrip: enc(curT, curP),
                 text: enc(v, curP),
                 time: serverTimestamp()
             }),
-            set(ref(db, `rooms/${curR}`), { 
-                deleteAt: Date.now() + ROOM_LIFETIME,
-                max: currentMax
+            update(roomRef, { 
+                deleteAt: Date.now() + ROOM_LIFETIME
             })
         ]);
     } catch (e) {
@@ -755,25 +896,21 @@ $("mi").oninput = e => {
 $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "24px"; toggleClearBtn(""); $("mi").focus(); };
 
-// 退出シーケンスの調整（厳格化されたルールで確実に動作する手順）
 $("exitBtn").onclick = async () => {
-    if (!confirm("退出しますか？")) return;
+    if (isProcessingExit || !confirm("退出しますか？")) return;
+    isProcessingExit = true;
 
     const rTmp = curR;
     const pTmp = curP;
     const nTmp = curN;
     const tTmp = curT;
 
-    if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
-    if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
+    clearSubscriptions();
 
     try {
-        // 1. まずブラウザ切断時の自動消去設定を取り消す
         await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
-        // 2. 自分の在室情報を削除
         await remove(ref(db, `presence/${rTmp}/${uid}`));
 
-        // 3. 自分を除いたアクティブな参加者が残っているか確認
         const pSnap = await get(ref(db, `presence/${rTmp}`));
         let activeCount = 0;
         const NOW = Date.now();
@@ -788,7 +925,6 @@ $("exitBtn").onclick = async () => {
         }
 
         if (activeCount > 0) {
-            // 他に人がいるなら、システムメッセージをプッシュして退出
             await push(ref(db, `chat/${rTmp}`), {
                 type: "sys",
                 text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp),
@@ -797,7 +933,6 @@ $("exitBtn").onclick = async () => {
                 tEnc: enc("", pTmp)
             });
         } else {
-            // 自分が最後の1人なら、強化ルールに基づき部屋データを完全にクリーンアップ
             await deleteRoomData(rTmp);
         }
     } catch (e) {
