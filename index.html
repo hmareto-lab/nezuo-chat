@@ -538,16 +538,13 @@ async function join(rID,pass,name,trip){
         if(snap.exists()){
             const users = snap.val() || {};
             
-            // 💡 改善：同一UIDが存在した時の条件を緩和（パスワードミスによるロックアウトの防止）
+            // 🛠️ なりすまし対策を軽量化：同一UIDであれば無条件で「再入室(isReEntry)」扱いにする
+            // これにより、名前やキーを変更しての再入室でもロックアウトされなくなります
             if(users[uid]){
-                const oldN = dec(users[uid].nEnc, pass);
-                const oldT = dec(users[uid].tEnc, pass) || "";
-                if(oldN && oldN === name && oldT === trip){
-                    isReEntry = true;
-                }
+                isReEntry = true;
             }
 
-            // 重複チェック
+            // 自分以外のユーザー（異なるUID）との「名前・キーの重複チェック」
             for(const k in users){
                 if(k === uid) continue;
                 const n = dec(users[k].nEnc, pass);
@@ -580,6 +577,7 @@ async function join(rID,pass,name,trip){
             lastSeen:serverTimestamp()
         });
 
+        // 🛠️ 同一UIDで戻った（isReEntry === true）なら、入室ログのプッシュをスキップする
         if (!isReEntry) {
             await push(chatRef,{
                 type:"sys",
@@ -628,7 +626,6 @@ async function join(rID,pass,name,trip){
             const div = document.createElement("div");
             div.className = "msg-wrap";
 
-            // 💡 改善：サーバーの時刻同期が遅散した瞬間のためのフォールバック
             const msgTime = m.time ? new Date(m.time) : new Date();
             const time = msgTime.toLocaleTimeString([],{
                 hour:"2-digit",
@@ -797,7 +794,6 @@ $("enterBtn").onclick = ()=>{
     join(r,p,n,tp);
 };
 
-// 💡 改善：初回ロード時の一時的な非接続ステータスを弾くフラグを追加
 let isInitialConnect = true;
 onValue(ref(db, ".info/connected"), (snap) => {
     if (isInitialConnect) {
