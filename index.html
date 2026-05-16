@@ -442,7 +442,7 @@ let unsubscribeChat = null;
 let unsubscribePres = null;
 
 const ROOM_LIFETIME = 10 * 60 * 1000; 
-const USER_TIMEOUT = 35 * 1000; // 生存スパン(30秒)に合わせ幽霊部員を素早く排除
+const USER_TIMEOUT = 35 * 1000; // 死活監視タイムアウト（35秒）
 
 const showLobby = (msg = "") => {
     curR = null;
@@ -500,15 +500,20 @@ async function updateTripPreview() {
     $("tp").innerText = (n && tk) ? await generateTripString(n, tk) : "";
 }
 
+// 厳格セキュリティルールに準拠したクリーンアップ関数
 async function deleteRoomData(roomHash) {
     try {
+        // セキュリティ制限をパスするため、まず自分のプレゼンスを削除し、完全に0人にする
+        await remove(ref(db, `presence/${roomHash}/${uid}`));
+        
+        // サーバーが削除を許可する条件を満たした状態で一括削除を実行
         await Promise.all([
             remove(ref(db, `chat/${roomHash}`)),
             remove(ref(db, `presence/${roomHash}`)),
             remove(ref(db, `rooms/${roomHash}`))
         ]);
     } catch (e) {
-        console.error("部屋データ削除失敗:", e);
+        console.error("部屋データ削除処理（制限付き）:", e);
     }
 }
 
@@ -568,7 +573,7 @@ async function join(rID, pass, name, trip, maxLimit) {
             }
         }
 
-        // ブラウザが閉じられたら自動でサーバー上の入室情報を削除する設定
+        // タブ閉じ・回線切断時に自動でプレゼンスを消去する予約
         await onDisconnect(myRef).remove();
 
         $("roomDisplay").innerText = rID;
@@ -591,7 +596,9 @@ async function join(rID, pass, name, trip, maxLimit) {
             tasks.push(push(chatRef, {
                 type: "sys",
                 text: enc(`${name}${trip}さんが入室しました`, pass),
-                time: serverTimestamp()
+                time: serverTimestamp(),
+                nEnc: enc("SYSTEM", pass),
+                tEnc: enc("", pass)
             }));
         }
 
@@ -602,7 +609,7 @@ async function join(rID, pass, name, trip, maxLimit) {
         return;
     }
 
-    // リアルタイム同期監視
+    // 在室管理の同期
     unsubscribePres = onValue(presRef, async s => {
         if (!curR) return;
         const users = s.val() || {};
@@ -635,13 +642,14 @@ async function join(rID, pass, name, trip, maxLimit) {
         } catch {}
         $("presenceCount").innerText = `(${count}/${rMax}名)`;
 
-        // アクティブユーザーが完全に0人になったら部屋を即座に削除
+        // 厳格ルール対応：完全に0人判定になったらフロントからもクリーンアップを試みる
         if (count === 0) {
             await deleteRoomData(curR);
             if (unsubscribeChat) showLobby("部屋の利用者がいなくなったため、データが自動消滅しました。");
         }
     });
 
+    // チャットログの同期
     unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
         const frag = document.createDocumentFragment();
 
@@ -675,7 +683,7 @@ async function join(rID, pass, name, trip, maxLimit) {
     });
 }
 
-// 30秒ごとの生存確認と10分の部屋期限切れチェック
+// 30秒サイクルのハートビート送信及び10分自動消滅チェック
 const updater = async () => {
     if (!curR) return;
     try {
@@ -691,7 +699,7 @@ const updater = async () => {
             location.reload();
         }
     } catch (e) {
-        console.error("生存確認エラー:", e);
+        console.error("生存確認更新エラー:", e);
     }
 };
 setInterval(updater, 30000);
@@ -747,7 +755,7 @@ $("mi").oninput = e => {
 $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "24px"; toggleClearBtn(""); $("mi").focus(); };
 
-// 退出処理の最適化
+// 退出シーケンスの調整（厳格化されたルールで確実に動作する手順）
 $("exitBtn").onclick = async () => {
     if (!confirm("退出しますか？")) return;
 
@@ -760,9 +768,12 @@ $("exitBtn").onclick = async () => {
     if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
 
     try {
+        // 1. まずブラウザ切断時の自動消去設定を取り消す
         await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
+        // 2. 自分の在室情報を削除
         await remove(ref(db, `presence/${rTmp}/${uid}`));
 
+        // 3. 自分を除いたアクティブな参加者が残っているか確認
         const pSnap = await get(ref(db, `presence/${rTmp}`));
         let activeCount = 0;
         const NOW = Date.now();
@@ -777,16 +788,20 @@ $("exitBtn").onclick = async () => {
         }
 
         if (activeCount > 0) {
+            // 他に人がいるなら、システムメッセージをプッシュして退出
             await push(ref(db, `chat/${rTmp}`), {
                 type: "sys",
                 text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp),
-                time: serverTimestamp()
+                time: serverTimestamp(),
+                nEnc: enc("SYSTEM", pTmp),
+                tEnc: enc("", pTmp)
             });
         } else {
+            // 自分が最後の1人なら、強化ルールに基づき部屋データを完全にクリーンアップ
             await deleteRoomData(rTmp);
         }
     } catch (e) {
-        console.error(e);
+        console.error("退出エラー:", e);
     }
     
     location.reload();
