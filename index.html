@@ -505,8 +505,11 @@ async function join(rID, pass, name, trip) {
 
     try {
         const snap = await get(presRef);
+        // 部屋に誰かしらデータが存在する場合のみチェックを行う（新規部屋ならスルーして入室へ）
         if (snap.exists()) {
             const users = snap.val() || {};
+            
+            // 同一UIDが既に部屋に存在する場合（リコンネクト）
             if (users[uid]) {
                 const oldN = dec(users[uid].nEnc, pass);
                 const oldT = dec(users[uid].tEnc, pass) || "";
@@ -517,6 +520,8 @@ async function join(rID, pass, name, trip) {
                     return;
                 }
             }
+            
+            // 他のユーザーとの重複チェック
             for (const k in users) {
                 if (k === uid) continue;
                 if (dec(users[k].nEnc, pass) === name) { showLobby("その名前は既に使用されています"); return; }
@@ -528,13 +533,13 @@ async function join(rID, pass, name, trip) {
         return;
     }
 
-    // 🚀【画面遷移先行】通信のラグを体感させない最速切り替え
+    // 画面切り替え
     $("roomDisplay").innerText = rID;
     $("lobby").style.display = "none";
     $("mainApp").style.display = "flex";
 
     try {
-        // 在席データ送信と切断時の自動削除設定
+        // 自身の存在（プレゼンス）を書き込み
         await set(myRef, {
             nEnc: enc(name, pass),
             tEnc: enc(trip, pass),
@@ -542,6 +547,7 @@ async function join(rID, pass, name, trip) {
         });
         onDisconnect(myRef).remove();
 
+        // 新規入室時のみシステムメッセージを送信
         if (!isReEntry) {
             await push(chatRef, {
                 type: "sys",
@@ -579,7 +585,6 @@ async function join(rID, pass, name, trip) {
         $("presenceList").appendChild(frag);
         $("presenceCount").innerText = `(${count}名)`;
 
-        // 誰一人いなくなったら即時に一括完全抹消
         if (count === 0) {
             await deleteRoomData(curR);
         }
@@ -641,7 +646,6 @@ const sendMsg = async () => {
     if (!v || Date.now() - lastT < 250) return;
     lastT = Date.now();
 
-    // 楽観的UI：通信ラグを感じさせない超高速クリア
     inputEl.value = "";
     inputEl.style.height = "24px";
     toggleClearBtn("");
@@ -689,7 +693,8 @@ $("exitBtn").onclick = async () => {
     const nTmp = curN;
     const tTmp = curT;
 
-    showLobby();
+    if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
+    if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
 
     try {
         await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
@@ -708,6 +713,7 @@ $("exitBtn").onclick = async () => {
     } catch (e) {
         console.error(e);
     }
+    
     location.reload();
 };
 
