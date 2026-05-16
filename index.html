@@ -111,7 +111,6 @@ body{
     padding-top:env(safe-area-inset-top);
 }
 
-/* --- 入力バー周辺：元のシンプルデザイン（線・影ノイズなし） --- */
 .app-header-top{
     display:flex;
     align-items:flex-end;
@@ -125,7 +124,7 @@ body{
     align-items:center;
     flex:1;
     min-width:0;
-    background:#f1f3f5; /* 元の均一な薄いグレー背景 */
+    background:#f1f3f5;
     border-radius:20px;
     padding:4px 12px;
     border:none !important; 
@@ -136,7 +135,7 @@ body{
 .input-container:focus-within {
     border:none !important;
     box-shadow:none !important;
-    background:#f1f3f5; /* フォーカス時も元のグレーを維持 */
+    background:#f1f3f5;
 }
 
 textarea{
@@ -149,8 +148,7 @@ textarea{
     background:transparent;
     font-size:15px;
     line-height:1.4;
-    color:#212529; /* 元の黒文字 */
-    
+    color:#212529;
     border:none !important;
     outline:none !important;
     resize:none;
@@ -158,13 +156,11 @@ textarea{
     -webkit-appearance:none;
 }
 
-/* 元のプレースホルダー配色 */
 textarea::placeholder {
     color:#adb5bd;
     opacity:1;
 }
 
-/* 元のクリアボタンデザイン */
 #clearBtn{
     width:24px;
     height:24px;
@@ -189,7 +185,6 @@ textarea::placeholder {
     background:#adb5bd;
 }
 
-/* 送信ボタン */
 #sendBtn{
     width:36px;
     height:36px;
@@ -397,9 +392,7 @@ textarea::placeholder {
 
     <div class="room-info-bar">
         <div id="roomDisplay" class="info-item"></div>
-
         <div id="presenceList"></div>
-
         <div id="presenceCount" style="font-size:10px;color:#999;font-weight:bold;padding-top:3px;"></div>
     </div>
 
@@ -412,17 +405,11 @@ textarea::placeholder {
 <footer id="footer">
 
     <div class="footer-nav">
-
         <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;font-size:20px;">⌨️</button>
-
         <button id="toTopBtn" class="btn" style="background:#f0f2f5;">↑</button>
-
         <button id="toBottomBtn" class="btn" style="background:#f0f2f5;">↓</button>
-
         <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待URL</button>
-
         <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
-
     </div>
 
 </footer>
@@ -446,7 +433,6 @@ serverTimestamp,
 query,
 orderByChild,
 get,
-limitToLast,
 update,
 onDisconnect
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
@@ -552,16 +538,16 @@ async function join(rID,pass,name,trip){
         if(snap.exists()){
             const users = snap.val() || {};
             
+            // 💡 改善：同一UIDが存在した時の条件を緩和（パスワードミスによるロックアウトの防止）
             if(users[uid]){
                 const oldN = dec(users[uid].nEnc, pass);
                 const oldT = dec(users[uid].tEnc, pass) || "";
-                if(!oldN || oldN !== name || oldT !== trip){
-                    showLobby("同一端末では正しいパスワードと、同じ名前・キーでのみ再入室できます");
-                    return;
+                if(oldN && oldN === name && oldT === trip){
+                    isReEntry = true;
                 }
-                isReEntry = true;
             }
 
+            // 重複チェック
             for(const k in users){
                 if(k === uid) continue;
                 const n = dec(users[k].nEnc, pass);
@@ -583,13 +569,11 @@ async function join(rID,pass,name,trip){
         return;
     }
 
-    // 接続検証クリア後に画面を切り替え
     $("roomDisplay").innerText = rID;
     $("lobby").style.display = "none";
     $("mainApp").style.display = "flex";
 
     try {
-        // 安全なサーバータイムスタンプのみを送信
         await set(myRef,{
             nEnc:enc(name,pass),
             tEnc:enc(trip,pass),
@@ -644,7 +628,9 @@ async function join(rID,pass,name,trip){
             const div = document.createElement("div");
             div.className = "msg-wrap";
 
-            const time = new Date(m.time).toLocaleTimeString([],{
+            // 💡 改善：サーバーの時刻同期が遅散した瞬間のためのフォールバック
+            const msgTime = m.time ? new Date(m.time) : new Date();
+            const time = msgTime.toLocaleTimeString([],{
                 hour:"2-digit",
                 minute:"2-digit",
                 second:"2-digit"
@@ -811,8 +797,13 @@ $("enterBtn").onclick = ()=>{
     join(r,p,n,tp);
 };
 
-// ネットワーク切断・Firebase切断の監視を強化
+// 💡 改善：初回ロード時の一時的な非接続ステータスを弾くフラグを追加
+let isInitialConnect = true;
 onValue(ref(db, ".info/connected"), (snap) => {
+    if (isInitialConnect) {
+        isInitialConnect = false;
+        return;
+    }
     if (snap.val() === false && curR) {
         console.warn("Firebase切断を検知しました。ロビーに戻ります。");
         showLobby("サーバーとの接続が切断されました。再試行してください。");
