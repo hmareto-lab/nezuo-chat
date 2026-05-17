@@ -430,17 +430,57 @@
         <div class="bg-slate-900 p-6 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col gap-4 border border-slate-800 select-text">
             <h3 class="font-black text-lg text-indigo-400 border-b border-slate-800 pb-2 flex items-center gap-1">📖 総合ガイド ＆ 規約項目</h3>
             <div class="text-xs text-slate-300 leading-relaxed space-y-4">
+                <!-- 🚨 最重要警告メッセージ -->
                 <div class="bg-red-950/50 p-3 rounded-xl border border-red-900/40 text-red-200 space-y-1">
-                    <p class="font-bold flex items-center gap-1">⚠️ ログデータに関する重要な注意</p>
-                    <p class="text-[11px] text-slate-400 leading-normal">本チャットは完全端末間暗号化（E2EE）です。サーバー側にログを一切保持しないため、ブラウザのリロードや「退出」によって会話は<strong>すべて永久に消滅し、復元できません。</strong></p>
+                    <p class="font-bold flex items-center gap-1">⚠️ ログデータに関する重要な注意（必読）</p>
+                    <p class="text-[11px] text-slate-400 leading-normal">
+                        本チャットは、サーバーにログを一切残さない<strong class="text-slate-200">完全端末間暗号化（E2EE）空間</strong>です。ブラウザの「リロード」「戻る」ボタンを押したり、右上の「退出」ボタンをクリックすると、それまでの会話履歴・シアター状態は<strong class="text-slate-200">すべて永久に消滅し、二度と復元できません。</strong> 重要な情報のバックアップは各自メモ等に控えてください。
+                    </p>
                 </div>
-                <div>
-                    <p class="font-bold text-indigo-300 text-sm">🔗 1. 部屋の共有（招待）</p>
-                    <p class="text-slate-400 mt-0.5 pl-1">入室後に右上の「招待」ボタンを押すと暗号キー付きリンクがコピーされます。友人に渡すだけで同じ安全な空間を共有できます。</p>
+
+                <!-- 📘 1. 使い方ガイド -->
+                <div class="space-y-1.5">
+                    <p class="font-bold text-indigo-300 text-sm flex items-center gap-1">📘 1. 使い方ガイド</p>
+                    <ul class="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
+                        <li><strong class="text-slate-200">部屋の作成と入室：</strong> 「あなたの表示名」「トリップ暗号」「部屋ID」「共通暗号パスワード」を入力して入室します。「自動生成」ボタンを使うと、ランダムで安全な部屋IDとパスワードが即座にセットされます。</li>
+                        <li><strong class="text-slate-200">友達を招待する：</strong> 入室後、右上にある「招待」ボタンを押すと、現在の部屋IDと暗号パスワードが埋め込まれた「招待用リンク」がクリップボードにコピーされます。これをそのまま友達に共有してください。</li>
+                        <li><strong class="text-slate-200">メッセージ送信：</strong> 入力欄に文字を入力し、Enterキー（スマホは紙飛行機ボタン）で送信できます。URLを貼り付けると自動的にリンク化されます。</li>
+                    </ul>
                 </div>
-                <div>
-                    <p class="font-bold text-red-400 text-sm">📺 2. 動画同時視聴コントロール</p>
-                    <p class="text-slate-400 mt-0.5 pl-1">右上の「プレイヤー」からYouTube窓を起動可能です。</p>
+
+                <!-- 📺 2. 同時視聴シアター（プレイヤー）の使い方 -->
+                <div class="space-y-1.5">
+                    <p class="font-bold text-red-400 text-sm flex items-center gap-1">📺 2. シンクロシアター機能</p>
+                    <p class="text-[11px] text-slate-400 leading-normal">
+                        チャット内にYouTubeのURLが投稿されると、メッセージの下に「同期起動パネル」が出現します。また、画面右上の「プレイヤー」ボタンから直接シネマコンソールを開くことも可能です。
+                    </p>
+                    <ul class="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
+                        <li><strong class="text-red-300">📺 同期起動：</strong> 部屋のメンバー全員の画面に同じ動画プレイヤーを強制起動し、再生位置をリアルタイムにシンクロさせます。動画を最初に再生・検索した人が「👑ホスト」となり、再生・停止・シークの全権限を持ちます。</li>
+                        <li><strong class="text-emerald-300">▶ 内部再生：</strong> シアタープレイヤー窓を開かず、そのメッセージのタイムライン枠内だけで個別にこっそり再生します。</li>
+                        <li><strong class="text-amber-300">🔓 マイペース再生（ゲスト用）：</strong> ホストとの強制連動を一時的に解除し、自分自身のタイムラインでシークや一時停止を自由に行えます。「ホストに同期する」を押せば、いつでもホストの再生位置へリシークして戻れます。</li>
+                        <li><strong class="text-slate-200">プレイヤーの操作：</strong> ビデオプレイヤー上部のバーをドラッグすると画面上の好きな位置へ移動でき、マウスホイール（スマホは右下のつまみをドラッグ）で自由にプレイヤーの大きさを拡大・縮小できます。</li>
+                    </ul>
+                </div>
+
+                <!-- 🛡️ 3. 高度なセキュリティ仕様 -->
+                <div class="space-y-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <p class="font-bold text-green-400 text-xs flex items-center gap-1">🛡️ 3. 本システムのセキュリティ仕様</p>
+                    <ul class="list-none space-y-1 text-slate-400 text-[11px]">
+                        <li><span class="text-green-500">◆</span> <strong class="text-slate-300">エンドツーエンド暗号化（E2EE）：</strong> 送信されるすべての文字情報は、ブラウザからネットワークに出る前に共通暗号パスワードによって「AES-256」規格で暗号化されます。データベースを管理するサーバーであっても、あなたの会話を解読することは絶対に不可能です。</li>
+                        <li><span class="text-green-500">◆</span> <strong class="text-slate-300">なりすまし防止（トリップ機能）：</strong> あなたの名前と「トリップ暗号（秘密のキー）」を掛け合わせて算出した固有の文字列（例：◆a1b2c3）が名前の横に表示されます。キーを知らない他人があなたの名前を騙っても、このトリップ文字列が変化するため、一目で偽物だと見破ることができます。</li>
+                        <li><span class="text-green-500">◆</span> <strong class="text-slate-300">データ自動消滅（クリーンアップ）：</strong> 部屋の全員が退出するか、部屋の作成時に設定した「無言クリーンアップタイマー」の間、誰も発言や操作を行わなかった場合、サーバー上の部屋データ・映像同期データは痕跡を残さず完全自動消滅します。</li>
+                    </ul>
+                </div>
+
+                <!-- 🚫 4. 禁止事項および利用上の注意 -->
+                <div class="space-y-1.5">
+                    <p class="font-bold text-amber-400 text-xs flex items-center gap-1">🚫 4. 禁止事項・注意事項</p>
+                    <ul class="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
+                        <li>共通暗号パスワードは無関係な第三者に漏洩しないよう管理してください（パスワードが漏れると、その部屋の通信はすべて傍受・解読可能になります）。</li>
+                        <li>サーバーへの攻撃行為、スクリプトを用いた大量の自動連投、部屋の不当な乱造・占有は禁止します。</li>
+                        <li>著作権を侵害する動画や、公序良俗に反するYouTube動画を部屋内で同期・拡散する行為はお控えください。</li>
+                        <li>当システムは「一時的な使い捨ての連絡空間」を提供するものです。永続的なデータ保存や、ミッションクリティカルな業務連絡への利用には適していません。</li>
+                    </ul>
                 </div>
             </div>
             <button id="closeGuideBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md mt-2">内容を確認しました</button>
@@ -518,6 +558,20 @@
                 await update(ref(db, `rooms/${curR}`), { lastActivity: NOW });
                 setTimeout(() => { isLocalAction = false; }, 400);
             }, 150);
+        };
+
+        // インライン内での再生処理へ切り替える関数
+        window.__inlinePlayVideo = function(containerId, vId) {
+            const container = $(containerId);
+            if (!container) return;
+            container.innerHTML = `
+            <div class="relative w-full aspect-video rounded-lg overflow-hidden border border-slate-800 bg-black">
+                <iframe class="absolute inset-0 w-full h-full border-0" 
+                        src="https://www.youtube.com/embed/${vId}?autoplay=1&playsinline=1" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            </div>`;
         };
 
         function pushMessageToOverlay(senderName, textMessage) {
@@ -614,7 +668,6 @@
             $("clearBtn").style.opacity = hasText ? "1" : "0"; $("clearBtn").style.pointerEvents = hasText ? "auto" : "none";
         };
 
-        // トリップ文字列生成処理
         function generateTripString(name, key) {
             if (!name || !key) return "";
             try {
@@ -625,7 +678,6 @@
             }
         }
 
-        // トリッププレビューの動的表示
         function updateTripPreview() { 
             const n = $("ni").value.replace(/[\s\u3000]+/g, "").trim(); 
             const tk = $("tk").value.trim(); 
@@ -684,7 +736,7 @@
 
             handle.addEventListener('touchstart', (e) => {
                 e.stopPropagation(); if (e.touches.length === 1) startResize(e.touches[0].clientX);
-            }, { passive: false });
+            }, { false: false });
             handle.addEventListener('touchmove', (e) => { if (!isResizing) return; e.preventDefault(); moveResize(e.touches[0].clientX); }, { passive: false });
             handle.addEventListener('touchend', () => { isResizing = false; }, { passive: true });
 
@@ -745,7 +797,6 @@
         $("ytVolumeMuteBtn").onclick = (e) => { e.preventDefault(); toggleLocalMute(); };
         $("ytMiniMuteBtn").onclick = (e) => { e.preventDefault(); toggleLocalMute(); };
 
-        // 核心：Firebase接続およびルーム入場・同期処理
         async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
             let waitCounter = 0; 
             while (!isOffsetLoaded && waitCounter < 20) { await new Promise(r => setTimeout(r, 50)); waitCounter++; }
@@ -784,6 +835,11 @@
                 });
 
                 await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
+                
+                // 🚪 入室成功が確定した段階で、名前とトリップ暗号キーをブラウザに記憶
+                localStorage.setItem("nez_ni", name);
+                localStorage.setItem("nez_tk", $("tk").value.trim());
+
                 $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
                 $("errMsg").style.display = "none";
                 await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
@@ -866,7 +922,7 @@
                     await set(roomStateRef, { 
                         videoId: currentId, status: status, currentTime: targetTime, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now()
                     });
-                    await update(roomRef, { lastActivity: getServerNow() });
+                    await update(ref(db, `rooms/${curR}`), { lastActivity: getServerNow() });
                     setTimeout(() => { isLocalAction = false; }, 400);
                 }
                 isUserDraggingSlider = false;
@@ -918,23 +974,29 @@
                     let embedMediaHtml = "";
                     
                     if (extractedId) {
-                        const isTriggerPlayer = /プレイヤー/i.test(txt);
-                        if (isTriggerPlayer) {
-                            embedMediaHtml = `
-                            <div class="mt-2 border border-slate-800 rounded-lg overflow-hidden w-full max-w-[280px]">
-                                <div class="relative w-full" style="padding-top: 56.25%;">
-                                    <iframe class="absolute inset-0 w-full h-full border-0" src="https://www.youtube.com/embed/${extractedId}?playsinline=1" allowfullscreen></iframe>
-                                </div>
-                            </div>`;
-                        } else {
-                            embedMediaHtml = `
-                            <div class="mt-2 border border-slate-700/40 rounded-lg overflow-hidden cursor-pointer relative group max-w-[220px]" onclick="window.__jumpToYtVideo('${extractedId}')">
-                                <img src="https://img.youtube.com/vi/${extractedId}/mqdefault.jpg" class="w-full h-auto object-cover group-hover:scale-103 transition duration-200">
-                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-85 group-hover:opacity-100 transition duration-200">
-                                    <span class="bg-indigo-600 text-[10px] px-2 py-1 rounded text-white font-bold shadow-md flex items-center gap-1">📺 押して全体同期起動</span>
-                                </div>
-                            </div>`;
-                        }
+                        const containerId = `yt-embed-${s.key}`;
+                        embedMediaHtml = `
+                        <div id="${containerId}" class="mt-2 w-full max-w-[280px] bg-slate-950/40 rounded-xl p-1.5 border border-slate-800/60">
+                            <div class="media-preview relative aspect-video rounded-lg overflow-hidden border border-slate-800">
+                                <img src="https://img.youtube.com/vi/${extractedId}/mqdefault.jpg" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent pointer-events-none"></div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-1 mt-1.5 text-[10px] font-bold select-none">
+                                <button onclick="window.__jumpToYtVideo('${extractedId}')" 
+                                        class="bg-indigo-600 hover:bg-indigo-500 text-white py-1 px-0.5 rounded transition flex items-center justify-center gap-0.5" title="部屋の全員と同期して起動">
+                                    <span>📺 同期</span>
+                                </button>
+                                <button onclick="window.__inlinePlayVideo('${containerId}', '${extractedId}')" 
+                                        class="bg-emerald-600 hover:bg-emerald-500 text-white py-1 px-0.5 rounded transition flex items-center justify-center gap-0.5" title="この枠内でそのまま再生">
+                                    <span>▶ 内部再生</span>
+                                </button>
+                                <a href="https://www.youtube.com/watch?v=${extractedId}" target="_blank" rel="noopener noreferrer" 
+                                   class="bg-slate-800 hover:bg-slate-700 text-slate-300 py-1 px-0.5 rounded transition flex items-center justify-center gap-0.5 text-center">
+                                    <span>🔗 外部</span>
+                                </a>
+                            </div>
+                        </div>`;
                     }
 
                     div.innerHTML = `<div class="text-[11px] font-bold text-slate-400 mb-0.5 pl-1">${esc(sN)}<span class="text-green-400 font-mono">${esc(sT)}</span> <span class="text-slate-500 font-normal">${time}</span></div>
@@ -1226,7 +1288,6 @@
         $("sendBtn").onclick = (e) => { e.preventDefault(); sendMessage(); };
         $("clearBtn").onclick = (e) => { e.preventDefault(); $("mi").value = ""; $("mi").rows = 1; toggleClearBtn(""); $("mi").focus(); };
 
-        // 「入室する」ボタン押下時の検証ロジック
         $("enterBtn").onclick = async () => {
             const rawName = $("ni").value;
             const tk = $("tk").value.trim();
@@ -1240,7 +1301,6 @@
                 return;
             }
 
-            // トリップ必須チェック
             if (!tk) {
                 alert("トリップ暗号（秘密のキー）の入力は必須です。なりすまし防止のためパスワードを設定してください。");
                 return;
@@ -1258,10 +1318,7 @@
 
             $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中...";
             
-            // トリップ文字列作成
             const tripStr = generateTripString(cleanName, tk);
-            
-            // ルーム入室プロセスの発動
             join(r, p, cleanName, tripStr, Number($("maxUsers").value), Number($("romTime").value), Number($("roomCleanTime").value));
         };
 
@@ -1381,11 +1438,9 @@
             }
         });
 
-        // リアルタイムプレビュー用インプット監視
         $("ni").addEventListener("input", updateTripPreview);
         $("tk").addEventListener("input", updateTripPreview);
 
-        // 自動生成ボタンの処理（トリップ暗号をクリアしないように修正）
         $("masterGenBtn").onclick = () => {
             const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
             let rGen = ""; for (let i = 0; i < 10; i++) rGen += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -1393,8 +1448,6 @@
             
             $("ri").value = rGen; 
             $("pi").value = pGen;
-            
-            // トリップ暗号のクリア処理を削除、入力されていた場合はプレビューに即時反映させる
             updateTripPreview();
         };
 
@@ -1403,9 +1456,17 @@
         $("focusBtn").onclick = () => $("mi").focus();
 
         window.addEventListener("DOMContentLoaded", () => {
+            // 💾 ローカルストレージに記憶された「名前」と「トリップ暗号」を復元
+            const savedName = localStorage.getItem("nez_ni");
+            const savedTripKey = localStorage.getItem("nez_tk");
+            if (savedName) $("ni").value = savedName;
+            if (savedTripKey) $("tk").value = savedTripKey;
+
             const params = new URLSearchParams(window.location.search);
             const r = params.get("r"), p = params.get("p"), n = params.get("n");
             if (r) $("ri").value = r; if (p) $("pi").value = p; if (n) $("ni").value = n;
+            
+            // 復元した値に基づいてトリップのプレビュー状態を更新
             updateTripPreview();
         });
     </script>
