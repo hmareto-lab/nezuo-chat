@@ -247,13 +247,13 @@
             </div>
             <!-- 3段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID（日本語・記号も可） <span class="text-red-500">*</span></label>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID <span class="text-red-500">*</span></label>
                 <input type="text" id="ri" placeholder="例: 秘密の裏部屋、room-abc" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <!-- 4段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">共通暗号パスワード <span class="text-red-500">*</span></label>
-                <input type="text" id="pi" placeholder="会話の解読鍵" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋パスワード <span class="text-red-500">*</span></label>
+                <input type="text" id="pi" placeholder="会話の解読鍵（入室者全員で共通のもの）" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
         </div>
 
@@ -442,8 +442,8 @@
                 <div class="space-y-1.5">
                     <p class="font-bold text-indigo-300 text-sm flex items-center gap-1">📘 1. 使い方ガイド</p>
                     <ul class="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
-                        <li><strong class="text-slate-200">部屋の作成と入室：</strong> 「あなたの表示名」「トリップ暗号」「部屋ID」「共通暗号パスワード」を入力して入室します。「自動生成」ボタンを使うと、ランダムで安全な部屋IDとパスワードが即座にセットされます。</li>
-                        <li><strong class="text-slate-200">友達を招待する：</strong> 入室後、右上にある「招待」ボタンを押すと、現在の部屋IDと暗号パスワードが埋め込まれた「招待用リンク」がクリップボードにコピーされます。これをそのまま友達に共有してください。</li>
+                        <li><strong class="text-slate-200">部屋の作成と入室：</strong> 「あなたの表示名」「トリップ暗号」「部屋ID」「部屋パスワード」を入力して入室します。「自動生成」ボタンを使うと、ランダムで安全な部屋IDとパスワードが即座にセットされます。</li>
+                        <li><strong class="text-slate-200">友達を招待する：</strong> 入室後、右上にある「招待」ボタンを押すと、現在の部屋IDと部屋パスワードが埋め込まれた「招待用リンク」がクリップボードにコピーされます。これをそのまま友達に共有してください。</li>
                         <li><strong class="text-slate-200">メッセージ送信：</strong> 入力欄に文字を入力し、Enterキー（スマホは紙飛行機ボタン）で送信できます。URLを貼り付けると自動的にリンク化されます。</li>
                     </ul>
                 </div>
@@ -466,7 +466,7 @@
                 <div class="space-y-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
                     <p class="font-bold text-green-400 text-xs flex items-center gap-1">🛡️ 3. 本システムのセキュリティ仕様</p>
                     <ul class="list-none space-y-1 text-slate-400 text-[11px]">
-                        <li><span class="text-green-500">◆</span> <strong class="text-slate-300">エンドツーエンド暗号化（E2EE）：</strong> 送信されるすべての文字情報は、ブラウザからネットワークに出る前に共通暗号パスワードによって「AES-256」規格で暗号化されます。データベースを管理するサーバーであっても、あなたの会話を解読することは絶対に不可能です。</li>
+                        <li><span class="text-green-500">◆</span> <strong class="text-slate-300">エンドツーエンド暗号化（E2EE）：</strong> 送信されるすべての文字情報は、ブラウザからネットワークに出る前に部屋パスワードによって「AES-256」規格で暗号化されます。データベースを管理するサーバーであっても、あなたの会話を解読することは絶対に不可能です。</li>
                         <li><span class="text-green-500">◆</span> <strong class="text-slate-300">なりすまし防止（トリップ機能）：</strong> あなたの名前と「トリップ暗号（秘密のキー）」を掛け合わせて算出した固有の文字列（例：◆a1b2c3）が名前の横に表示されます。キーを知らない他人があなたの名前を騙っても、このトリップ文字列が変化するため、一目で偽物だと見破ることができます。</li>
                         <li><span class="text-green-500">◆</span> <strong class="text-slate-300">データ自動消滅（クリーンアップ）：</strong> 部屋の全員が退出するか、部屋の作成時に設定した「無言クリーンアップタイマー」の間、誰も発言や操作を行わなかった場合、サーバー上の部屋データ・映像同期データは痕跡を残さず完全自動消滅します。</li>
                     </ul>
@@ -476,7 +476,7 @@
                 <div class="space-y-1.5">
                     <p class="font-bold text-amber-400 text-xs flex items-center gap-1">🚫 4. 禁止事項・注意事項</p>
                     <ul class="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
-                        <li>共通暗号パスワードは無関係な第三者に漏洩しないよう管理してください（パスワードが漏れると、その部屋の通信はすべて傍受・解読可能になります）。</li>
+                        <li>部屋パスワードは無関係な第三者に漏洩しないよう管理してください（パスワードが漏れると、その部屋の通信はすべて傍受・解読可能になります）。</li>
                         <li>サーバーへの攻撃行為、スクリプトを用いた大量の自動連投、部屋の不当な乱造・占有は禁止します。</li>
                         <li>著作権を侵害する動画や、公序良俗に反するYouTube動画を部屋内で同期・拡散する行為はお控えください。</li>
                         <li>当システムは「一時的な使い捨ての連絡空間」を提供するものです。永続的なデータ保存や、ミッションクリティカルな業務連絡への利用には適していません。</li>
@@ -560,7 +560,6 @@
             }, 150);
         };
 
-        // インライン内での再生処理へ切り替える関数
         window.__inlinePlayVideo = function(containerId, vId) {
             const container = $(containerId);
             if (!container) return;
@@ -802,7 +801,6 @@
             let waitCounter = 0; 
             while (!isOffsetLoaded && waitCounter < 20) { await new Promise(r => setTimeout(r, 50)); waitCounter++; }
             
-            // 💡 部屋IDをSHA-256ハッシュに落とし込むことで、日本語や記号が含まれていてもFirebaseの安全なパスに変換可能にします
             const hashId = CryptoJS.SHA256(rID).toString();
             curR = hashId; rawR = rID; curP = pass; curN = name; curT = trip;
 
@@ -838,7 +836,6 @@
 
                 await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
                 
-                // 🚪 入室成功が確定した段階で、名前、トリップ暗号キー、そしてカスタム部屋IDを記憶
                 localStorage.setItem("nez_ni", name);
                 localStorage.setItem("nez_tk", $("tk").value.trim());
                 localStorage.setItem("nez_ri", rID);
@@ -907,7 +904,7 @@
                                 $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-600";
                                 $("ytLagMeter").innerText = `ホストとのズレ: ${(lag >= 0 ? '+' : '')}${lag.toFixed(2)}秒 (シーク待機)`;
                                 $("ytLagMeter").className = "text-[9px] text-rose-400 font-mono font-bold animate-pulse";
-                                $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping";
+                                $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-rose-500 shrink-0";
                                 $("topLiveIndicator").className = "w-2 h-2 bg-rose-500 rounded-full shrink-0";
                             }
                         }
@@ -1310,12 +1307,10 @@
             }
 
             if (!r || !p) { 
-                alert("部屋IDおよび共通暗号パスワードを入力してください。"); 
+                alert("部屋IDおよび部屋パスワードを入力してください。"); 
                 return; 
             }
             
-            // 💡 部屋IDの英数字バリデーション(正規表現)を撤廃し、どんな文字でも通るように変更。
-
             $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中...";
             
             const tripStr = generateTripString(cleanName, tk);
@@ -1340,7 +1335,7 @@
             if (!rawR || !curP) return;
             const nameParam = encodeURIComponent($("ni").value.trim());
             const shareUrl = `${location.protocol}//${location.host}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}&n=${nameParam}`;
-            navigator.clipboard.writeText(shareUrl).then(() => alert("暗号キー付き招待リンクをコピーしました！")).catch(() => alert("コピーに失敗しました。"));
+            navigator.clipboard.writeText(shareUrl).then(() => alert("パスワード付き招待リンクをコピーしました！")).catch(() => alert("コピーに失敗しました。"));
         };
 
         $("openPlayerNavBtn").onclick = async (e) => {
@@ -1456,7 +1451,6 @@
         $("focusBtn").onclick = () => $("mi").focus();
 
         window.addEventListener("DOMContentLoaded", () => {
-            // 💾 ローカルストレージに記憶された「名前」と「トリップ暗号」、そして「部屋ID」を復元
             const savedName = localStorage.getItem("nez_ni");
             const savedTripKey = localStorage.getItem("nez_tk");
             const savedRoomId = localStorage.getItem("nez_ri");
