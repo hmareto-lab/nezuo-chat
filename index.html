@@ -448,7 +448,6 @@ textarea{
             </select>
         </div>
 
-        <!-- ご指定のバランス（初期値5分・最大15分）に再構築 -->
         <div class="setting-row">
             <label for="romTime">自動退出:</label>
             <select id="romTime" class="lobby-input" style="flex:1; height:34px; font-size:14px; cursor:pointer;">
@@ -459,7 +458,6 @@ textarea{
             </select>
         </div>
 
-        <!-- ご指定のバランス（初期値10分・最大1時間/60分）に拡張 -->
         <div class="setting-row">
             <label for="roomTime">消滅タイマー:</label>
             <select id="roomTime" class="lobby-input" style="flex:1; height:34px; font-size:14px; cursor:pointer;">
@@ -545,7 +543,6 @@ function updateTimeText() {
     const romMin = Number($("romTime").value);
     let roomMin = Number($("roomTime").value);
     
-    // 防御的措置：部屋が消える時間は、個人が放置で落とされる時間より必ず長く保持する
     if (roomMin <= romMin) {
         roomMin = romMin === 15 ? 20 : Math.min(romMin + 5, 60);
         $("roomTime").value = roomMin;
@@ -573,7 +570,6 @@ let unsubscribeRoomConfig = null;
 let isProcessingExit = false;
 let serverTimeOffset = 0; 
 
-// ミリ秒変換した動的判定用変数
 let USER_TIMEOUT = 5 * 60 * 1000;
 let ROOM_LIFETIME = 10 * 60 * 1000;
 
@@ -635,6 +631,7 @@ async function deleteRoomData(roomHash) {
     } catch (e) { console.error(e); }
 }
 
+// 【修正箇所】セキュリティルールの競合を完全に回避する安全な入室シークエンス
 async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
 
@@ -644,52 +641,54 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     const myRef = ref(db, `presence/${curR}/${uid}`);
 
     try {
-        const [presSnap, roomSnap] = await Promise.all([get(presRef), get(roomRef)]);
+        const NOW = getServerNow();
 
-        // 部屋作成者の選択パラメータを適用
+        // 1. セキュリティルールをパスするために、まず「rooms」のみを単独でチェック（presenceはまだ読まない）
+        const roomSnap = await get(roomRef);
+
         USER_TIMEOUT = selectRomMin * 60 * 1000;
         ROOM_LIFETIME = selectRoomMin * 60 * 1000;
         let finalMax = maxLimit;
 
-        // 既存の部屋（URL招待入室）であればホストの設定を完全に読み込んで上書き
         if (roomSnap.exists()) {
+            // 既存の部屋：作成者（ホスト）が指定した時間・人数設定を引き継ぐ
             const rData = roomSnap.val();
             USER_TIMEOUT = (rData.romMin || selectRomMin) * 60 * 1000;
             ROOM_LIFETIME = (rData.roomMin || selectRoomMin) * 60 * 1000;
             if (rData.max !== undefined) finalMax = Number(rData.max);
+        } else {
+            // 新規の部屋：何よりも優先して「rooms」のデータを作成する（これでセキュリティエラーを100%回避）
+            await set(roomRef, { 
+                max: finalMax, 
+                romMin: selectRomMin, 
+                roomMin: selectRoomMin,
+                lastActivity: NOW
+            });
         }
 
+        // 2. roomsが存在する（または作成された）状態になったので、安全に「presence」を取得して定員チェック
+        const presSnap = await get(presRef);
         if (presSnap.exists()) {
-            const users = presSnap.val() || {}; const NOW = getServerNow(); let currentActiveCount = 0;
+            const users = presSnap.val() || {};
+            let currentActiveCount = 0;
             Object.keys(users).forEach(k => { 
                 if (k !== uid && NOW - (users[k].lastSeen || NOW) <= USER_TIMEOUT) currentActiveCount++; 
             });
             if (currentActiveCount >= finalMax) { showLobby(`部屋が満員です（上限 ${finalMax} 名）`); return; }
         }
 
+        // 3. 接続状態の切り替えと切断時イベントの登録
         await onDisconnect(myRef).remove();
         $("roomDisplay").innerText = rID;
         $("lobby").style.display = "none";
         $("mainApp").style.display = "flex";
 
-        const NOW = getServerNow();
-        
-        // 部屋メタデータの書き込み（新規作成時・入室時のリフレッシュ含む）
-        if (!roomSnap.exists()) {
-            await set(roomRef, { 
-                max: finalMax, 
-                romMin: USER_TIMEOUT / 60000, 
-                roomMin: ROOM_LIFETIME / 60000,
-                lastActivity: NOW
-            });
-        }
-        
-        // ユーザー生存シグナルの配置
+        // 4. 自身の生存シグナルと入室メッセージを同期
         await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
         await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
 
     } catch (e) { 
-        console.error(e);
+        console.error("入室処理中にエラーが発生しました:", e);
         showLobby("入室エラーが発生しました。"); 
         return; 
     }
@@ -709,7 +708,6 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
 
         Object.keys(users).forEach(k => {
             const n = dec(users[k].nEnc, curP); if (!n) return;
-            // 設定された「個人自動退出時間」に基づいてアクティブ数を判定
             if (NOW - (users[k].lastSeen || NOW) > USER_TIMEOUT) return;
             if (k === uid) amIInList = true;
             count++;
@@ -721,7 +719,6 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         $("presenceList").innerHTML = ""; $("presenceList").appendChild(frag);
         $("presenceCount").innerText = `[${count}/${finalMax}]`;
 
-        // 無人検知での即時削除
         if (count === 0 && !isProcessingExit && amIInList) {
             deleteRoomData(curR); showLobby("全員が退出したため部屋は消滅しました。");
         }
@@ -752,16 +749,13 @@ setInterval(async () => {
     if (!curR || isProcessingExit) return;
     try {
         const NOW = getServerNow();
-        // 自身の存在を更新
         await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: NOW });
 
-        // データベースからサーバーサイドの時間を引き、無言消滅判定を実行
         const roomSnap = await get(ref(db, `rooms/${curR}`));
         if (roomSnap.exists()) {
             const rData = roomSnap.val();
             const lastActive = rData.lastActivity || NOW;
             
-            // 設定されたルーム消滅時間を超えている場合、すべて完全消去
             if (NOW - lastActive > ROOM_LIFETIME) {
                 clearSubscriptions(); 
                 await deleteRoomData(curR);
@@ -780,7 +774,6 @@ const sendMsg = async () => {
 
     const NOW = getServerNow();
     try {
-        // 発言があったタイミングで、部屋全体の無言タイマーの起点（lastActivity）を現在時刻に更新
         await Promise.all([
             push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: NOW }),
             update(ref(db, `rooms/${curR}`), { lastActivity: NOW })
