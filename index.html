@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT & WATCH (Compact Sync)</title>
+<title>NEZU ONETIME CHAT & WATCH (Perfect Sync)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
@@ -52,7 +52,6 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 .setting-row{display:flex;align-items:center;gap:6px;}
 .setting-row label{font-size:11px;font-weight:bold;color:#718096;white-space:nowrap;width:90px;}
 
-/* --- 同期プレイヤーの広がり防止対策 --- */
 #ytArea {
     width: 100%; 
     background: #000; 
@@ -90,13 +89,12 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
     height: 100% !important;
 }
 
-/* タイムライン内のインライン要素（動画埋め込み・純粋サムネイル兼用） */
 .inline-media-box {
     margin-top: 8px;
     position: relative;
     width: 100%;
     max-width: 320px;
-    padding-top: 56.25%; /* 16:9比率 */
+    padding-top: 56.25%;
     background: #000;
     border-radius: 8px;
     overflow: hidden;
@@ -130,7 +128,7 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             <div class="modal-section-title">1. エンドツーエンド暗号化</div>
             <div>全メッセージは端末間で完全暗号化されます。パスワードはサーバーに送信されないため、運営側であっても解読は不可能です。</div>
             <div class="modal-section-title">2. データの自動消滅</div>
-            <div>誰も喋らない状態が設定時間（<strong class="dyn-room-text" style="color:var(--primary);">10分</strong>）続くか、全員が退出した瞬間に、すべての暗号化ログがサーバーから完全に削除されます。</div>
+            <div>誰も喋らない状態が設定時間続くか、全員が退出した瞬間に、すべての暗号化ログがサーバーから完全に削除されます。</div>
             <div class="modal-section-title">3. 免責事項</div>
             <div>通信障害等によるログの消失について、一切の責任を負いません。完全に使い捨てのチャットとしてご利用ください。</div>
         </div>
@@ -231,8 +229,8 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             </div>
         </div>
         <div id="ytControls" style="display:flex; gap:8px; padding:4px 10px; background:rgba(0,0,0,0.9); justify-content:center; align-items:center;">
-            <button id="ytPlayBtn" style="padding:4px 12px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">▶ 再生</button>
-            <button id="ytPauseBtn" style="padding:4px 12px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">⏸ 一時停止</button>
+            <button id="ytPlayBtn" style="padding:4px 12px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">▶ 同期開始</button>
+            <button id="ytPauseBtn" style="padding:4px 12px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">⏸ 同期停止</button>
             <button id="ytCloseBtn" style="padding:4px 10px; background:#4a5568; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer;">閉じる</button>
         </div>
     </div>
@@ -325,14 +323,15 @@ const uid = (() => {
 })();
 
 let curR, curP, curN, curT, rawR, lastT = 0, serverTimeOffset = 0;
-let unsubscribeChat = null, unsubscribePres = null, unsubscribeRoomConfig = null;
+let unsubscribeChat = null, unsubscribePres = null, unsubscribeRoomConfig = null, unsubscribeConn = null;
 let isProcessingExit = false, USER_TIMEOUT = 5 * 60 * 1000, ROOM_LIFETIME = 10 * 60 * 1000;
 
 const getServerNow = () => Date.now() + serverTimeOffset;
 
 const clearSubscriptions = () => {
-    if (unsubscribeChat) unsubscribeChat(); if (unsubscribePres) unsubscribePres(); if (unsubscribeRoomConfig) unsubscribeRoomConfig();
-    unsubscribeChat = null; unsubscribePres = null; unsubscribeRoomConfig = null;
+    if (unsubscribeChat) unsubscribeChat(); if (unsubscribePres) unsubscribePres(); 
+    if (unsubscribeRoomConfig) unsubscribeRoomConfig(); if (unsubscribeConn) unsubscribeConn();
+    unsubscribeChat = null; unsubscribePres = null; unsubscribeRoomConfig = null; unsubscribeConn = null;
 };
 
 const showLobby = (msg = "") => {
@@ -397,9 +396,15 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             if (currentActiveCount >= finalMax) { showLobby(`部屋が満員です（上限 ${finalMax} 名）`); return; }
         }
 
-        await onDisconnect(myRef).remove();
+        // スマホスリープ復帰時などの「Firebase接続切れ」対策を完璧化
+        unsubscribeConn = onValue(ref(db, ".info/connected"), async (snap) => {
+            if (snap.val() === true && curR && !isProcessingExit) {
+                await onDisconnect(myRef).remove();
+                await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: getServerNow() });
+            }
+        });
+
         $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
-        await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
         await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
     } catch (e) { showLobby("入室エラーが発生しました。"); return; }
 
@@ -471,6 +476,7 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     let lastLoadedVideoId = null, isLocalAction = false, syncIntervalId = null, amIOwner = false, isUserApprovedSync = false;
     let lastSavedTime = 0, lastSavedStatus = "", lastResetSeed = 0; 
 
+    // 途中参加（あとから入った人）でもタイミングバグを起こさない完全同期処理
     onValue(roomStateRef, (snapshot) => {
         if (!snapshot.exists()) {
             $("ytArea").style.display = "none";
@@ -481,7 +487,7 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         const state = snapshot.val(); if (!state?.videoId) return;
         amIOwner = (state.owner === uid);
 
-        const statusText = state.status === "playing" ? "▶" : "⏸";
+        const statusText = state.status === "playing" ? "同期中" : "停止中";
         const badgeColor = state.status === "playing" ? "var(--success)" : "var(--danger)";
 
         if (amIOwner) {
@@ -512,7 +518,6 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         lastSavedTime = state.currentTime; lastSavedStatus = state.status;
         lastResetSeed = incomingResetSeed;
 
-        // ★ 初期状態(paused)の時は自動再生(autoplay)をオフにする
         const isInitialLoad = (state.currentTime === 0 && state.status === "paused");
         const pVars = { 
             'autoplay': isInitialLoad ? 0 : 1, 
@@ -534,7 +539,18 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
                     videoId: state.videoId, 
                     playerVars: pVars, 
                     events: { 
-                        'onReady': () => { syncPlayer(state); }, 
+                        'onReady': () => { 
+                            // プレイヤー準備完了後にリトライ付きで同期を確実に発火
+                            let retryCount = 0;
+                            const safeSync = () => {
+                                if (ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+                                    syncPlayer(state);
+                                } else if (retryCount < 10) {
+                                    retryCount++; setTimeout(safeSync, 150);
+                                }
+                            };
+                            safeSync();
+                        }, 
                         'onStateChange': onPlayerStateChange 
                     } 
                 });
@@ -648,7 +664,6 @@ const sendMsg = async () => {
         ];
         if (shouldTriggerTopSync) {
             forcedResetCounter++;
-            // ★ 最初は自動再生させないため、ステータスを "paused" で初期登録
             promises.push(update(ref(db, `rooms/${curR}`), {
                 videoState: { 
                     videoId: ytId, 
