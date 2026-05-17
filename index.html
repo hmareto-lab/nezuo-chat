@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT & WATCH (Ultra-Light Sync Fix)</title>
+<title>NEZU ONETIME CHAT & WATCH (Inline Fix)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
-:root{--bg:#f4f7f9;--text:#2c3e50;--primary:#3a86ff;--accent:#4ea8de;--danger:#ff4d4d;--panel:#ffffff;--border:#e2e8f0;}
+:root{--bg:#f4f7f9;--text:#2c3e50;--primary:#3a86ff;--accent:#4ea8de;--danger:#ff4d4d;--panel:#ffffff;--border:#e2e8f0;--success:#2ec4b6;}
 html,body{width:100%;height:100svh;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text);display:flex;justify-content:center;align-items:center;}
 #lobby{position:fixed;inset:0;justify-content:center;align-items:center;background:var(--bg);z-index:1000;display:flex;padding:env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;}
 .lobby-content{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;max-height:98vh;box-shadow:0 4px 20px rgba(58,134,255,0.05);}
@@ -51,6 +51,33 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 .btn:active{background:#edf2f7;}
 .setting-row{display:flex;align-items:center;gap:6px;}
 .setting-row label{font-size:11px;font-weight:bold;color:#718096;white-space:nowrap;width:90px;}
+
+#ytArea::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 20;
+    opacity: 0; transition: opacity 0.4s ease-out; background: transparent;
+}
+#ytArea.flash-play::after { background: var(--success); opacity: 0.35; transition: none; }
+#ytArea.flash-pause::after { background: var(--danger); opacity: 0.35; transition: none; }
+
+/* チャット内埋め込みプレイヤー用のスタイル */
+.inline-player-container {
+    margin-top: 8px;
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    padding-top: 56.25%;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.inline-player-container iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
 </style>
 </head>
 <body>
@@ -76,12 +103,10 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
         <div class="modal-body">
             <div class="modal-section-title">部屋を作る</div>
             <div>1. 名前と合言葉を入力。<br>2. [自動生成] でランダムな部屋情報をセット。<br>3. [入室] 完了後、画面下の [招待] からURLを共有。</div>
-            <div class="modal-section-title">YouTubeを同時に再生する条件</div>
-            <div>チャット欄に **YouTubeの動画URLと「同期」という文字を同時に含めて送信** してください。<br>（例: `https://www.youtube.com/watch?v=xxxxxx 同期`）</div>
-            <div class="modal-section-title">他の人への確認アラート</div>
-            <div>誰かが「URL 同期」を送信すると、他メンバーの画面に**「同期確認ポップアップ」**が出現します。許可した場合のみ自動連動が始まります。</div>
-            <div class="modal-section-title">操作権限（ホストロック）</div>
-            <div>同期を発言した本人のみがホストとなり、シーク操作・再生停止が可能です。他メンバーは自動的に操作がロックされ、ホストの映像に100%連動します。</div>
+            <div class="modal-section-title">YouTubeの同時視聴（上部連動）</div>
+            <div>チャット欄に **YouTubeの動画URLと「同期」「呼出」「リセット」のいずれかの文字を含めて送信** すると、全員の画面上部でプレイヤーが開き、再生位置が100%同期されます。</div>
+            <div class="modal-section-title">メッセージ欄への動画埋め込み</div>
+            <div>チャット欄に **YouTubeURLと「サムネイル」または「プレイヤー」を含めて送信** すると、上部同期は行われず、その発言ブロックの中にだけ再生可能なプレイヤーが埋め込まれます。</div>
         </div>
         <button id="closeGuideModalBtn" class="modal-close-btn" style="background:var(--accent);">閉じる</button>
     </div>
@@ -157,15 +182,17 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 
 <div id="mainApp">
     <div id="ytArea" style="display:none; width:100%; background:#000; flex-shrink:0; position:relative;">
-        <div id="ytBadge" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.75); color:#fff; padding:3px 8px; font-size:10px; font-weight:bold; border-radius:4px; z-index:10; border:1px solid rgba(255,255,255,0.2);"></div>
+        <div id="ytBadge" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.85); color:#fff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; z-index:10; border:1px solid rgba(255,255,255,0.25);"></div>
         <div style="position:relative; width:100%; padding-top:56.25%;">
             <div id="ytLockOverlay" style="position:absolute; inset:0; z-index:5; display:none; background:transparent;"></div>
-            <div id="ytPlayer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+            <div id="ytPlayerOuter" style="position:absolute; inset:0; background:#000;">
+                <div id="ytPlayer"></div>
+            </div>
         </div>
         <div id="ytControls" style="display:flex; gap:10px; padding:6px 10px; background:rgba(0,0,0,0.85); justify-content:center;">
-            <button id="ytPlayBtn" style="padding:4px 12px; background:var(--primary); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">▶ 同期再生</button>
-            <button id="ytPauseBtn" style="padding:4px 12px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">⏸ 同期停止</button>
-            <button id="ytCloseBtn" style="padding:4px 12px; background:#4a5568; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;">プレイヤー終了</button>
+            <button id="ytPlayBtn" style="padding:4px 14px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">▶ 同期スタート</button>
+            <button id="ytPauseBtn" style="padding:4px 14px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">⏸ 同期ストップ</button>
+            <button id="ytCloseBtn" style="padding:4px 12px; background:#4a5568; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;">終了</button>
         </div>
     </div>
 
@@ -214,15 +241,19 @@ const firebaseApp = initializeApp({
 });
 const db = getDatabase(firebaseApp);
 
-const ytTag = document.createElement('script');
-ytTag.src = "https://www.youtube.com/iframe_api";
-document.head.appendChild(ytTag);
+let ytPlayer = null, isYtReady = false, forcedResetCounter = 0;
 
-let ytPlayer = null, isYtReady = false;
-window.onYouTubeIframeAPIReady = () => { isYtReady = true; };
+const loadYtScript = () => {
+    if (window.YT && window.YT.Player) { isYtReady = true; return; }
+    window.onYouTubeIframeAPIReady = () => { isYtReady = true; };
+    const t = document.createElement('script'); t.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(t);
+};
+loadYtScript();
 
 function extractVideoId(url) {
-    const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]{11}).*/;
+    const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
@@ -238,7 +269,8 @@ $("guideModal").onclick = (e) => { if (e.target === $("guideModal")) closeGuide(
 function updateTimeText() {
     const romMin = Number($("romTime").value); let roomMin = Number($("roomTime").value);
     if (roomMin <= romMin) { roomMin = romMin === 15 ? 20 : Math.min(romMin + 5, 60); $("roomTime").value = roomMin; }
-    const romStr = romMin + "分", roomStr = roomMin === 60 ? "1時間" : roomMin + "分";
+    const romStr = romMin + "分";
+    const roomStr = roomMin === 60 ? "1時間" : roomMin + "分";
     document.querySelectorAll(".dyn-rom-text").forEach(el => el.innerText = romStr);
     document.querySelectorAll(".dyn-room-text").forEach(el => el.innerText = roomStr);
 }
@@ -291,6 +323,14 @@ async function deleteRoomData(roomHash) {
     try { await Promise.all([remove(ref(db, `chat/${roomHash}`)), remove(ref(db, `presence/${roomHash}`)), remove(ref(db, `rooms/${roomHash}`))]); } catch (e) {}
 }
 
+function triggerFlashEffect(type) {
+    const area = $("ytArea"); if (!area) return;
+    area.classList.remove("flash-play", "flash-pause");
+    void area.offsetWidth; 
+    area.classList.add(type === "playing" ? "flash-play" : "flash-pause");
+    setTimeout(() => area.classList.remove("flash-play", "flash-pause"), 400);
+}
+
 async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
     const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), roomRef = ref(db, `rooms/${curR}`), myRef = ref(db, `presence/${curR}/${uid}`);
@@ -308,9 +348,9 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             await set(roomRef, { max: finalMax, romMin: selectRomMin, roomMin: selectRoomMin, lastActivity: NOW });
         }
 
-        const presSnap = await get(presRef);
-        if (presSnap.exists()) {
-            const users = presSnap.val() || {}; let currentActiveCount = 0;
+        const pSnap = await get(presRef);
+        if (pSnap.exists()) {
+            const users = pSnap.val() || {}; let currentActiveCount = 0;
             Object.keys(users).forEach(k => { if (k !== uid && NOW - (users[k].lastSeen || NOW) <= USER_TIMEOUT) currentActiveCount++; });
             if (currentActiveCount >= finalMax) { showLobby(`部屋が満員です（上限 ${finalMax} 名）`); return; }
         }
@@ -355,18 +395,33 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
                 div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
             } else {
                 const sN = dec(m.nEnc, curP) || "???", sT = dec(m.tEnc, curP) || "";
+                
+                const inlineYtId = extractVideoId(txt);
+                const hasInlineKeyword = txt.includes("サムネイル") || txt.includes("プレイヤー");
+                let inlinePlayerHtml = "";
+                
+                // API競合と干渉を防ぐため enablejsapi=1 を適用
+                if (inlineYtId && hasInlineKeyword) {
+                    inlinePlayerHtml = `
+                    <div class="inline-player-container">
+                        <iframe src="https://www.youtube.com/embed/${inlineYtId}?rel=0&enablejsapi=1" allowfullscreen></iframe>
+                    </div>`;
+                }
+
                 div.innerHTML = `<div style="font-size:11px;font-weight:bold;color:var(--text);margin-bottom:2px;padding-left:4px;">${esc(sN)}<span style="color:var(--primary);">${esc(sT)}</span> <span style="color:#a0aec0;font-weight:normal;font-size:10px;">${time}</span></div>
-                    <div class="msg" style="background:#fff; padding:8px 12px; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.02);"><div class="msg-text">${linkify(txt)}</div></div>`;
+                    <div class="msg" style="background:#fff; padding:8px 12px; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.02);">
+                        <div class="msg-text">${linkify(txt)}</div>
+                        ${inlinePlayerHtml}
+                    </div>`;
             }
             frag.appendChild(div);
         });
         $("list").innerHTML = ""; $("list").appendChild(frag);
     });
 
-    // YouTube同期システム (極限軽量化版)
     const roomStateRef = ref(db, `rooms/${curR}/videoState`);
     let lastLoadedVideoId = null, isLocalAction = false, syncIntervalId = null, amIOwner = false, isUserApprovedSync = false;
-    let lastSavedTime = 0, lastSavedStatus = ""; 
+    let lastSavedTime = 0, lastSavedStatus = "", lastResetSeed = 0; 
 
     onValue(roomStateRef, (snapshot) => {
         if (!snapshot.exists()) {
@@ -378,37 +433,61 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         const state = snapshot.val(); if (!state.videoId) return;
         amIOwner = (state.owner === uid);
 
+        const statusText = state.status === "playing" ? "▶ 同期再生中" : "⏸ 同期一時停止中";
+        const badgeColor = state.status === "playing" ? "var(--success)" : "var(--danger)";
+
         if (amIOwner) {
             isUserApprovedSync = true; $("ytLockOverlay").style.display = "none"; $("ytControls").style.display = "flex";
-            $("ytBadge").innerText = "👑 あなたが操作中"; $("ytBadge").style.color = "#ffbe0b";
+            $("ytBadge").innerText = `👑 ホスト操作中 (${statusText})`; $("ytBadge").style.borderColor = badgeColor;
         } else {
             if (lastLoadedVideoId !== state.videoId) {
                 isUserApprovedSync = false;
-                const conf = confirm(`${state.ownerName ? dec(state.ownerName, curP) : "誰か"} さんから動画の同時視聴リクエストが届きました。\nプレイヤーを開いて連動しますか？`);
+                const conf = confirm(`${state.ownerName ? dec(state.ownerName, curP) : "誰か"} さんから動画の同時視聴リクエストが届きました。\nプレイヤーを開いて同期連動しますか？`);
                 if (conf) { isUserApprovedSync = true; } else {
                     isUserApprovedSync = false; $("ytArea").style.display = "none";
-                    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
-                    lastLoadedVideoId = state.videoId; return;
+                    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = state.videoId; }
+                    return;
                 }
             }
             if (isUserApprovedSync) {
                 $("ytLockOverlay").style.display = "block"; $("ytControls").style.display = "none";
-                $("ytBadge").innerText = "🔒 視聴専用モード（ホスト連動）"; $("ytBadge").style.color = "#a0aec0";
+                $("ytBadge").innerText = `🔒 ホストに連動中 (${statusText})`; $("ytBadge").style.borderColor = badgeColor;
             } else { return; }
         }
 
         if ($("ytArea").style.display !== "block") $("ytArea").style.display = "block";
-        lastSavedTime = state.currentTime; lastSavedStatus = state.status;
+        
+        if (lastSavedStatus !== state.status) { triggerFlashEffect(state.status); }
 
-        const pVars = { 'playsinline': 1, 'controls': amIOwner ? 1 : 0, 'disablekb': amIOwner ? 0 : 1, 'rel': 0 };
-        if (!ytPlayer && isYtReady) {
-            ytPlayer = new YT.Player('ytPlayer', { videoId: state.videoId, playerVars: pVars, events: { 'onReady': () => syncPlayer(state), 'onStateChange': onPlayerStateChange } });
+        const incomingResetSeed = state.resetSeed || 0;
+        const needsForcedRebuild = (lastLoadedVideoId !== state.videoId) || (lastResetSeed !== incomingResetSeed);
+
+        lastSavedTime = state.currentTime; lastSavedStatus = state.status;
+        lastResetSeed = incomingResetSeed;
+
+        const pVars = { 'autoplay': 1, 'playsinline': 1, 'controls': amIOwner ? 1 : 0, 'disablekb': amIOwner ? 0 : 1, 'rel': 0, 'modestbranding': 1 };
+        
+        if (needsForcedRebuild || !ytPlayer) {
             lastLoadedVideoId = state.videoId;
-        } else if (ytPlayer && lastLoadedVideoId !== state.videoId) {
-            try { ytPlayer.destroy(); } catch(e){}
-            ytPlayer = new YT.Player('ytPlayer', { videoId: state.videoId, playerVars: pVars, events: { 'onReady': () => syncPlayer(state), 'onStateChange': onPlayerStateChange } });
-            lastLoadedVideoId = state.videoId;
-        } else if (ytPlayer) { syncPlayer(state); }
+            if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+            
+            $("ytPlayerOuter").innerHTML = '<div id="ytPlayer"></div>';
+            
+            const buildPlayer = () => {
+                if (!isYtReady || !window.YT || !window.YT.Player) { setTimeout(buildPlayer, 100); return; }
+                ytPlayer = new YT.Player('ytPlayer', { 
+                    videoId: state.videoId, 
+                    playerVars: pVars, 
+                    events: { 
+                        'onReady': () => { syncPlayer(state); }, 
+                        'onStateChange': onPlayerStateChange 
+                    } 
+                });
+            };
+            buildPlayer();
+        } else {
+            syncPlayer(state);
+        }
     });
 
     function syncPlayer(state) {
@@ -500,15 +579,28 @@ const sendMsg = async () => {
     lastT = getServerNow(); inputEl.value = ""; inputEl.style.height = "24px";
     toggleClearBtn("");
     
-    const NOW = getServerNow(), ytId = extractVideoId(v), hasTriggerKeywords = (ytId !== null) && v.includes("同期");
+    const NOW = getServerNow(), ytId = extractVideoId(v);
+    
+    const hasSyncTrigger = v.includes("同期") || v.includes("呼出") || v.includes("リセット");
+    const shouldTriggerTopSync = (ytId !== null) && hasSyncTrigger;
+
     try {
         const promises = [
             push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: NOW }),
             update(ref(db, `rooms/${curR}`), { lastActivity: NOW })
         ];
-        if (hasTriggerKeywords) {
+        if (shouldTriggerTopSync) {
+            forcedResetCounter++;
             promises.push(update(ref(db, `rooms/${curR}`), {
-                videoState: { videoId: ytId, status: "playing", currentTime: 0, timestamp: NOW, owner: uid, ownerName: enc(curN, curP) }
+                videoState: { 
+                    videoId: ytId, 
+                    status: "playing", 
+                    currentTime: 0, 
+                    timestamp: NOW, 
+                    owner: uid, 
+                    ownerName: enc(curN, curP),
+                    resetSeed: forcedResetCounter
+                }
             }));
         }
         await Promise.all(promises);
@@ -555,6 +647,7 @@ $("copyBtn").onclick = async () => {
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
     try { await navigator.clipboard.writeText(url); alert("コピーしました"); } catch { alert(url); }
 };
+$("copyBtn").ontouchstart = (e) => { e.preventDefault(); $("copyBtn").click(); };
 $("toTopBtn").onclick = () => $("chatWrap").scrollTo({ top: 0, behavior: "smooth" });
 $("toBottomBtn").onclick = () => { const wrap = $("chatWrap"); if (wrap) wrap.scrollTo({ top: wrap.scrollHeight, behavior: "smooth" }); };
 
