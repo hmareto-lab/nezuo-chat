@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>NEZU ONETIME CHAT - Multi-Trigger Pro</title>
     <script src="https://cdn.tailwindcss.com/"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         :root {
             --primary: #4f46e5;
@@ -230,29 +230,29 @@
         
         <div id="errMsg" class="bg-red-950 text-red-400 text-xs p-2 rounded-lg font-bold border border-red-900 hidden shrink-0"></div>
         
-        <!-- ✍️ 縦並び4段の入力フォームエリア -->
+        <!-- ✍️ 縦並び4段 of 入力フォームエリア -->
         <div class="flex flex-col gap-2 shrink-0">
             <!-- 1段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">あなたの表示名</label>
-                <input type="text" id="ni" placeholder="名無しさん" maxlength="14" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">あなたの表示名 <span class="text-red-500">*</span></label>
+                <input type="text" id="ni" placeholder="名前を入力してください（必須）" maxlength="14" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <!-- 2段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">トリップ暗号（必須キー）</label>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">トリップ暗号（秘密のキー） <span class="text-red-500">*必須</span></label>
                 <div class="flex gap-1.5 items-center">
-                    <input type="text" id="tk" placeholder="本人証明キー（必須）" autocomplete="off" autocapitalize="off" spellcheck="false" class="flex-1 px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <span id="tp" class="text-[10px] font-mono text-indigo-400 hidden shrink-0"></span>
+                    <input type="text" id="tk" placeholder="本人証明用のキーワード（必須）" autocomplete="on" spellcheck="true" class="flex-1 px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span id="tp" class="text-[10px] font-mono text-green-400 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 hidden shrink-0"></span>
                 </div>
             </div>
             <!-- 3段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID（半角英数）</label>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID（半角英数） <span class="text-red-500">*</span></label>
                 <input type="text" id="ri" placeholder="room-abc" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <!-- 4段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">共通暗号パスワード</label>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">共通暗号パスワード <span class="text-red-500">*</span></label>
                 <input type="text" id="pi" placeholder="会話の解読鍵" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
         </div>
@@ -577,7 +577,7 @@
             return id;
         })();
 
-        let curR, curP, curN, curT, rawR, lastT = 0, serverTimeOffset = 0, isOffsetLoaded = false;
+        let curR, curP, curN, curT, rawR, serverTimeOffset = 0, isOffsetLoaded = false;
         let unsubscribeChat = null, unsubscribePres = null, unsubscribeRoomConfig = null, unsubscribeConn = null;
         let isProcessingExit = false, USER_TIMEOUT = 30 * 60 * 1000, ROOM_LIFETIME = 60 * 60 * 1000;
 
@@ -604,7 +604,6 @@
             $("enterBtn").disabled = false; $("enterBtn").innerText = "入室する";
         };
 
-        const hash = t => CryptoJS.SHA256(t).toString();
         const enc = (t, k) => t ? CryptoJS.AES.encrypt(t, k).toString() : "";
         const textDec = (c, k) => { try { return c ? (CryptoJS.AES.decrypt(c, k).toString(CryptoJS.enc.Utf8) || null) : null; } catch { return null; } };
         const esc = t => (t || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -615,23 +614,28 @@
             $("clearBtn").style.opacity = hasText ? "1" : "0"; $("clearBtn").style.pointerEvents = hasText ? "auto" : "none";
         };
 
-        async function generateTripString(name, key) {
-            return new Promise((resolve) => {
-                if (!name || !key) { resolve(""); return; }
-                try {
-                    const hashVal = CryptoJS.SHA256(`${name}:${key}`).toString();
-                    resolve("◆" + hashVal.slice(0, 6));
-                } catch(e) { resolve(""); }
-            });
+        // トリップ文字列生成処理
+        function generateTripString(name, key) {
+            if (!name || !key) return "";
+            try {
+                const hashVal = CryptoJS.SHA256(`${name}:${key}`).toString();
+                return "◆" + hashVal.slice(0, 6);
+            } catch(e) { 
+                return ""; 
+            }
         }
 
-        async function updateTripPreview() { 
-            const n = $("ni").value.trim(), tk = $("tk").value.trim(); 
+        // トリッププレビューの動的表示
+        function updateTripPreview() { 
+            const n = $("ni").value.replace(/[\s\u3000]+/g, "").trim(); 
+            const tk = $("tk").value.trim(); 
             if (n && tk) {
-                const tripStr = await generateTripString(n, tk);
-                $("tp").innerText = tripStr; $("tp").style.display = "inline-block";
+                const tripStr = generateTripString(n, tk);
+                $("tp").innerText = tripStr; 
+                $("tp").style.display = "inline-block";
             } else {
-                $("tp").innerText = ""; $("tp").style.display = "none";
+                $("tp").innerText = ""; 
+                $("tp").style.display = "none";
             }
         }
 
@@ -741,11 +745,14 @@
         $("ytVolumeMuteBtn").onclick = (e) => { e.preventDefault(); toggleLocalMute(); };
         $("ytMiniMuteBtn").onclick = (e) => { e.preventDefault(); toggleLocalMute(); };
 
+        // 核心：Firebase接続およびルーム入場・同期処理
         async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
             let waitCounter = 0; 
             while (!isOffsetLoaded && waitCounter < 20) { await new Promise(r => setTimeout(r, 50)); waitCounter++; }
             
-            rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
+            const hashId = CryptoJS.SHA256(rID).toString();
+            curR = hashId; rawR = rID; curP = pass; curN = name; curT = trip;
+
             const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), roomRef = ref(db, `rooms/${curR}`), myRef = ref(db, `presence/${curR}/${uid}`);
             const roomStateRef = ref(db, `rooms/${curR}/videoState`);
 
@@ -778,6 +785,7 @@
 
                 await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
                 $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
+                $("errMsg").style.display = "none";
                 await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
             } catch (e) { showLobby("通信エラーにより入室できませんでした。"); return; }
 
@@ -929,7 +937,7 @@
                         }
                     }
 
-                    div.innerHTML = `<div class="text-[11px] font-bold text-slate-400 mb-0.5 pl-1">${esc(sN)}<span class="text-indigo-400">${esc(sT)}</span> <span class="text-slate-500 font-normal">${time}</span></div>
+                    div.innerHTML = `<div class="text-[11px] font-bold text-slate-400 mb-0.5 pl-1">${esc(sN)}<span class="text-green-400 font-mono">${esc(sT)}</span> <span class="text-slate-500 font-normal">${time}</span></div>
                         <div class="msg-card msg bg-slate-900/90 text-slate-200 px-3 py-2 rounded-xl border border-slate-800 shadow-md max-w-sm inline-block break-all new-alert">
                             <div class="text-sm leading-relaxed">${linkify(txt)}</div>
                             ${embedMediaHtml}
@@ -1218,19 +1226,43 @@
         $("sendBtn").onclick = (e) => { e.preventDefault(); sendMessage(); };
         $("clearBtn").onclick = (e) => { e.preventDefault(); $("mi").value = ""; $("mi").rows = 1; toggleClearBtn(""); $("mi").focus(); };
 
+        // 「入室する」ボタン押下時の検証ロジック
         $("enterBtn").onclick = async () => {
-            const n = $("ni").value.trim() || "名無しさん";
+            const rawName = $("ni").value;
             const tk = $("tk").value.trim();
             const r = $("ri").value.trim();
             const p = $("pi").value.trim();
 
-            if (!tk) { alert("トリップ暗号（本人証明キー）を入力してください。なりすまし防止に必須です。"); return; }
-            if (!r || !p) { alert("部屋IDおよび共通暗号パスワードを入力してください。"); return; }
-            if (!/^[a-zA-Z0-9_-]+$/.test(r)) { alert("部屋IDは半角英数字、ハイフン、アンダースコアのみ使用可能です。"); return; }
+            const cleanName = rawName.replace(/[\s\u3000]+/g, "").trim();
+
+            if (!cleanName) {
+                alert("表示名を入力してください（空白のみの構成は禁止されています）。");
+                return;
+            }
+
+            // トリップ必須チェック
+            if (!tk) {
+                alert("トリップ暗号（秘密のキー）の入力は必須です。なりすまし防止のためパスワードを設定してください。");
+                return;
+            }
+
+            if (!r || !p) { 
+                alert("部屋IDおよび共通暗号パスワードを入力してください。"); 
+                return; 
+            }
+            
+            if (!/^[a-zA-Z0-9_-]+$/.test(r)) { 
+                alert("部屋IDは半角英数字、ハイフン、アンダースコアのみ使用可能です。"); 
+                return; 
+            }
 
             $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中...";
-            const tripStr = await generateTripString(n, tk);
-            join(r, p, n, tripStr, Number($("maxUsers").value), Number($("romTime").value), Number($("roomCleanTime").value));
+            
+            // トリップ文字列作成
+            const tripStr = generateTripString(cleanName, tk);
+            
+            // ルーム入室プロセスの発動
+            join(r, p, cleanName, tripStr, Number($("maxUsers").value), Number($("romTime").value), Number($("roomCleanTime").value));
         };
 
         async function exitRoom() {
@@ -1249,7 +1281,7 @@
 
         $("copyBtn").onclick = () => {
             if (!rawR || !curP) return;
-            const nameParam = encodeURIComponent($("ni").value.trim() || "名無しさん");
+            const nameParam = encodeURIComponent($("ni").value.trim());
             const shareUrl = `${location.protocol}//${location.host}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}&n=${nameParam}`;
             navigator.clipboard.writeText(shareUrl).then(() => alert("暗号キー付き招待リンクをコピーしました！")).catch(() => alert("コピーに失敗しました。"));
         };
@@ -1349,17 +1381,21 @@
             }
         });
 
-        $("ni").oninput = updateTripPreview;
-        $("tk").oninput = updateTripPreview;
+        // リアルタイムプレビュー用インプット監視
+        $("ni").addEventListener("input", updateTripPreview);
+        $("tk").addEventListener("input", updateTripPreview);
 
+        // 自動生成ボタンの処理（トリップ暗号をクリアしないように修正）
         $("masterGenBtn").onclick = () => {
             const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
             let rGen = ""; for (let i = 0; i < 10; i++) rGen += chars.charAt(Math.floor(Math.random() * chars.length));
             let pGen = ""; for (let i = 0; i < 12; i++) pGen += chars.charAt(Math.floor(Math.random() * chars.length));
-            let kGen = ""; for (let i = 0; i < 8; i++) kGen += chars.charAt(Math.floor(Math.random() * chars.length));
             
-            $("ri").value = rGen; $("pi").value = pGen; $("tk").value = kGen; updateTripPreview();
-            alert("安全な部屋情報（部屋ID・暗号キー・トリップキー）をランダム生成しました！");
+            $("ri").value = rGen; 
+            $("pi").value = pGen;
+            
+            // トリップ暗号のクリア処理を削除、入力されていた場合はプレビューに即時反映させる
+            updateTripPreview();
         };
 
         $("openGuideBtn").onclick = () => $("guideCard").style.display = "flex";
@@ -1370,7 +1406,7 @@
             const params = new URLSearchParams(window.location.search);
             const r = params.get("r"), p = params.get("p"), n = params.get("n");
             if (r) $("ri").value = r; if (p) $("pi").value = p; if (n) $("ni").value = n;
-            if (r && p) { $("tk").placeholder = "必須キー（パスワードを入力）"; }
+            updateTripPreview();
         });
     </script>
 </body>
