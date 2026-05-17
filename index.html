@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>NEZU ONETIME CHAT - Ultra Optimized</title>
+    <title>NEZU ONETIME CHAT - Multi-Trigger Pro</title>
     <script src="https://cdn.tailwindcss.com/"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
     <style>
@@ -100,8 +100,8 @@
         
         @keyframes flashPlay { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.9); } 100% { box-shadow: 0 0 0 20px rgba(16, 185, 129, 0); } }
         @keyframes flashPause { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9); } 100% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); } }
-        .flash-play { animation: flashPlay 0.4s opacity ease-out; }
-        .flash-pause { animation: flashPause 0.4s opacity ease-out; }
+        .flash-play { animation: flashPlay 0.4s ease-out; }
+        .flash-pause { animation: flashPause 0.4s ease-out; }
 
         #ytSearchResults {
             display: none;
@@ -127,8 +127,8 @@
         .search-item:hover { background: #334155; }
         .search-item img { width: 44px; height: 33px; object-fit: cover; border-radius: 4px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
         #chatTimeline {
             flex: 1 1 0%;
@@ -141,12 +141,11 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .msg-wrap {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
+        #chatTimeline::-webkit-scrollbar { width: 6px; }
+        #chatTimeline::-webkit-scrollbar-track { background: transparent; }
+        #chatTimeline::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 9999px; }
+
+        .msg-wrap { width: 100%; display: flex; flex-direction: column; align-items: flex-start; }
         .msg-card {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(4px);
@@ -170,77 +169,124 @@
             gap: 8px;
             pointer-events: none;
         }
-        #floating-nav button {
-            pointer-events: auto;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        #floating-nav button { pointer-events: auto; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+
+        #ytResizeHandle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 24px;
+            height: 24px;
+            cursor: se-resize;
+            background: linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%);
+            z-index: 120;
+            border-bottom-right-radius: 14px;
+            touch-action: none;
+        }
+        #ytResizeHandle::after {
+            content: "◢";
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #ytMessageOverlay {
+            position: absolute;
+            top: 36px;
+            left: 8px;
+            right: 8px;
+            z-index: 25;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .overlay-msg-item {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            border-left: 3px solid var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #fff;
+            max-width: 90%;
+            animation: fadeIn 0.15s ease-out forwards;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center p-0 m-0 text-slate-100">
+<body class="flex flex-col items-center justify-start pt-4 p-0 m-0 text-slate-100 h-screen w-screen overflow-hidden">
 
     <!-- 🚪 ロビー画面 -->
-    <div id="lobby" class="w-full max-w-md p-6 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 flex flex-col gap-4 m-4 select-text">
-        <h1 class="text-2xl font-black text-center text-indigo-400 tracking-tight">NEZU ONETIME CHAT</h1>
+    <div id="lobby" class="w-full max-w-md p-4 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 flex flex-col gap-2.5 m-2 select-text max-h-[calc(100vh-2rem)] overflow-y-auto overflow-x-hidden">
+        <h1 class="text-lg font-black text-center text-indigo-400 tracking-tight shrink-0">NEZU ONETIME CHAT</h1>
         
-        <div class="bg-indigo-950/40 border border-indigo-900/60 rounded-xl p-3 text-xs space-y-1 text-slate-300">
-            <p class="font-bold text-indigo-300 flex items-center gap-1">
-                🛡️ 高い安全性を確保した暗号化通信空間
-            </p>
-            <p class="text-[11px] leading-relaxed text-slate-400">
-                本システムは端末間（E2EE）で完全にメッセージを暗号化します。退出すればすべてのログが痕跡なく自動消滅します。
-            </p>
+        <div class="bg-indigo-950/40 border border-indigo-900/60 rounded-xl p-2 text-[11px] space-y-0.5 text-slate-300 shrink-0">
+            <p class="font-bold text-indigo-300 flex items-center gap-1">🛡️ 高い安全性を確保した暗号化通信空間</p>
+            <p class="leading-relaxed text-slate-400">本システムは端末間（E2EE）で完全にメッセージを暗号化します。退出すればすべてのログが痕跡なく自動消滅します。</p>
         </div>
         
-        <div id="errMsg" class="bg-red-950 text-red-400 text-xs p-3 rounded-lg font-bold border border-red-900 hidden"></div>
+        <div id="errMsg" class="bg-red-950 text-red-400 text-xs p-2 rounded-lg font-bold border border-red-900 hidden shrink-0"></div>
         
-        <div class="flex flex-col gap-3">
+        <!-- ✍️ 縦並び4段の入力フォームエリア -->
+        <div class="flex flex-col gap-2 shrink-0">
+            <!-- 1段目 -->
             <div>
-                <label class="block text-xs font-bold text-slate-400 mb-1">あなたの表示名</label>
-                <input type="text" id="ni" placeholder="名無しさん" maxlength="14" class="w-full px-3 py-2 border border-slate-700 bg-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">あなたの表示名</label>
+                <input type="text" id="ni" placeholder="名無しさん" maxlength="14" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
+            <!-- 2段目 -->
             <div>
-                <label class="block text-xs font-bold text-slate-400 mb-1">トリップ暗号（任意キー）</label>
-                <div class="flex gap-2 items-center">
-                    <input type="text" id="tk" placeholder="トリップ生成用の秘密の言葉" autocomplete="off" autocapitalize="off" spellcheck="false" class="flex-1 px-3 py-2 border border-slate-700 bg-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <span id="tp" class="text-xs font-mono text-indigo-400 hidden shrink-0"></span>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">トリップ暗号（必須キー）</label>
+                <div class="flex gap-1.5 items-center">
+                    <input type="text" id="tk" placeholder="本人証明キー（必須）" autocomplete="off" autocapitalize="off" spellcheck="false" class="flex-1 px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <span id="tp" class="text-[10px] font-mono text-indigo-400 hidden shrink-0"></span>
                 </div>
             </div>
-        </div>
-
-        <div class="border-t border-slate-800 my-1"></div>
-
-        <div>
-            <label class="block text-xs font-bold text-slate-400 mb-1">部屋の設定</label>
-            <div class="flex flex-col gap-2">
-                <input type="text" id="ri" placeholder="部屋ID（半角英数）" class="w-full px-3 py-2 border border-slate-700 bg-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <input type="text" id="pi" placeholder="共通暗号パスワード（会話の解読鍵）" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full px-3 py-2 border border-slate-700 bg-slate-800 rounded-xl text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <!-- 3段目 -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID（半角英数）</label>
+                <input type="text" id="ri" placeholder="room-abc" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <!-- 4段目 -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">共通暗号パスワード</label>
+                <input type="text" id="pi" placeholder="会話の解読鍵" autocomplete="off" autocapitalize="off" spellcheck="false" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
         </div>
 
-        <details class="text-xs text-slate-400 bg-slate-950 p-3 rounded-xl border border-slate-800">
-            <summary class="cursor-pointer font-bold select-none text-slate-300">⚙️ 高度な設定項目</summary>
-            <div class="grid grid-cols-2 gap-3 mt-3">
+        <details class="text-[11px] text-slate-400 bg-slate-950 p-2.5 rounded-xl border border-slate-800 shrink-0">
+            <summary class="cursor-pointer font-bold select-none text-slate-300">⚙️ 部屋の最適化構成</summary>
+            <div class="grid grid-cols-2 gap-2 mt-2">
                 <div>
-                    <label class="block font-semibold mb-1">最大同時入室数</label>
-                    <select id="maxUsers" class="w-full p-1 border border-slate-700 rounded bg-slate-800 text-white"><option value="2">2名</option><option value="4" selected>4名</option><option value="8">8名</option><option value="16">16名</option></select>
+                    <label class="block font-semibold mb-0.5 text-slate-400">部屋人数制限</label>
+                    <select id="maxUsers" class="w-full p-1.5 border border-slate-700 rounded-lg bg-slate-800 text-white font-bold text-xs">
+                        <option value="2">2名</option><option value="3">3名</option><option value="4" selected>4名</option><option value="5">5名</option><option value="6">6名</option><option value="7">7名</option><option value="8">8名</option><option value="9">9名</option><option value="10">10名</option>
+                    </select>
                 </div>
                 <div>
-                    <label class="block font-semibold mb-1">即座の寝落ち切断</label>
-                    <select id="romTime" class="w-full p-1 border border-slate-700 rounded bg-slate-800 text-white"><option value="1">1分未操作</option><option value="3">3分未操作</option><option value="5" selected>5分未操作</option><option value="10">10分未操作</option></select>
+                    <label class="block font-semibold mb-0.5 text-slate-400">ROM切断タイマー</label>
+                    <select id="romTime" class="w-full p-1.5 border border-slate-700 rounded-lg bg-slate-800 text-white font-bold text-xs">
+                        <option value="5">5分</option><option value="10">10分</option><option value="15">15分</option><option value="30" selected>30分</option><option value="45">45分</option><option value="60">1時間</option>
+                    </select>
                 </div>
                 <div class="col-span-2">
-                    <label class="block font-semibold mb-1">部屋の最大寿命</label>
-                    <select id="roomTime" class="w-full p-1 border border-slate-700 rounded bg-slate-800 text-white"><option value="5">5分無発言</option><option value="10" selected>10分無発言</option><option value="30">30分無発言</option><option value="60">60分無発言</option></select>
+                    <label class="block font-semibold mb-0.5 text-slate-400">無言部屋の自動消滅（クリーンアップ）</label>
+                    <select id="roomCleanTime" class="w-full p-1.5 border border-slate-700 rounded-lg bg-slate-800 text-white font-bold text-xs">
+                        <option value="10">10分</option><option value="20">20分</option><option value="30">30分</option><option value="40">40分</option><option value="60" selected>1時間</option>
+                    </select>
                 </div>
             </div>
         </details>
 
-        <div class="flex gap-2 mt-2">
-            <button id="masterGenBtn" class="w-1/3 text-xs bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition font-bold py-2">新部屋自動生成</button>
-            <button id="enterBtn" class="flex-1 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition py-2">入室する</button>
+        <div class="flex gap-2 mt-0.5 shrink-0">
+            <button id="masterGenBtn" class="w-1/3 text-xs bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition font-bold py-2">自動生成</button>
+            <button id="enterBtn" class="flex-1 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition py-2">入室する</button>
         </div>
 
-        <div class="flex justify-center text-[11px] text-slate-500 mt-2 px-1">
+        <div class="flex justify-center text-[10px] text-slate-500 mt-0.5 px-1 shrink-0">
             <button id="openGuideBtn" class="hover:text-indigo-400 font-bold flex items-center gap-1 transition">📖 使い方ガイドと注意点（必読）</button>
         </div>
     </div>
@@ -286,13 +332,13 @@
 
         <!-- 🎯 固定ナビゲーションアシスタントボタン -->
         <div id="floating-nav">
-            <button id="toTopBtn" class="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl border border-indigo-500 flex flex-col items-center justify-center transition" title="最上部（最新発言）へ">
+            <button id="toTopBtn" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 flex flex-col items-center justify-center transition" title="最上部（過去ログ）へ">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 11l7-7 7 7M5 19l7-7 7 7"/></svg>
-                <span class="text-[9px] font-bold mt-0.5">最新</span>
-            </button>
-            <button id="toBottomBtn" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 flex flex-col items-center justify-center transition" title="最下部（最古ログ）へ">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7M19 5l-7 7-7-7"/></svg>
                 <span class="text-[9px] font-bold mt-0.5">過去</span>
+            </button>
+            <button id="toBottomBtn" class="p-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl border border-indigo-500 flex flex-col items-center justify-center transition" title="最下部（最新発言）へ">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 13l-7 7-7-7M19 5l-7 7-7-7"/></svg>
+                <span class="text-[9px] font-bold mt-0.5">最新</span>
             </button>
             <button id="focusBtn" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 flex flex-col items-center justify-center transition" title="入力欄へフォーカス">
                 <span class="text-base leading-none">⌨️</span>
@@ -302,7 +348,6 @@
 
         <!-- 📥 下部固定フッター -->
         <div id="footer-panel" class="w-full shrink-0 z-30 bg-slate-900/95 backdrop-filter backdrop-blur-md flex flex-col shadow-inner">
-            
             <!-- YouTubeコントロールセンター -->
             <div id="ytControlConsole" class="hidden p-3 bg-slate-950 text-white flex flex-col gap-2 transition-all border-t-2 border-slate-800">
                 <div class="flex items-center justify-between text-xs border-b border-slate-800/80 pb-1.5">
@@ -337,10 +382,10 @@
 
                 <div class="grid grid-cols-12 gap-1.5 items-center mt-0.5">
                     <div class="col-span-8 relative">
-                        <input type="text" id="ytSearchInput" placeholder="キーワード、URLを検索..." class="w-full px-2 py-1 border border-slate-800 rounded-lg text-xs bg-slate-900 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <input type="text" id="ytSearchInput" placeholder="キーワード、または動画URLをここにペースト..." class="w-full px-2 py-1 border border-slate-800 rounded-lg text-xs bg-slate-900 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 select-text">
                         <div id="ytSearchResults" class="shadow-2xl rounded-b-lg text-slate-200"></div>
                     </div>
-                    <button id="ytSearchBtn" class="col-span-4 bg-indigo-600 text-white py-1 rounded-lg text-xs font-bold hover:bg-indigo-700 transition">検索</button>
+                    <button id="ytSearchBtn" class="col-span-4 bg-indigo-600 text-white py-1 rounded-lg text-xs font-bold hover:bg-indigo-700 transition">検索 / 再生</button>
                 </div>
                 
                 <div class="grid grid-cols-12 gap-1.5 items-center">
@@ -354,70 +399,50 @@
     </div>
 
     <!-- 📺 変形・ドラッグ対応ビデオプレイヤー -->
-    <div id="ytArea" class="transition-shadow duration-300">
+    <div id="ytArea" class="transition-shadow duration-300 flex flex-col">
         <div id="ytDragBar" class="px-3 py-1.5 bg-slate-950 text-slate-200 flex items-center justify-between text-[11px] font-bold select-none shrink-0 border-b border-slate-900">
             <span class="text-slate-400 tracking-wider flex items-center gap-1">
                 <span id="ytLiveIndicator" class="inline-block w-2 h-2 rounded-full bg-slate-500"></span> SYSTEM SCREEN
             </span>
             <button id="ytClosePlayerBtn" class="text-slate-500 hover:text-white p-0.5"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
         </div>
-        <div class="relative w-full bg-black select-none" id="ytPlayerContainer">
+        <div class="relative w-full bg-black select-none flex-1" id="ytPlayerContainer">
+            <div id="ytMessageOverlay"></div>
             <div id="ytLockOverlay"></div>
             <div class="inline-zoom-container">
                 <div id="ytPlayer" class="absolute inset-0 w-full h-full"></div>
             </div>
         </div>
+        
+        <div id="ytEmbeddedControls" class="bg-slate-950 border-t border-slate-900 p-1.5 flex items-center gap-2 select-none relative z-30 shrink-0">
+            <button id="ytMiniPlayPauseBtn" class="text-xs font-bold text-slate-300 hover:text-white bg-slate-900 px-2 py-0.5 rounded border border-slate-800 min-w-[36px] transition">▶</button>
+            <span id="ytMiniTimeDisplay" class="text-[10px] font-mono text-slate-400 tracking-tight shrink-0">00:00</span>
+            <input type="range" id="ytMiniSlider" min="0" max="100" value="0" step="1" class="flex-1 h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-indigo-500">
+            <button id="ytMiniMuteBtn" class="text-[11px] text-slate-400 hover:text-white transition px-0.5">🔊</button>
+            <input type="range" id="ytMiniVolume" min="0" max="100" value="50" step="1" class="w-12 h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-emerald-500">
+        </div>
+
+        <div id="ytResizeHandle"></div>
     </div>
 
     <!-- 📑 統合ガイドモーダル -->
     <div id="guideCard" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 p-6 rounded-2xl max-w-md w-full max-h-[85vh] overflow-y-auto shadow-2xl flex flex-col gap-4 border border-slate-800 select-text">
             <h3 class="font-black text-lg text-indigo-400 border-b border-slate-800 pb-2 flex items-center gap-1">📖 総合ガイド ＆ 規約項目</h3>
-            
             <div class="text-xs text-slate-300 leading-relaxed space-y-4">
-                <!-- 重要警告セクション -->
                 <div class="bg-red-950/50 p-3 rounded-xl border border-red-900/40 text-red-200 space-y-1">
                     <p class="font-bold flex items-center gap-1">⚠️ ログデータに関する重要な注意</p>
-                    <p class="text-[11px] text-slate-400 leading-normal">
-                        本チャットは完全端末間暗号化（E2EE）です。サーバー側にログを一切保持しないため、ブラウザのリロードや「退出」によって会話は<strong>すべて永久に消滅し、復元できません。</strong>
-                    </p>
+                    <p class="text-[11px] text-slate-400 leading-normal">本チャットは完全端末間暗号化（E2EE）です。サーバー側にログを一切保持しないため、ブラウザのリロードや「退出」によって会話は<strong>すべて永久に消滅し、復元できません。</strong></p>
                 </div>
-
-                <!-- 使い方 -->
                 <div>
                     <p class="font-bold text-indigo-300 text-sm">🔗 1. 部屋の共有（招待）</p>
                     <p class="text-slate-400 mt-0.5 pl-1">入室後に右上の「招待」ボタンを押すと暗号キー付きリンクがコピーされます。友人に渡すだけで同じ安全な空間を共有できます。</p>
                 </div>
-
                 <div>
                     <p class="font-bold text-red-400 text-sm">📺 2. 動画同時視聴コントロール</p>
                     <p class="text-slate-400 mt-0.5 pl-1">右上の「プレイヤー」からYouTube窓を起動可能です。</p>
-                    <ul class="list-disc pl-5 mt-1 space-y-1 text-slate-400 text-[11px]">
-                        <li><strong class="text-slate-200">動画変更:</strong> URLをそのままチャット欄に貼り付けて送信するか、プレイヤー内検索をお使いください。</li>
-                        <li><strong class="text-indigo-400">👑 ホスト同期:</strong> 自分が操作すると部屋全員の再生・停止・位置がリアルタイムに強制同期されます。</li>
-                        <li><strong class="text-amber-400">🔓 マイペースモード:</strong> ゲスト時に切り替えると、ホストに縛られず自由なザッピングが可能になります。</li>
-                    </ul>
-                </div>
-
-                <div>
-                    <p class="font-bold text-green-400 text-sm">📱 3. 画面の変形と移動</p>
-                    <p class="text-slate-400 mt-0.5 pl-1">上部バーをドラッグして移動。PCのマウスホイールやスマホのピンチイン／アウトで自在にサイズ変更が可能です。</p>
-                </div>
-
-                <!-- 禁止事項 -->
-                <div class="border-t border-slate-800 pt-3 space-y-2">
-                    <p class="font-bold text-slate-200 text-sm">🚫 ルーム維持規則・禁止事項</p>
-                    <div>
-                        <p class="font-semibold text-slate-300">・放置・寝落ちの禁止</p>
-                        <p class="pl-2 text-slate-400 text-[11px]">設定した無操作時間が経過すると自動切断されます。また部屋全員が無発言になると部屋自体がクラッシュ消滅します。</p>
-                    </div>
-                    <div>
-                        <p class="font-semibold text-slate-300">・不正利用の禁止</p>
-                        <p class="pl-2 text-slate-400 text-[11px]">誹謗中傷や不正な文字列の送信は制限されます。ルームIDの漏洩にはご注意ください。</p>
-                    </div>
                 </div>
             </div>
-
             <button id="closeGuideBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md mt-2">内容を確認しました</button>
         </div>
     </div>
@@ -440,7 +465,7 @@
         });
         const db = getDatabase(firebaseApp, DB_URL);
 
-        let isTimelineAtTop = true; 
+        let isTimelineScrolledUp = false; 
         let ytPlayer = null, isYtReady = false;
         let currentSearchResults = []; 
         let currentSearchIndex = 0;
@@ -463,24 +488,66 @@
         let savedVolumeLevel = 50;
         let isMutedLocal = false;
 
-        const chatTimeline = $('chatTimeline');
+        window.__jumpToYtVideo = function(vId) {
+            if (!vId) return;
+            if ($("ytArea").style.display !== "block") {
+                $("ytArea").style.display = "block";
+                $("ytControlConsole").style.display = "flex";
+                setupPlayerTransformationController($("ytArea"), 180, 1200);
+            }
+            isUserApprovedSync = true;
+            isExplicitlyClosedByGuest = false;
+            isGuestFreeMode = false;
+            
+            setTimeout(async () => {
+                amIOwner = true; 
+                isLocalAction = true;
+                if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+                
+                const NOW = getServerNow();
+                await set(ref(db, `rooms/${curR}/videoState`), { 
+                    videoId: vId, 
+                    status: "playing", 
+                    currentTime: 0, 
+                    timestamp: NOW, 
+                    owner: uid, 
+                    ownerName: enc(curN, curP),
+                    resetSeed: Date.now()
+                });
+                lastLoadedVideoId = vId;
+                await update(ref(db, `rooms/${curR}`), { lastActivity: NOW });
+                setTimeout(() => { isLocalAction = false; }, 400);
+            }, 150);
+        };
 
+        function pushMessageToOverlay(senderName, textMessage) {
+            const container = $("ytMessageOverlay");
+            if (!container) return;
+            const item = document.createElement("div");
+            item.className = "overlay-msg-item";
+            item.innerText = `${senderName}: ${textMessage}`;
+            container.appendChild(item);
+            
+            if (container.children.length > 3) { container.removeChild(container.firstChild); }
+            setTimeout(() => {
+                if (item && item.parentNode) {
+                    item.style.transition = "opacity 0.3s ease"; item.style.opacity = "0";
+                    setTimeout(() => { if (item && item.parentNode) item.parentNode.removeChild(item); }, 300);
+                }
+            }, 4500);
+        }
+
+        const chatTimeline = $('chatTimeline');
         chatTimeline.addEventListener('scroll', () => {
-            isTimelineAtTop = (chatTimeline.scrollTop <= 24);
+            const distanceFromBottom = chatTimeline.scrollHeight - chatTimeline.scrollTop - chatTimeline.clientHeight;
+            isTimelineScrolledUp = (distanceFromBottom > 45);
         }, { passive: true });
 
-        window.scrollToLatest = function() {
-            chatTimeline.scrollTop = 0;
-            isTimelineAtTop = true;
-        };
+        window.scrollToLatest = function() { chatTimeline.scrollTop = chatTimeline.scrollHeight; isTimelineScrolledUp = false; };
+        window.scrollToOldest = function() { chatTimeline.scrollTop = 0; isTimelineScrolledUp = true; };
 
-        window.scrollToOldest = function() {
-            chatTimeline.scrollTop = chatTimeline.scrollHeight;
-            isTimelineAtTop = false;
-        };
-
-        $("toTopBtn").onclick = () => { scrollToLatest(); };
-        $("toBottomBtn").onclick = () => { scrollToOldest(); };
+        $("toTopBtn").onclick = () => { scrollToOldest(); };
+        $("toBottomBtn").onclick = () => { scrollToLatest(); };
 
         const loadYtScript = () => {
             if (window.YT && window.YT.Player) { isYtReady = true; return; }
@@ -512,11 +579,10 @@
 
         let curR, curP, curN, curT, rawR, lastT = 0, serverTimeOffset = 0, isOffsetLoaded = false;
         let unsubscribeChat = null, unsubscribePres = null, unsubscribeRoomConfig = null, unsubscribeConn = null;
-        let isProcessingExit = false, USER_TIMEOUT = 5 * 60 * 1000, ROOM_LIFETIME = 10 * 60 * 1000;
+        let isProcessingExit = false, USER_TIMEOUT = 30 * 60 * 1000, ROOM_LIFETIME = 60 * 60 * 1000;
 
         onValue(ref(db, ".info/serverTimeOffset"), (snap) => { 
-            serverTimeOffset = snap.val() || 0; 
-            isOffsetLoaded = true;
+            serverTimeOffset = snap.val() || 0; isOffsetLoaded = true;
         }, { onlyOnce: true });
 
         const getServerNow = () => Date.now() + (isOffsetLoaded ? serverTimeOffset : 0);
@@ -549,7 +615,7 @@
             $("clearBtn").style.opacity = hasText ? "1" : "0"; $("clearBtn").style.pointerEvents = hasText ? "auto" : "none";
         };
 
-        function generateTripString(name, key) {
+        async function generateTripString(name, key) {
             return new Promise((resolve) => {
                 if (!name || !key) { resolve(""); return; }
                 try {
@@ -584,108 +650,96 @@
             if (!playerEl || playerEl.dataset.transformSetup === "true") return;
             playerEl.dataset.transformSetup = "true";
             
-            let currentWidth = 320; 
-            let isDragging = false, isPinching = false;
-            let startTop = 0, startLeft = 0;
-            let startTouchX = 0, startTouchY = 0;
-            let startW = 0, startPinchDist = 0;
+            let currentWidth = 320; let isDragging = false; let isResizing = false;
+            let startTop = 0, startLeft = 0; let startTouchX = 0, startTouchY = 0; let startW = 0;
 
             playerEl.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomFactor = e.deltaY < 0 ? 1.05 : 1 / 1.05;
                 let newW = currentWidth * zoomFactor;
                 newW = Math.max(minW, Math.min(newW, maxW, window.innerWidth - 16));
-                currentWidth = newW;
-                playerEl.style.width = currentWidth + "px";
+                currentWidth = newW; playerEl.style.width = currentWidth + "px";
             }, { passive: false });
 
-            playerEl.addEventListener('touchstart', (e) => {
-                if (e.target.closest("#ytClosePlayerBtn")) return;
-                const touches = e.touches || [];
-                
-                if (touches.length === 2) {
-                    isPinching = true; isDragging = false;
-                    startW = currentWidth;
-                    startPinchDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-                } else if (touches.length === 1 && !isPinching) {
-                    isDragging = true;
-                    startTop = playerEl.offsetTop; startLeft = playerEl.offsetLeft;
-                    startTouchX = touches[0].clientX; startTouchY = touches[0].clientY;
-                }
-            }, { passive: true });
+            const handle = $("ytResizeHandle");
+            const startResize = (clientX) => { isResizing = true; startW = currentWidth; startTouchX = clientX; };
+            const moveResize = (clientX) => {
+                if (!isResizing) return;
+                const deltaX = clientX - startTouchX;
+                let newW = startW + deltaX;
+                newW = Math.max(minW, Math.min(newW, maxW, window.innerWidth - 16));
+                currentWidth = newW; playerEl.style.width = currentWidth + "px";
+            };
 
-            playerEl.addEventListener('touchmove', (e) => {
-                const touches = e.touches || [];
-                if (isPinching && touches.length === 2) {
-                    if (e.cancelable) e.preventDefault();
-                    const currentDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-                    if (startPinchDist > 0) {
-                        let newW = startW * (currentDist / startPinchDist);
-                        currentWidth = Math.max(minW, Math.min(newW, maxW, window.innerWidth - 16));
-                        playerEl.style.width = currentWidth + "px";
-                    }
-                } else if (isDragging && touches.length === 1 && !isPinching) {
-                    if (e.cancelable) e.preventDefault();
-                    let newTop = startTop + (touches[0].clientY - startTouchY); 
-                    let newLeft = startLeft + (touches[0].clientX - startTouchX);
-                    playerEl.style.top = Math.max(40, Math.min(newTop, window.innerHeight - 100)) + "px"; 
-                    playerEl.style.left = Math.max(-100, Math.min(newLeft, window.innerWidth - 50)) + "px";
-                }
-            }, { passive: false });
-
-            playerEl.addEventListener('touchend', () => { isPinching = false; isDragging = false; }, { passive: true });
-
-            playerEl.addEventListener('mousedown', (e) => {
-                if (e.button !== 0 || e.target.closest("#ytClosePlayerBtn")) return;
-                isDragging = true; 
-                startTop = playerEl.offsetTop; startLeft = playerEl.offsetLeft;
-                startTouchX = e.clientX; startTouchY = e.clientY;
-                
-                const onMouseMove = (ev) => {
-                    if (!isDragging) return;
-                    let newTop = startTop + (ev.clientY - startTouchY); 
-                    let newLeft = startLeft + (ev.clientX - startTouchX);
-                    playerEl.style.top = Math.max(40, Math.min(newTop, window.innerHeight - 100)) + "px"; 
-                    playerEl.style.left = Math.max(-100, Math.min(newLeft, window.innerWidth - 50)) + "px";
-                };
-                const onMouseUp = () => { isDragging = false; document.removeEventListener('mousemove', onMouseMove); };
-                document.addEventListener('mousemove', onMouseMove, { passive: true }); 
-                document.addEventListener('mouseup', onMouseUp, { once: true });
+            handle.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); e.preventDefault(); startResize(e.clientX);
+                const onMouseMove = (ev) => moveResize(ev.clientX);
+                const onMouseUp = () => { isResizing = false; document.removeEventListener('mousemove', onMouseMove); };
+                document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp, { once: true });
             });
+
+            handle.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); if (e.touches.length === 1) startResize(e.touches[0].clientX);
+            }, { passive: false });
+            handle.addEventListener('touchmove', (e) => { if (!isResizing) return; e.preventDefault(); moveResize(e.touches[0].clientX); }, { passive: false });
+            handle.addEventListener('touchend', () => { isResizing = false; }, { passive: true });
+
+            const dragBar = $("ytDragBar");
+            const startDrag = (clientX, clientY) => { isDragging = true; startTop = playerEl.offsetTop; startLeft = playerEl.offsetLeft; startTouchX = clientX; startTouchY = clientY; };
+            const moveDrag = (clientX, clientY) => {
+                if (!isDragging) return;
+                let newTop = startTop + (clientY - startTouchY); let newLeft = startLeft + (clientX - startTouchX);
+                playerEl.style.top = Math.max(40, Math.min(newTop, window.innerHeight - 100)) + "px"; 
+                playerEl.style.left = Math.max(-100, Math.min(newLeft, window.innerWidth - 50)) + "px";
+            };
+
+            dragBar.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return; startDrag(e.clientX, e.clientY);
+                const onMouseMove = (ev) => moveDrag(ev.clientX, ev.clientY);
+                const onMouseUp = () => { isDragging = false; document.removeEventListener('mousemove', onMouseMove); };
+                document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp, { once: true });
+            });
+
+            dragBar.addEventListener('touchstart', (e) => { if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+            dragBar.addEventListener('touchmove', (e) => { if (!isDragging) return; e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+            dragBar.addEventListener('touchend', () => { isDragging = false; }, { passive: true });
         }
 
-        function applyLocalVolumeFromUI() {
-            const vol = parseInt($("ytVolumeSlider").value, 10);
+        function applyLocalVolumeFromUI(source = "console") {
+            const activeSlider = source === "console" ? $("ytVolumeSlider") : $("ytMiniVolume");
+            const mirrorSlider = source === "console" ? $("ytMiniVolume") : $("ytVolumeSlider");
+            const vol = parseInt(activeSlider.value, 10);
+            mirrorSlider.value = vol;
             $("ytVolumeDisplay").innerText = `${vol}%`;
             savedVolumeLevel = vol;
             if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
                 if (vol === 0) {
-                    ytPlayer.mute();
-                    $("ytVolumeIcon").innerText = "🔇";
-                    isMutedLocal = true;
+                    ytPlayer.mute(); $("ytVolumeIcon").innerText = "🔇"; $("ytMiniMuteBtn").innerText = "🔇"; isMutedLocal = true;
                 } else {
                     if (isMutedLocal) { ytPlayer.unMute(); isMutedLocal = false; }
                     ytPlayer.setVolume(vol);
-                    $("ytVolumeIcon").innerText = vol < 40 ? "🔈" : vol < 80 ? "🔉" : "🔊";
+                    const icon = vol < 40 ? "🔈" : vol < 80 ? "🔉" : "🔊";
+                    $("ytVolumeIcon").innerText = icon; $("ytMiniMuteBtn").innerText = icon;
                 }
             }
         }
 
-        $("ytVolumeSlider").oninput = () => { applyLocalVolumeFromUI(); };
-        $("ytVolumeMuteBtn").onclick = (e) => {
-            e.preventDefault();
+        $("ytVolumeSlider").oninput = () => { applyLocalVolumeFromUI("console"); };
+        $("ytMiniVolume").oninput = () => { applyLocalVolumeFromUI("mini"); };
+
+        const toggleLocalMute = () => {
             if (!ytPlayer) return;
             if (isMutedLocal) {
-                isMutedLocal = false;
-                $("ytVolumeSlider").value = savedVolumeLevel === 0 ? 50 : savedVolumeLevel;
-                applyLocalVolumeFromUI();
+                isMutedLocal = false; const activeVol = savedVolumeLevel === 0 ? 50 : savedVolumeLevel;
+                $("ytVolumeSlider").value = activeVol; $("ytMiniVolume").value = activeVol; applyLocalVolumeFromUI("console");
             } else {
-                isMutedLocal = true;
-                $("ytVolumeIcon").innerText = "🔇";
+                isMutedLocal = true; $("ytVolumeIcon").innerText = "🔇"; $("ytMiniMuteBtn").innerText = "🔇";
                 if (typeof ytPlayer.mute === 'function') ytPlayer.mute();
                 $("ytVolumeDisplay").innerText = "0%";
             }
         };
+        $("ytVolumeMuteBtn").onclick = (e) => { e.preventDefault(); toggleLocalMute(); };
+        $("ytMiniMuteBtn").onclick = (e) => { e.preventDefault(); toggleLocalMute(); };
 
         async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
             let waitCounter = 0; 
@@ -718,14 +772,12 @@
                 if (unsubscribeConn) unsubscribeConn = null;
                 unsubscribeConn = onValue(ref(db, ".info/connected"), (snap) => {
                     if (snap.val() === true && curR && !isProcessingExit) {
-                        onDisconnect(myRef).remove();
-                        set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: getServerNow() });
+                        onDisconnect(myRef).remove(); set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: getServerNow() });
                     }
                 });
 
                 await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
                 $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
-                
                 await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
             } catch (e) { showLobby("通信エラーにより入室できませんでした。"); return; }
 
@@ -736,7 +788,14 @@
                     const curTime = ytPlayer.getCurrentTime(); const duration = ytPlayer.getDuration();
                     if (duration > 0) {
                         $("ytSyncSlider").max = Math.floor(duration); $("ytSyncSlider").value = Math.floor(curTime);
+                        $("ytMiniSlider").max = Math.floor(duration); $("ytMiniSlider").value = Math.floor(curTime);
                         $("ytSyncTimeDisplay").innerText = `${formatTime(curTime)} / ${formatTime(duration)}`;
+                        $("ytMiniTimeDisplay").innerText = formatTime(curTime);
+                    }
+
+                    if (typeof ytPlayer.getPlayerState === 'function') {
+                        const pState = ytPlayer.getPlayerState();
+                        $("ytMiniPlayPauseBtn").innerText = pState === YT.PlayerState.PLAYING ? "⏸" : "▶";
                     }
 
                     if (isUserApprovedSync) {
@@ -746,33 +805,30 @@
                             $("ytLagMeter").style.display = "none";
                             $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse";
                             $("topLiveIndicator").className = "w-2 h-2 bg-indigo-500 rounded-full animate-pulse shrink-0";
-                            $("ytControlConsole").className = "p-3 bg-slate-950 text-white flex flex-col gap-2 transition-all border-t-2 border-indigo-600 shadow-[inset_0_1px_15px_rgba(79,70,229,0.15)]";
+                            $("ytControlConsole").className = "p-3 bg-slate-950 text-white flex flex-col gap-2 transition-all border-t-2 border-indigo-600";
                         } else if (isGuestFreeMode) {
                             $("ytSyncStatusIndicator").innerText = "単独自由再生";
                             $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-black bg-amber-955 text-amber-400 border border-amber-500 animate-pulse";
                             $("ytLagMeter").style.display = "none";
                             $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-amber-500";
                             $("topLiveIndicator").className = "w-2 h-2 bg-amber-500 rounded-full shrink-0";
-                            $("ytControlConsole").className = "p-3 bg-amber-950/20 text-white flex flex-col gap-2 transition-all border-t-2 border-amber-600 shadow-[inset_0_1px_15px_rgba(245,158,11,0.1)]";
+                            $("ytControlConsole").className = "p-3 bg-amber-955/20 text-white flex flex-col gap-2 transition-all border-t-2 border-amber-600";
                         } else {
-                            $("ytControlConsole").className = "p-3 bg-slate-950 text-white flex flex-col gap-2 transition-all border-t-2 border-emerald-600 shadow-[inset_0_1px_15px_rgba(16,185,129,0.08)]";
-
+                            $("ytControlConsole").className = "p-3 bg-slate-950 text-white flex flex-col gap-2 transition-all border-t-2 border-emerald-600";
                             let hostTargetTime = globalVideoStateCache ? globalVideoStateCache.currentTime : curTime;
                             if (globalVideoStateCache && globalVideoStateCache.status === "playing") {
                                 hostTargetTime += ((getServerNow() - globalVideoStateCache.timestamp) / 1000);
                             }
-                            const lag = curTime - hostTargetTime;
-                            const absLag = Math.abs(lag);
-
+                            const lag = curTime - hostTargetTime; const absLag = Math.abs(lag);
                             $("ytLagMeter").style.display = "inline-block";
-                            if (absLag <= 1.2) {
+                            if (absLag <= 1.5) {
                                 $("ytSyncStatusIndicator").innerText = "完全同期中";
                                 $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-600";
                                 $("ytLagMeter").innerText = `ホストとのズレ: ${(lag >= 0 ? '+' : '')}${lag.toFixed(2)}秒 (良好)`;
                                 $("ytLagMeter").className = "text-[9px] text-emerald-400 font-mono font-bold";
                                 $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
                                 $("topLiveIndicator").className = "w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0";
-                            } else if (absLag <= 2.5) {
+                            } else if (absLag <= 3.0) {
                                 $("ytSyncStatusIndicator").innerText = "許容範囲内";
                                 $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-yellow-400 border border-yellow-600";
                                 $("ytLagMeter").innerText = `ホストとのズレ: ${(lag >= 0 ? '+' : '')}${lag.toFixed(2)}秒 (微調整中)`;
@@ -792,29 +848,35 @@
                 } catch(e){}
             }, 1000);
 
-            $("ytSyncSlider").oninput = () => { isUserDraggingSlider = true; };
-            $("ytSyncSlider").onchange = async () => {
-                const targetTime = Number($("ytSyncSlider").value);
+            const onSliderChange = async (sliderEl) => {
+                const targetTime = Number(sliderEl.value);
                 if (ytPlayer && typeof ytPlayer.seekTo === 'function') { ytPlayer.seekTo(targetTime, true); }
-                
                 if (amIOwner) {
                     isLocalAction = true;
                     const status = (ytPlayer && typeof ytPlayer.getPlayerState === 'function' && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) ? "playing" : "paused";
                     const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
-                    
                     await set(roomStateRef, { 
-                        videoId: currentId,
-                        status: status,
-                        currentTime: targetTime, 
-                        timestamp: getServerNow(), 
-                        owner: uid, 
-                        ownerName: enc(curN, curP),
-                        resetSeed: lastResetSeed || Date.now()
+                        videoId: currentId, status: status, currentTime: targetTime, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now()
                     });
                     await update(roomRef, { lastActivity: getServerNow() });
                     setTimeout(() => { isLocalAction = false; }, 400);
                 }
                 isUserDraggingSlider = false;
+            };
+
+            $("ytSyncSlider").oninput = () => { isUserDraggingSlider = true; };
+            $("ytMiniSlider").oninput = () => { isUserDraggingSlider = true; };
+            $("ytSyncSlider").onchange = () => onSliderChange($("ytSyncSlider"));
+            $("ytMiniSlider").onchange = () => onSliderChange($("ytMiniSlider"));
+
+            $("ytMiniPlayPauseBtn").onclick = (e) => {
+                e.preventDefault(); if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+                const pState = ytPlayer.getPlayerState();
+                if (pState === YT.PlayerState.PLAYING) {
+                    if (amIOwner) $("ytHostPauseBtn").click(); else ytPlayer.pauseVideo();
+                } else {
+                    if (amIOwner) $("ytHostPlayBtn").click(); else ytPlayer.playVideo();
+                }
             };
 
             unsubscribePres = onValue(presRef, s => {
@@ -833,25 +895,48 @@
             chatTimeline.innerHTML = ""; 
             const chatQuery = query(chatRef, orderByChild("time"), limitToLast(40)); 
             unsubscribeChat = onChildAdded(chatQuery, s => {
-                const m = s.val();
-                const txt = textDec(m.text, curP); if (!txt) return;
-                
+                const m = s.val(); const txt = textDec(m.text, curP); if (!txt) return;
                 const div = document.createElement("div"); div.className = "msg-wrap animate-fade-in";
-                const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+                const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "";
                 
                 if (m.type === "sys") {
                     div.innerHTML = `<div class="sys-msg text-center text-[10px] font-bold text-slate-400 my-1 bg-slate-800/60 border border-slate-700/50 py-1 px-3 rounded-lg inline-block mx-auto">${linkify(txt)}</div>`;
                     div.className = "msg-wrap text-center w-full justify-center items-center";
                 } else {
                     const sN = textDec(m.nEnc, curP) || "???", sT = textDec(m.tEnc, curP) || "";
+                    if ($("ytArea").style.display === "block" && isUserApprovedSync) { pushMessageToOverlay(sN, txt); }
+
+                    const extractedId = extractVideoId(txt);
+                    let embedMediaHtml = "";
+                    
+                    if (extractedId) {
+                        const isTriggerPlayer = /プレイヤー/i.test(txt);
+                        if (isTriggerPlayer) {
+                            embedMediaHtml = `
+                            <div class="mt-2 border border-slate-800 rounded-lg overflow-hidden w-full max-w-[280px]">
+                                <div class="relative w-full" style="padding-top: 56.25%;">
+                                    <iframe class="absolute inset-0 w-full h-full border-0" src="https://www.youtube.com/embed/${extractedId}?playsinline=1" allowfullscreen></iframe>
+                                </div>
+                            </div>`;
+                        } else {
+                            embedMediaHtml = `
+                            <div class="mt-2 border border-slate-700/40 rounded-lg overflow-hidden cursor-pointer relative group max-w-[220px]" onclick="window.__jumpToYtVideo('${extractedId}')">
+                                <img src="https://img.youtube.com/vi/${extractedId}/mqdefault.jpg" class="w-full h-auto object-cover group-hover:scale-103 transition duration-200">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-85 group-hover:opacity-100 transition duration-200">
+                                    <span class="bg-indigo-600 text-[10px] px-2 py-1 rounded text-white font-bold shadow-md flex items-center gap-1">📺 押して全体同期起動</span>
+                                </div>
+                            </div>`;
+                        }
+                    }
+
                     div.innerHTML = `<div class="text-[11px] font-bold text-slate-400 mb-0.5 pl-1">${esc(sN)}<span class="text-indigo-400">${esc(sT)}</span> <span class="text-slate-500 font-normal">${time}</span></div>
                         <div class="msg-card msg bg-slate-900/90 text-slate-200 px-3 py-2 rounded-xl border border-slate-800 shadow-md max-w-sm inline-block break-all new-alert">
                             <div class="text-sm leading-relaxed">${linkify(txt)}</div>
+                            ${embedMediaHtml}
                         </div>`;
                 }
-                
-                chatTimeline.insertBefore(div, chatTimeline.firstChild);
-                if (isTimelineAtTop) {
+                chatTimeline.appendChild(div);
+                if (!isTimelineScrolledUp) {
                     scrollToLatest();
                     setTimeout(() => { div.querySelector('.msg-card')?.classList.remove('new-alert'); }, 800);
                 }
@@ -860,9 +945,7 @@
             onValue(roomStateRef, (snapshot) => {
                 if (!snapshot.exists()) {
                     if (lastLoadedVideoId === "__NAV_INIT_MODE__" || lastLoadedVideoId === "__SEARCH_MODE__" || !lastLoadedVideoId) {
-                        amIOwner = true; 
-                        updateControlsUI();
-                        return; 
+                        amIOwner = true; updateControlsUI(); return; 
                     }
                     $("ytArea").style.display = "none"; $("ytControlConsole").style.display = "none"; if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
                     if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
@@ -874,21 +957,19 @@
                 amIOwner = (state.owner === uid);
 
                 if (lastLoadedVideoId !== state.videoId) {
-                    isExplicitlyClosedByGuest = false;
-                    if (!amIOwner) { isGuestFreeMode = false; } 
+                    isExplicitlyClosedByGuest = false; if (!amIOwner) { isGuestFreeMode = false; } 
                 }
 
                 if (amIOwner) {
                     isUserApprovedSync = true; $("ytGuestModeBtn").style.display = "none"; 
                     $("ytHostPlayBtn").style.display = "block"; $("ytHostPauseBtn").style.display = "block";
-                    $("ytBadge").innerText = `👑 ホスト配信中 [${state.status === "playing" ? "再生" : "停止"}]`;
-                    $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-indigo-400 border-indigo-500 bg-indigo-950/50 shadow-[0_0_8px_rgba(79,70,229,0.4)]";
-                    $("ytSyncSlider").disabled = false;
-                    
+                    updateControlsUI();
                     if (isLocalAction || state.status === "playing") {
                         lastLoadedVideoId = state.videoId; lastSavedStatus = state.status;
-                        updateControlsUI();
-                        return;
+                        if ($("ytArea").style.display !== "block") {
+                            $("ytArea").style.display = "block"; $("ytControlConsole").style.display = "flex";
+                            setupPlayerTransformationController($("ytArea"), 180, 1200);
+                        }
                     }
                 } else {
                     $("ytHostPlayBtn").style.display = "none"; $("ytHostPauseBtn").style.display = "none";
@@ -896,33 +977,25 @@
                     if (isExplicitlyClosedByGuest) { $("ytArea").style.display = "none"; return; }
 
                     if (lastLoadedVideoId !== state.videoId) {
-                        isUserApprovedSync = false; const conf = confirm(`${state.ownerName ? textDec(state.ownerName, curP) : "誰か"} さんから同時視聴リクエストがあります。\nプレイヤーを開きますか？`);
+                        isUserApprovedSync = false; 
+                        const hostNameDec = state.ownerName ? textDec(state.ownerName, curP) : "誰か";
+                        const conf = confirm(`👑 ${hostNameDec} さんから同時視聴シアターの起動リクエストがあります。\n動画プレイヤーを開いて同期しますか？`);
                         if (conf) { isUserApprovedSync = true; } else { isExplicitlyClosedByGuest = true; $("ytArea").style.display = "none"; if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = state.videoId; } return; }
                     }
-
-                    if (isUserApprovedSync) { 
-                        if (isGuestFreeMode) {
-                            $("ytBadge").innerText = `🔓 マイペース再生中`;
-                            $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-amber-400 border-amber-500 bg-amber-950/60 shadow-[0_0_8px_rgba(245,158,11,0.3)]";
-                            $("ytSyncSlider").disabled = false;
-                        } else {
-                            $("ytBadge").innerText = `🔒 ホスト連動中 [${state.status === "playing" ? "再生" : "停止"}]`;
-                            $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-emerald-400 border-emerald-500 bg-emerald-950/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]";
-                            $("ytSyncSlider").disabled = true; 
-                        }
-                    } else { return; }
+                    if (!isUserApprovedSync) return;
                 }
 
-                if ($("ytArea").style.display !== "block") {
-                    $("ytArea").style.display = "block";
-                    $("ytControlConsole").style.display = "flex";
+                if ($("ytArea").style.display !== "block" && isUserApprovedSync) {
+                    $("ytArea").style.display = "block"; $("ytControlConsole").style.display = "flex";
                     setupPlayerTransformationController($("ytArea"), 180, 1200);
                 }
                 
                 updateControlsUI();
                 if (!amIOwner && isGuestFreeMode) { lastLoadedVideoId = state.videoId; return; }
                 if (lastSavedStatus !== state.status) { triggerFlashEffect(state.status); }
-                const incomingResetSeed = state.resetSeed || 0, needsForcedRebuild = (lastLoadedVideoId !== state.videoId) || (lastResetSeed !== incomingResetSeed);
+                
+                const incomingResetSeed = state.resetSeed || 0;
+                const needsForcedRebuild = (lastLoadedVideoId !== state.videoId) || (lastResetSeed !== incomingResetSeed);
                 lastSavedTime = state.currentTime; lastSavedStatus = state.status; lastResetSeed = incomingResetSeed;
 
                 if (needsForcedRebuild || !ytPlayer) {
@@ -936,15 +1009,13 @@
                         ytPlayer = new YT.Player('ytPlayer', { 
                             videoId: state.videoId, 
                             playerVars: { 
-                                'autoplay': (state.status==="paused")?0:1, 'playsinline': 1, 
-                                'controls': (amIOwner||isGuestFreeMode)?1:0, 'disablekb': amIOwner?0:1, 
-                                'rel': 0, 'modestbranding': 1, 'start': Math.floor(startPos), 'mute': amIOwner ? 0 : 1
+                                'autoplay': (state.status==="paused")?0:1, 'playsinline': 1, 'controls': 0, 'disablekb': 1, 
+                                'rel': 0, 'modestbranding': 1, 'start': Math.max(0, Math.floor(startPos)), 'mute': amIOwner ? 0 : 1
                             }, 
                             events: { 
                                 'onReady': (e) => { 
                                     if(!amIOwner) { e.target.unMute(); e.target.playVideo(); } 
-                                    applyLocalVolumeFromUI();
-                                    syncPlayer(state); 
+                                    applyLocalVolumeFromUI("console"); syncPlayer(state); 
                                 }, 
                                 'onStateChange': onPlayerStateChange 
                             } 
@@ -958,29 +1029,27 @@
                 if (!curR) return;
                 if (amIOwner) {
                     $("ytGuestModeBtn").style.display = "none"; $("ytHostPlayBtn").style.display = "block"; $("ytHostPauseBtn").style.display = "block";
-                    $("ytSyncSlider").disabled = false;
+                    $("ytSyncSlider").disabled = false; $("ytMiniSlider").disabled = false;
                     $("ytBadge").innerText = `👑 ホスト配信中`;
                     $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-indigo-400 border-indigo-500 bg-indigo-950/50 shadow-[0_0_8px_rgba(79,70,229,0.4)]";
                 } else {
                     $("ytHostPlayBtn").style.display = "none"; $("ytHostPauseBtn").style.display = "none"; $("ytGuestModeBtn").style.display = "block";
-                    
                     if (isGuestFreeMode) {
                         $("ytGuestModeBtn").innerHTML = `🔗 ホストに同期する`;
                         $("ytGuestModeBtn").className = "px-2.5 py-1 rounded text-[10px] font-black tracking-wide text-white bg-emerald-600 border border-emerald-400 shadow-md hover:bg-emerald-500 transition-all active:scale-95";
                         $("ytBadge").innerText = `🔓 マイペース再生中`;
-                        $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-amber-400 border-amber-500 bg-amber-950/60 shadow-[0_0_8px_rgba(245,158,11,0.3)]";
-                        $("ytSyncSlider").disabled = false;
+                        $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-amber-400 border-amber-500 bg-amber-955/60 shadow-[0_0_8px_rgba(245,158,11,0.3)]";
+                        $("ytSyncSlider").disabled = false; $("ytMiniSlider").disabled = false;
                         $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-amber-500";
                     } else {
                         $("ytGuestModeBtn").innerHTML = `🔓 マイペース再生`;
                         $("ytGuestModeBtn").className = "px-2.5 py-1 rounded text-[10px] font-black tracking-wide text-gray-900 bg-amber-400 border border-amber-300 shadow-md hover:bg-amber-300 transition-all active:scale-95";
-                        $("ytSyncSlider").disabled = true;
+                        $("ytSyncSlider").disabled = true; $("ytMiniSlider").disabled = true;
                         if (globalVideoStateCache) {
                             $("ytBadge").innerText = `🔒 ホスト連動中 [${globalVideoStateCache.status === "playing" ? "再生" : "停止"}]`;
                             $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-emerald-400 border-emerald-500 bg-emerald-950/60 shadow-[0_0_8px_rgba(16,185,129,0.3)]";
                         } else {
-                            $("ytBadge").innerText = `🔒 デモ同期中`;
-                            $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-emerald-400 border-emerald-500 bg-emerald-950/60";
+                            $("ytBadge").innerText = `🔒 デモ同期中`; $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-emerald-400 border-emerald-500 bg-emerald-950/60";
                         }
                     }
                 }
@@ -989,21 +1058,11 @@
             $("ytHostPlayBtn").onclick = async (e) => {
                 e.preventDefault(); if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
                 const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
-                amIOwner = true; 
-                isLocalAction = true; 
-                lastSavedStatus = "playing"; 
-                const currentPos = ytPlayer.getCurrentTime(); 
-                lastSavedTime = currentPos;
-                
+                amIOwner = true; isLocalAction = true; lastSavedStatus = "playing"; 
+                const currentPos = ytPlayer.getCurrentTime(); lastSavedTime = currentPos;
                 try {
                     await set(roomStateRef, { 
-                        videoId: currentId,
-                        status: "playing", 
-                        currentTime: currentPos, 
-                        timestamp: getServerNow(),
-                        owner: uid,
-                        ownerName: enc(curN, curP),
-                        resetSeed: lastResetSeed || Date.now()
+                        videoId: currentId, status: "playing", currentTime: currentPos, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now()
                     });
                     if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
                     startPeriodicSync();
@@ -1014,22 +1073,12 @@
             $("ytHostPauseBtn").onclick = async (e) => {
                 e.preventDefault(); if (!ytPlayer || typeof ytPlayer.getCurrentTime !== 'function') return;
                 const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
-                amIOwner = true;
-                isLocalAction = true; 
-                lastSavedStatus = "paused"; 
+                amIOwner = true; isLocalAction = true; lastSavedStatus = "paused"; 
                 if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
-                const currentPos = ytPlayer.getCurrentTime(); 
-                lastSavedTime = currentPos;
-                
+                const currentPos = ytPlayer.getCurrentTime(); lastSavedTime = currentPos;
                 try {
                     await set(roomStateRef, { 
-                        videoId: currentId,
-                        status: "paused", 
-                        currentTime: currentPos, 
-                        timestamp: getServerNow(),
-                        owner: uid,
-                        ownerName: enc(curN, curP),
-                        resetSeed: lastResetSeed || Date.now()
+                        videoId: currentId, status: "paused", currentTime: currentPos, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now()
                     });
                     if (ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) ytPlayer.pauseVideo();
                 } catch(err){}
@@ -1038,30 +1087,22 @@
 
             $("ytGuestModeBtn").onclick = (e) => {
                 e.preventDefault(); if (!ytPlayer) return;
-                isGuestFreeMode = !isGuestFreeMode; 
-                updateControlsUI();
-                
+                isGuestFreeMode = !isGuestFreeMode; updateControlsUI();
                 const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
                 if (isGuestFreeMode) {
                     const curFreeTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
                     rebuildFreePlayer(currentId, curFreeTime);
                 } else { 
-                    if (globalVideoStateCache) {
-                        rebuildLockedPlayer(globalVideoStateCache); 
-                    } else {
-                        rebuildFreePlayer("dQw4w9WgXcQ", ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0);
-                    }
+                    if (globalVideoStateCache) rebuildLockedPlayer(globalVideoStateCache); 
+                    else rebuildFreePlayer("dQw4w9WgXcQ", ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0);
                 }
             };
 
             function rebuildFreePlayer(vId, startTime) {
                 if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
                 ytPlayer = new YT.Player('ytPlayer', { 
-                    videoId: vId, playerVars: { 'autoplay': 1, 'playsinline': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1, 'start': Math.floor(startTime) }, 
-                    events: { 
-                        'onReady': () => { applyLocalVolumeFromUI(); },
-                        'onStateChange': onPlayerStateChange 
-                    } 
+                    videoId: vId, playerVars: { 'autoplay': 1, 'playsinline': 1, 'controls': 0, 'rel': 0, 'modestbranding': 1, 'start': Math.floor(startTime) }, 
+                    events: { 'onReady': () => { applyLocalVolumeFromUI("console"); }, 'onStateChange': onPlayerStateChange } 
                 });
             }
 
@@ -1069,266 +1110,267 @@
                 if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
                 let targetTime = state.currentTime; if (state.status === "playing") { targetTime += ((getServerNow() - state.timestamp) / 1000); }
                 ytPlayer = new YT.Player('ytPlayer', { 
-                    videoId: state.videoId, playerVars: { 'autoplay': (state.status === "paused") ? 0 : 1, 'playsinline': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'modestbranding': 1, 'start': Math.floor(targetTime) }, 
-                    events: { 'onReady': () => { applyLocalVolumeFromUI(); syncPlayer(state); }, 'onStateChange': onPlayerStateChange } 
+                    videoId: state.videoId, playerVars: { 'autoplay': (state.status === "paused") ? 0 : 1, 'playsinline': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'modestbranding': 1, 'start': Math.max(0, Math.floor(targetTime)), 'mute': 1 }, 
+                    events: { 'onReady': (e) => { e.target.unMute(); e.target.playVideo(); applyLocalVolumeFromUI("console"); syncPlayer(state); }, 'onStateChange': onPlayerStateChange } 
                 });
             }
 
-            $("ytClosePlayerBtn").onclick = async (e) => {
-                e.preventDefault();
-                if (amIOwner) {
-                    if (confirm("👑 全員の画面からプレイヤーを消去しますか？")) {
-                        if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
-                        if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
-                        $("ytArea").style.display = "none"; $("ytControlConsole").style.display = "none"; await remove(roomStateRef);
-                    }
-                } else {
-                    isExplicitlyClosedByGuest = true; isUserApprovedSync = false; isGuestFreeMode = false;
-                    if (ytPlayer) { try { ytPlayer.pauseVideo(); } catch(e){} }
-                    $("ytArea").style.display = "none"; $("ytControlConsole").style.display = "none";
-                }
-            };
-
             function syncPlayer(state) {
-                if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || !isUserApprovedSync || (isLocalAction && amIOwner) || isGuestFreeMode) return;
-                const pState = ytPlayer.getPlayerState();
-                if (state.status === "playing") {
-                    const targetTime = state.currentTime + ((getServerNow() - state.timestamp) / 1000);
-                    if (Math.abs(ytPlayer.getCurrentTime() - targetTime) > 1.8) ytPlayer.seekTo(targetTime, true);
-                    if (pState !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
-                } else if (state.status === "paused") {
-                    if (Math.abs(ytPlayer.getCurrentTime() - state.currentTime) > 0.5) ytPlayer.seekTo(state.currentTime, true);
-                    if (pState !== YT.PlayerState.PAUSED) ytPlayer.pauseVideo();
-                }
-            }
+                if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || isLocalAction || isGuestFreeMode) return;
+                try {
+                    let targetTime = state.currentTime;
+                    if (state.status === "playing") { targetTime += ((getServerNow() - state.timestamp) / 1000); }
+                    const curTime = ytPlayer.getCurrentTime(); const timeDiff = Math.abs(curTime - targetTime);
 
-            function onPlayerStateChange(event) {
-                if (!ytPlayer) return; 
-                if (!amIOwner) return; 
-                
-                const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
-                if (!isLocalAction) {
-                    if (event.data === YT.PlayerState.PLAYING) startPeriodicSync();
-                    else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) { if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; } }
-                    return;
-                }
-                const NOW = getServerNow(), currentPos = ytPlayer.getCurrentTime();
-                if (event.data === YT.PlayerState.PLAYING) {
-                    lastSavedStatus = "playing"; lastSavedTime = currentPos; 
-                    set(roomStateRef, { videoId: currentId, status: "playing", currentTime: currentPos, timestamp: NOW, owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now() }); 
-                    startPeriodicSync();
-                } else if (event.data === YT.PlayerState.PAUSED) {
-                    lastSavedStatus = "paused"; lastSavedTime = currentPos; 
-                    set(roomStateRef, { videoId: currentId, status: "paused", currentTime: currentPos, timestamp: NOW, owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now() }); 
-                    if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
-                }
+                    if (state.status === "playing") {
+                        if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) { ytPlayer.playVideo(); }
+                        if (timeDiff > 2.0) { ytPlayer.seekTo(targetTime, true); }
+                    } else if (state.status === "paused") {
+                        if (ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) { ytPlayer.pauseVideo(); }
+                        if (timeDiff > 1.0) { ytPlayer.seekTo(targetTime, true); }
+                    }
+                } catch(e){}
             }
 
             function startPeriodicSync() {
-                if (!amIOwner) return; if (syncIntervalId) clearInterval(syncIntervalId);
-                const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
-                syncIntervalId = setInterval(() => {
-                    if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || !amIOwner || isLocalAction) return;
+                if (syncIntervalId) clearInterval(syncIntervalId);
+                syncIntervalId = setInterval(async () => {
+                    if (!amIOwner || !ytPlayer || typeof ytPlayer.getCurrentTime !== 'function' || isLocalAction) return;
                     if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) return;
-                    
-                    const currentPos = ytPlayer.getCurrentTime();
-                    if (globalVideoStateCache && globalVideoStateCache.status === "playing") {
-                        const elapsed = (getServerNow() - globalVideoStateCache.timestamp) / 1000;
-                        const expectedServerTime = globalVideoStateCache.currentTime + elapsed;
-                        if (Math.abs(currentPos - expectedServerTime) < 1.8) { lastSavedTime = currentPos; return; }
-                    }
-                    
-                    isLocalAction = true; lastSavedTime = currentPos; lastSavedStatus = "playing";
-                    set(roomStateRef, { videoId: currentId, status: "playing", currentTime: currentPos, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now() });
-                }, 5000);
-            }
-
-            async function executeYtDataSearch() {
-                const queryStr = $("ytSearchInput").value.trim(); if (!queryStr) return;
-                const directId = extractVideoId(queryStr);
-                if (directId) {
-                    currentSearchResults = [{ id: directId, title: "直貼り指定された動画URL", thumb: `https://img.youtube.com/vi/${directId}/default.jpg` }];
-                    currentSearchIndex = 0; loadSelectedSearchVideo(); return;
-                }
-
-                try {
-                    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(queryStr)}&type=video&maxResults=5&key=${YT_API_KEY}`;
-                    const res = await fetch(url); const data = await res.json();
-                    if (data.items && data.items.length > 0) {
-                        currentSearchResults = data.items.map(item => ({ id: item.id.videoId, title: item.snippet.title, thumb: item.snippet.thumbnails.default.url })).filter(item => item.id);
-                        currentSearchIndex = 0; renderSearchResults();
-                    } else {
-                        $("ytSearchResults").innerHTML = '<div class="p-2 text-xs text-slate-400 text-center">動画が見つかりませんでした</div>';
-                        $("ytSearchResults").style.display = "block";
-                    }
-                } catch (e) { console.error(e); }
-            }
-
-            function renderSearchResults() {
-                const box = $("ytSearchResults"); box.innerHTML = "";
-                currentSearchResults.forEach((video, index) => {
-                    const item = document.createElement("div"); item.className = "search-item";
-                    item.innerHTML = `<img src="${esc(video.thumb)}"><div><div class="font-bold text-slate-200 line-clamp-1">${esc(video.title)}</div></div>`;
-                    item.onclick = () => { currentSearchIndex = index; loadSelectedSearchVideo(); box.style.display = "none"; };
-                    box.appendChild(item);
-                });
-                box.style.display = "block";
-            }
-
-            function loadSelectedSearchVideo() {
-                const video = currentSearchResults[currentSearchIndex]; if (!video) return;
-                
-                amIOwner = true;
-                if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
-                
-                const NOW = getServerNow();
-                set(roomStateRef, { 
-                    videoId: video.id, 
-                    status: "playing", 
-                    currentTime: 0, 
-                    timestamp: NOW, 
-                    owner: uid, 
-                    ownerName: enc(curN, curP),
-                    resetSeed: Date.now()
-                });
-                
-                lastLoadedVideoId = video.id;
-            }
-
-            $("ytSearchBtn").onclick = (e) => { e.preventDefault(); executeYtDataSearch(); };
-            $("ytSearchInput").onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); executeYtDataSearch(); } };
-            document.addEventListener("click", (e) => { if (!e.target.closest("#ytSearchResults") && !e.target.closest("#ytSearchInput")) $("ytSearchResults").style.display = "none"; });
-
-            $("ytPrevVideoBtn").onclick = (e) => { e.preventDefault(); if (currentSearchResults.length === 0) return; currentSearchIndex = (currentSearchIndex - 1 + currentSearchResults.length) % currentSearchResults.length; loadSelectedSearchVideo(); };
-            $("ytNextVideoBtn").onclick = (e) => { e.preventDefault(); if (currentSearchResults.length === 0) return; currentSearchIndex = (currentSearchIndex + 1) % currentSearchResults.length; loadSelectedSearchVideo(); };
-
-            $("openPlayerNavBtn").onclick = (e) => {
-                e.preventDefault(); 
-                if ($("ytArea").style.display === "block") { $("ytArea").style.display = "none"; $("ytControlConsole").style.display = "none"; return; }
-                $("ytArea").style.display = "block"; $("ytControlConsole").style.display = "flex";
-                setupPlayerTransformationController($("ytArea"), 180, 1200);
-                
-                isUserApprovedSync = true;
-                if (!ytPlayer) {
-                    const buildInitPlayer = () => {
-                        if (!isYtReady || !window.YT?.Player) { setTimeout(buildInitPlayer, 100); return; }
-                        
-                        const initId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
-                        
-                        ytPlayer = new YT.Player('ytPlayer', {
-                            videoId: initId, playerVars: { 'autoplay': 0, 'playsinline': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
-                            events: { 'onReady': () => { 
-                                applyLocalVolumeFromUI();
-                                lastLoadedVideoId = initId;
-                                updateControlsUI();
-                            }, 'onStateChange': onPlayerStateChange }
+                    const curTime = ytPlayer.getCurrentTime();
+                    try {
+                        const currentId = (globalVideoStateCache && globalVideoStateCache.videoId) ? globalVideoStateCache.videoId : "dQw4w9WgXcQ";
+                        await set(roomStateRef, { 
+                            videoId: currentId, status: "playing", currentTime: curTime, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now()
                         });
-                    };
-                    buildInitPlayer();
-                } else {
-                    updateControlsUI();
-                }
-            };
-
-            const iframeWrap = $("ytArea");
-            if (iframeWrap) {
-                const setLocal = () => { if(amIOwner) isLocalAction = true; }; const unsetLocal = () => { if(amIOwner) setTimeout(() => { isLocalAction = false; }, 400); };
-                iframeWrap.addEventListener("pointerenter", setLocal, {passive:true}); iframeWrap.addEventListener("pointerleave", unsetLocal, {passive:true});
+                    } catch(e){}
+                }, 8000);
             }
+
+            function onPlayerStateChange(event) {
+                if (!ytPlayer || isGuestFreeMode) return;
+                const pState = event.data;
+                if (amIOwner) {
+                    if (isLocalAction) return;
+                    const curTime = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+                    if (pState === YT.PlayerState.PLAYING) {
+                        isLocalAction = true; lastSavedStatus = "playing";
+                        set(roomStateRef, { videoId: globalVideoStateCache?.videoId || "dQw4w9WgXcQ", status: "playing", currentTime: curTime, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now() });
+                        startPeriodicSync(); setTimeout(() => { isLocalAction = false; }, 400);
+                    } else if (pState === YT.PlayerState.PAUSED) {
+                        isLocalAction = true; lastSavedStatus = "paused";
+                        if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
+                        set(roomStateRef, { videoId: globalVideoStateCache?.videoId || "dQw4w9WgXcQ", status: "paused", currentTime: curTime, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: lastResetSeed || Date.now() });
+                        setTimeout(() => { isLocalAction = false; }, 400);
+                    }
+                } else {
+                    if (globalVideoStateCache && !isLocalAction) {
+                        if (globalVideoStateCache.status === "playing" && pState === YT.PlayerState.PAUSED) {
+                            setTimeout(() => { if (!isGuestFreeMode && globalVideoStateCache?.status === "playing" && ytPlayer?.getPlayerState() === YT.PlayerState.PAUSED) ytPlayer.playVideo(); }, 1200);
+                        } else if (globalVideoStateCache.status === "paused" && pState === YT.PlayerState.PLAYING) {
+                            setTimeout(() => { if (!isGuestFreeMode && globalVideoStateCache?.status === "paused" && ytPlayer?.getPlayerState() === YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); }, 600);
+                        }
+                    }
+                }
+            }
+
+            if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
+            heartbeatIntervalId = setInterval(async () => {
+                if (!curR) return;
+                const myPresRef = ref(db, `presence/${curR}/${uid}`);
+                const NOW = getServerNow();
+                try {
+                    await update(myPresRef, { lastSeen: NOW });
+                    await update(roomRef, { lastActivity: NOW });
+                } catch(e) {}
+            }, 15000);
+
+            unsubscribeRoomConfig = onValue(roomRef, async (snap) => {
+                if (!snap.exists()) return; const data = snap.val();
+                if (data.lastActivity && getServerNow() - data.lastActivity > ROOM_LIFETIME) {
+                    await deleteRoomData(curR); showLobby("部屋の有効期限（クリーンアップ時間）が切れたため自動消滅しました。");
+                }
+            });
         }
 
-        if (heartbeatIntervalId) clearInterval(heartbeatIntervalId);
-        heartbeatIntervalId = setInterval(async () => {
-            if (!curR || isProcessingExit) return;
+        async function sendMessage() {
+            if (!curR) return; const input = $("mi"); const txt = input.value.trim(); if (!txt || isComposing) return;
+            toggleClearBtn(""); input.value = ""; input.rows = 1;
             try {
-                const NOW = getServerNow(); await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: NOW });
-                const roomSnap = await get(ref(db, `rooms/${curR}`));
-                if (roomSnap.exists()) {
-                    const rData = roomSnap.val();
-                    if (NOW - (rData.lastActivity || NOW) > ROOM_LIFETIME) {
-                        clearSubscriptions(); await deleteRoomData(curR); alert("一定時間発言がなかったため、部屋は消滅しました。"); location.href = location.pathname;
-                    }
-                }
-            } catch (e) {}
-        }, 25000); 
+                const chatRef = ref(db, `chat/${curR}`); const NOW = getServerNow();
+                await push(chatRef, { type: "msg", nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(txt, curP), time: NOW });
+                await update(ref(db, `rooms/${curR}`), { lastActivity: NOW });
+            } catch (e) { alert("送信に失敗しました。再試行してください。"); }
+        }
 
-        const sendMsg = async () => {
-            const inputEl = $("mi"), v = inputEl.value.trim(); if (!v || getServerNow() - lastT < 250) return;
-            lastT = getServerNow(); inputEl.value = ""; inputEl.style.height = "38px"; toggleClearBtn("");
-            
-            const ytId = extractVideoId(v); 
-            const shouldTriggerTopSync = (ytId !== null) && (/同期|呼出|sync|再生|プレイヤー/i.test(v) || v.trim() === v.match(/https?:\/\/[^\s]+/)?.[0]);
-            const NOW = getServerNow();
-            try {
-                const promises = [push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: NOW }), update(ref(db, `rooms/${curR}`), { lastActivity: NOW })];
-                if (shouldTriggerTopSync) { 
-                    amIOwner = true;
-                    promises.push(update(ref(db, `rooms/${curR}`), { videoState: { videoId: ytId, status: "playing", currentTime: 0, timestamp: NOW, owner: uid, ownerName: enc(curN, curP), resetSeed: Date.now() } })); 
-                }
-                await Promise.all(promises);
-            } catch (e) {}
-        };
-
-        $("sendBtn").onclick = sendMsg;
-
-        $("mi").addEventListener('compositionstart', () => { isComposing = true; });
-        $("mi").addEventListener('compositionend', () => { isComposing = false; });
-
-        $("mi").addEventListener("keydown", e => { 
-            if (e.key === "Enter" && !e.shiftKey) { 
-                if (isComposing) return; 
-                e.preventDefault(); 
-                sendMsg(); 
-            } 
+        $("mi").addEventListener("compositionstart", () => { isComposing = true; });
+        $("mi").addEventListener("compositionend", (e) => { isComposing = false; toggleClearBtn(e.target.value); });
+        $("mi").addEventListener("input", (e) => {
+            toggleClearBtn(e.target.value);
+            e.target.rows = 1;
+            const lineCount = Math.min(4, Math.floor(e.target.scrollHeight / 24)) || 1;
+            e.target.rows = lineCount;
         });
-        $("mi").oninput = e => { const el = e.target; el.style.height = "38px"; el.style.height = Math.min(Math.max(el.scrollHeight - 4, 38), 96) + "px"; toggleClearBtn(el.value); };
-        $("focusBtn").onclick = () => { $("mi").focus(); scrollToLatest(); };
-        $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "38px"; toggleClearBtn(""); $("mi").focus(); };
 
-        $("exitBtn").onclick = async () => {
-            if (isProcessingExit || !confirm("すべてのログを破棄して退出しますか？")) return;
-            isProcessingExit = true; const rTmp = curR, pTmp = curP, nTmp = curN, tTmp = curT; clearSubscriptions();
-            try {
-                await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel(); await remove(ref(db, `presence/${rTmp}/${uid}`));
-                const pSnap = await get(ref(db, `presence/${rTmp}`)); let activeCount = 0; const NOW = getServerNow();
-                if (pSnap.exists()) { Object.keys(pSnap.val() || {}).forEach(k => { if (k !== uid && NOW - (pSnap.val()[k].lastSeen || NOW) <= USER_TIMEOUT) activeCount++; }); }
-                if (activeCount > 0) { await Promise.all([push(ref(db, `chat/${rTmp}`), { type: "sys", text: enc(`${nTmp}${tTmp} が退出しました`, pTmp), time: NOW }), update(ref(db, `rooms/${rTmp}`), { lastActivity: NOW })]); }
-                else { await deleteRoomData(rTmp); }
-            } catch (e) {}
-            location.href = location.pathname;
+        $("mi").addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey && !isComposing) { e.preventDefault(); sendMessage(); }
+        });
+        $("sendBtn").onclick = (e) => { e.preventDefault(); sendMessage(); };
+        $("clearBtn").onclick = (e) => { e.preventDefault(); $("mi").value = ""; $("mi").rows = 1; toggleClearBtn(""); $("mi").focus(); };
+
+        $("enterBtn").onclick = async () => {
+            const n = $("ni").value.trim() || "名無しさん";
+            const tk = $("tk").value.trim();
+            const r = $("ri").value.trim();
+            const p = $("pi").value.trim();
+
+            if (!tk) { alert("トリップ暗号（本人証明キー）を入力してください。なりすまし防止に必須です。"); return; }
+            if (!r || !p) { alert("部屋IDおよび共通暗号パスワードを入力してください。"); return; }
+            if (!/^[a-zA-Z0-9_-]+$/.test(r)) { alert("部屋IDは半角英数字、ハイフン、アンダースコアのみ使用可能です。"); return; }
+
+            $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中...";
+            const tripStr = await generateTripString(n, tk);
+            join(r, p, n, tripStr, Number($("maxUsers").value), Number($("romTime").value), Number($("roomCleanTime").value));
         };
 
-        $("enterBtn").onclick = async (e) => {
-            e.preventDefault(); if ($("enterBtn").disabled) return;
-            const name = $("ni").value.trim(), key = $("tk").value.trim(), rID = $("ri").value.trim(), pass = $("pi").value.trim();
-            if (!name) { alert("⚠️ 表示名を入力してください"); return; }
-            if (!rID || !pass) { alert("⚠️ 部屋IDと暗号パスが必要です"); return; }
-            
-            $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中..."; $("errMsg").style.display = "none";
-            
+        async function exitRoom() {
+            if (isProcessingExit || !curR) return; isProcessingExit = true;
+            if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
+            const chatRef = ref(db, `chat/${curR}`), myRef = ref(db, `presence/${curR}/${uid}`), roomStateRef = ref(db, `rooms/${curR}/videoState`);
             try {
-                localStorage.setItem("nez_n", name); localStorage.setItem("nez_t", key);
-                const trip = await generateTripString(name, key);
-                await join(rID, pass, name, trip, Number($("maxUsers").value), Number($("romTime").value), Number($("roomTime").value));
-            } catch (err) { 
-                showLobby("接続中にエラーが発生しました。"); 
+                if (amIOwner) { await remove(roomStateRef); }
+                await push(chatRef, { type: "sys", text: enc(`${curN}${curT} が退出しました`, curP), time: getServerNow() });
+                await remove(myRef);
+            } catch(e){}
+            isProcessingExit = false; showLobby();
+        }
+
+        $("exitBtn").onclick = () => { if (confirm("本当に退出しますか？会話履歴はすべて消滅します。")) exitRoom(); };
+
+        $("copyBtn").onclick = () => {
+            if (!rawR || !curP) return;
+            const nameParam = encodeURIComponent($("ni").value.trim() || "名無しさん");
+            const shareUrl = `${location.protocol}//${location.host}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}&n=${nameParam}`;
+            navigator.clipboard.writeText(shareUrl).then(() => alert("暗号キー付き招待リンクをコピーしました！")).catch(() => alert("コピーに失敗しました。"));
+        };
+
+        $("openPlayerNavBtn").onclick = async (e) => {
+            e.preventDefault();
+            const consolePanel = $("ytControlConsole");
+            if (consolePanel.style.display === "flex") {
+                consolePanel.style.display = "none";
+            } else {
+                consolePanel.style.display = "flex";
+                if ($("ytArea").style.display !== "block") {
+                    isLocalAction = true; amIOwner = true; isUserApprovedSync = true; isExplicitlyClosedByGuest = false; isGuestFreeMode = false;
+                    $("ytArea").style.display = "block";
+                    setupPlayerTransformationController($("ytArea"), 180, 1200);
+                    
+                    const roomStateRef = ref(db, `rooms/${curR}/videoState`);
+                    const snap = await get(roomStateRef);
+                    if (!snap.exists()) {
+                        await set(roomStateRef, { videoId: "dQw4w9WgXcQ", status: "paused", currentTime: 0, timestamp: getServerNow(), owner: uid, ownerName: enc(curN, curP), resetSeed: Date.now() });
+                    }
+                    setTimeout(() => { isLocalAction = false; }, 400);
+                }
             }
         };
 
-        $("masterGenBtn").onclick = (e) => { e.preventDefault(); $("ri").value = Math.random().toString(36).slice(2, 10); $("pi").value = Math.random().toString(36).slice(2, 12); updateTripPreview(); };
-        $("ni").oninput = () => updateTripPreview(); $("tk").oninput = () => updateTripPreview();
-        $("copyBtn").onclick = async () => {
-            const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
-            try { await navigator.clipboard.writeText(url); alert("招待リンクをコピーしました！"); } catch { alert(url); }
+        $("ytClosePlayerBtn").onclick = async (e) => {
+            e.preventDefault();
+            if (confirm(amIOwner ? "シアターのホスト配信を終了し、全員のプレイヤーを閉じますか？" : "あなたの画面のプレイヤーを閉じますか？")) {
+                if (amIOwner) {
+                    isLocalAction = true; if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
+                    await remove(ref(db, `rooms/${curR}/videoState`));
+                    setTimeout(() => { isLocalAction = false; }, 400);
+                } else {
+                    isExplicitlyClosedByGuest = true; isUserApprovedSync = false; isGuestFreeMode = false;
+                    $("ytArea").style.display = "none"; $("ytControlConsole").style.display = "none";
+                    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+                }
+            }
         };
 
-        $("openGuideBtn").onclick = () => { $("guideCard").style.display = "flex"; }; $("closeGuideBtn").onclick = () => { $("guideCard").style.display = "none"; };
+        async function executeSearch() {
+            const queryStr = $("ytSearchInput").value.trim(); if (!queryStr) return;
+            const extractedId = extractVideoId(queryStr);
+            
+            if (extractedId) {
+                window.__jumpToYtVideo(extractedId); return;
+            }
+            
+            $("ytSearchBtn").disabled = true; $("ytSearchBtn").innerText = "検索中...";
+            try {
+                const res = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=${encodeURIComponent(queryStr)}&type=video&key=${YT_API_KEY}`);
+                const data = await res.json();
+                if (data.items && data.items.length > 0) {
+                    currentSearchResults = data.items; currentSearchIndex = 0;
+                    renderSearchResults();
+                    const targetId = data.items[0].id.videoId;
+                    window.__jumpToYtVideo(targetId);
+                } else { alert("動画が見つかりませんでした。"); }
+            } catch(e) { alert("YouTube検索に失敗しました。URLの直貼りをお試しください。"); }
+            $("ytSearchBtn").disabled = false; $("ytSearchBtn").innerText = "検索 / 再生";
+        }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem("nez_n")) $("ni").value = localStorage.getItem("nez_n");
-            if (localStorage.getItem("nez_t")) $("tk").value = localStorage.getItem("nez_t");
-            const u = new URLSearchParams(location.search); if (u.get("r")) $("ri").value = u.get("r"); if (u.get("p")) $("pi").value = u.get("p");
-            updateTripPreview();
+        function renderSearchResults() {
+            const container = $("ytSearchResults"); if (!container) return;
+            container.innerHTML = "";
+            if (currentSearchResults.length === 0) { container.style.display = "none"; return; }
+            
+            currentSearchResults.forEach((item, index) => {
+                const div = document.createElement("div");
+                div.className = "search-item" + (index === currentSearchIndex ? " bg-indigo-950 border-l-4 border-indigo-500" : "");
+                div.innerHTML = `<img src="${item.snippet.thumbnails.default.url}">
+                    <div class="flex-1 truncate"><p class="font-bold truncate text-xs text-white">${esc(item.snippet.title)}</p><p class="text-[10px] text-slate-400 truncate">${esc(item.snippet.channelTitle)}</p></div>`;
+                div.onclick = () => { currentSearchIndex = index; renderSearchResults(); window.__jumpToYtVideo(item.id.videoId); };
+                container.appendChild(div);
+            });
+            container.style.display = "block";
+        }
+
+        $("ytSearchBtn").onclick = (e) => { e.preventDefault(); executeSearch(); };
+        $("ytSearchInput").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); executeSearch(); } };
+
+        $("ytPrevVideoBtn").onclick = (e) => {
+            e.preventDefault(); if (currentSearchResults.length === 0) return;
+            currentSearchIndex = (currentSearchIndex - 1 + currentSearchResults.length) % currentSearchResults.length;
+            renderSearchResults(); window.__jumpToYtVideo(currentSearchResults[currentSearchIndex].id.videoId);
+        };
+        $("ytNextVideoBtn").onclick = (e) => {
+            e.preventDefault(); if (currentSearchResults.length === 0) return;
+            currentSearchIndex = (currentSearchIndex + 1) % currentSearchResults.length;
+            renderSearchResults(); window.__jumpToYtVideo(currentSearchResults[currentSearchIndex].id.videoId);
+        };
+
+        document.addEventListener("click", (e) => {
+            if (!$("ytSearchResults").contains(e.target) && e.target !== $("ytSearchInput") && e.target !== $("ytSearchBtn")) {
+                $("ytSearchResults").style.display = "none";
+            }
+        });
+
+        $("ni").oninput = updateTripPreview;
+        $("tk").oninput = updateTripPreview;
+
+        $("masterGenBtn").onclick = () => {
+            const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+            let rGen = ""; for (let i = 0; i < 10; i++) rGen += chars.charAt(Math.floor(Math.random() * chars.length));
+            let pGen = ""; for (let i = 0; i < 12; i++) pGen += chars.charAt(Math.floor(Math.random() * chars.length));
+            let kGen = ""; for (let i = 0; i < 8; i++) kGen += chars.charAt(Math.floor(Math.random() * chars.length));
+            
+            $("ri").value = rGen; $("pi").value = pGen; $("tk").value = kGen; updateTripPreview();
+            alert("安全な部屋情報（部屋ID・暗号キー・トリップキー）をランダム生成しました！");
+        };
+
+        $("openGuideBtn").onclick = () => $("guideCard").style.display = "flex";
+        $("closeGuideBtn").onclick = () => $("guideCard").style.display = "none";
+        $("focusBtn").onclick = () => $("mi").focus();
+
+        window.addEventListener("DOMContentLoaded", () => {
+            const params = new URLSearchParams(window.location.search);
+            const r = params.get("r"), p = params.get("p"), n = params.get("n");
+            if (r) $("ri").value = r; if (p) $("pi").value = p; if (n) $("ni").value = n;
+            if (r && p) { $("tk").placeholder = "必須キー（パスワードを入力）"; }
         });
     </script>
 </body>
