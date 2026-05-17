@@ -3,384 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT & WATCH (Perfect Sync)</title>
-
-<!-- 暗号化ライブラリの読み込み -->
+<title>NEZU ONETIME CHAT & WATCH (Ultra-Light Sync Fix)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
-
 <style>
-*{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
-    margin: 0;
-    padding: 0;
-}
-
-:root{
-    var-bg:#f4f7f9;       
-    --text:#2c3e50;     
-    --primary:#3a86ff;  
-    --accent:#4ea8de;   
-    --danger:#ff4d4d;   
-    --panel:#ffffff;    
-    --border:#e2e8f0;   
-}
-
-html,body{
-    width:100%;
-    height:100%;
-    height: 100svh;
-    overflow:hidden;
-    background:#f4f7f9;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--text);
-}
-
-body{
-    display:flex;
-    justify-content:center;
-    align-items: center;
-}
-
-/* ロビー */
-#lobby{
-    position:fixed;
-    inset:0;
-    justify-content:center;
-    align-items:center;
-    background:#f4f7f9;
-    z-index:1000;
-    display:flex;
-    padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
-}
-
-.lobby-content{
-    width:100%;
-    max-width:340px;
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:20px;
-    display:flex;
-    flex-direction:column;
-    gap:10px; 
-    max-height:98vh;
-    box-shadow: 0 4px 20px rgba(58,134,255,0.05);
-}
-
-.lobby-input{
-    width:100%;
-    height:38px; 
-    border:1px solid var(--border);
-    background:#ffffff;
-    padding:0 12px;
-    font-size:16px; 
-    color:var(--text);
-    outline:none;
-    font-family:inherit;
-    border-radius:8px;
-    -webkit-appearance: none;
-}
-.lobby-input:focus { border-color: var(--primary); }
-.lobby-input::placeholder { color: #a0aec0; }
-
-.error-msg{
-    color:var(--danger);
-    font-size:11px;
-    font-weight:bold;
-    text-align:center;
-    display:none;
-    background:#fff5f5;
-    padding:6px;
-    border:1px solid #fed7d7;
-    border-radius:6px;
-}
-
-.info-box{
-    background:#edf2f7;
-    padding:10px;
-    font-size:11px;
-    line-height:1.5;
-    color:#4a5568;
-    border-radius:8px;
-}
-
-.modal-trigger-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-top: 6px;
-}
-
-.btn-trigger {
-    height: 26px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: #fff;
-    color: #718096;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    font-family:inherit;
-}
-.btn-trigger:active { background: #edf2f7; }
-
-/* モーダル共通 */
-.modal-overlay {
-    position:fixed;
-    inset:0;
-    background:rgba(44,62,80,0.4);
-    backdrop-filter: blur(2px);
-    z-index:2000;
-    display:none;
-    justify-content:center;
-    align-items:center;
-}
-
-.modal-window {
-    width:92%;
-    max-width:340px;
-    background:var(--panel);
-    border-radius:16px;
-    padding:20px;
-    display:flex;
-    flex-direction:column;
-    gap:12px;
-    max-height:80vh;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-}
-
-.modal-window h3 {
-    font-size:15px;
-    font-weight:bold;
-    color:var(--primary);
-    text-align:center;
-}
-
-.modal-body {
-    font-size:11.5px;
-    color:#4a5568;
-    line-height:1.6;
-    overflow-y:auto;
-}
-
-.modal-section-title {
-    font-weight:bold;
-    color:var(--text);
-    margin:10px 0 4px 0;
-    font-size:12px;
-    border-left: 3px solid var(--accent);
-    padding-left: 6px;
-}
-.modal-section-title:first-child { margin-top:0; }
-
-.modal-close-btn {
-    width:100%;
-    height:38px;
-    border:none;
-    border-radius:8px;
-    background:var(--text);
-    color:#fff;
-    font-size:13px;
-    font-weight:bold;
-    cursor:pointer;
-    font-family:inherit;
-}
-
-#mainApp{
-    display:none;
-    flex-direction:column;
-    width:100%;
-    height:100%;
-    height:100svh;
-    max-width:800px;
-    background:var(--panel);
-    position:relative;
-}
-
-#header{
-    background:var(--panel);
-    border-bottom:1px solid var(--border);
-    padding-top:env(safe-area-inset-top);
-    flex-shrink: 0;
-}
-
-.app-header-top{
-    display:flex;
-    align-items:flex-end;
-    gap:6px;
-    padding:8px 10px;
-}
-
-.input-container {
-    display:flex;
-    align-items:center;
-    flex:1;
-    min-width:0;
-    background:#edf2f7;
-    padding:2px 8px;
-    border-radius:18px;
-}
-
-textarea{
-    flex:1;
-    min-width:0;
-    height:24px;
-    min-height:24px;
-    max-height:96px;
-    padding:2px 4px;
-    background:transparent;
-    font-size:16px;
-    line-height:1.4;
-    color:var(--text);
-    border:none;
-    outline:none;
-    resize:none;
-    overflow-y:auto;
-    font-family:inherit;
-    -webkit-appearance:none;
-}
-
-#clearBtn{
-    width:20px;
-    height:20px;
-    flex-shrink:0;
-    background:#cbd5e0;
-    border:none;
-    color:#fff;
-    font-size:12px;
-    border-radius:50%;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin-left:4px;
-    opacity:0;
-    pointer-events:none;
-}
-
-#sendBtn{
-    width:56px;
-    height:32px;
-    flex-shrink:0;
-    border:none;
-    background:var(--primary);
-    color:#ffffff;
-    font-size:13px;
-    font-weight:bold;
-    cursor:pointer;
-    font-family:inherit;
-    border-radius:16px;
-}
-#sendBtn:active { opacity:0.8; }
-
-.room-info-bar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:4px 12px;
-    background:#f7fafc;
-    gap:8px;
-    font-size:11px;
-    border-top:1px solid var(--border);
-}
-
-.info-item{
-    color:#718096;
-    font-weight:bold;
-    white-space:nowrap;
-}
-
-#presenceList{
-    display:flex;
-    flex-wrap:wrap;
-    gap:4px;
-    flex:1;
-    max-height:36px;
-    overflow-y:auto;
-}
-
-.user-chip{
-    color:var(--primary);
-    font-size:10px;
-    font-weight:bold;
-    white-space:nowrap;
-    display:inline-flex;
-    align-items:center;
-}
-.user-chip::after { content: ","; margin-right:4px; color:#a0aec0; }
-.user-chip:last-child::after { content: ""; }
-
-#chatWrap{
-    flex:1;
-    overflow-y:auto;
-    padding:12px;
-    background:#f4f7f9;
-    display:flex;
-    flex-direction:column;
-    -webkit-overflow-scrolling: touch;
-}
-
-#list{
-    display:flex;
-    flex-direction:column-reverse;
-    gap:10px;
-}
-
-.msg-wrap{ display:flex; flex-direction:column; }
-.msg{ max-width:100%; }
-.msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; color:var(--text); }
-.msg-text a{ color:var(--primary); text-decoration:underline; }
-.msg-meta{ font-size:10px; color:#a0aec0; margin-top:2px; }
-.sys-msg{ align-self:center; color:#718096; font-size:11px; font-weight:bold; margin:6px 0; background:#e2e8f0; padding:3px 10px; border-radius:10px; }
-
-#footer{
-    background:var(--panel);
-    border-top:1px solid var(--border);
-    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-    flex-shrink: 0;
-}
-
-.footer-nav{
-    display:grid;
-    grid-template-columns: 1fr 0.8fr 0.8fr 1fr 1fr;
-    gap:4px;
-    align-items:center;
-}
-
-.btn{
-    border:1px solid var(--border);
-    background:#ffffff;
-    color:#4a5568;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    height:36px;
-    cursor:pointer;
-    font-size:11px;
-    font-weight:bold;
-    font-family:inherit;
-    border-radius:6px;
-}
-.btn:active { background:#edf2f7; }
-
-.setting-row {
-    display:flex;
-    align-items:center;
-    gap:6px;
-}
-.setting-row label {
-    font-size:11px;
-    font-weight:bold;
-    color:#718096;
-    white-space:nowrap;
-    width:90px;
-}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+:root{--bg:#f4f7f9;--text:#2c3e50;--primary:#3a86ff;--accent:#4ea8de;--danger:#ff4d4d;--panel:#ffffff;--border:#e2e8f0;}
+html,body{width:100%;height:100svh;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text);display:flex;justify-content:center;align-items:center;}
+#lobby{position:fixed;inset:0;justify-content:center;align-items:center;background:var(--bg);z-index:1000;display:flex;padding:env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;}
+.lobby-content{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;max-height:98vh;box-shadow:0 4px 20px rgba(58,134,255,0.05);}
+.lobby-input{width:100%;height:38px;border:1px solid var(--border);background:#fff;padding:0 12px;font-size:16px;color:var(--text);outline:none;border-radius:8px;-webkit-appearance:none;}
+.lobby-input:focus{border-color:var(--primary);}
+.lobby-input::placeholder{color:#a0aec0;}
+.error-msg{color:var(--danger);font-size:11px;font-weight:bold;text-align:center;display:none;background:#fff5f5;padding:6px;border:1px solid #fed7d7;border-radius:6px;}
+.info-box{background:#edf2f7;padding:10px;font-size:11px;line-height:1.5;color:#4a5568;border-radius:8px;}
+.modal-trigger-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;}
+.btn-trigger{height:26px;border:1px solid var(--border);border-radius:4px;background:#fff;color:#718096;font-size:11px;font-weight:bold;cursor:pointer;}
+.btn-trigger:active{background:#edf2f7;}
+.modal-overlay{position:fixed;inset:0;background:rgba(44,62,80,0.4);backdrop-filter:blur(2px);z-index:2000;display:none;justify-content:center;align-items:center;}
+.modal-window{width:92%;max-width:340px;background:var(--panel);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;max-height:80vh;box-shadow:0 10px 25px rgba(0,0,0,0.1);}
+.modal-window h3{font-size:15px;font-weight:bold;color:var(--primary);text-align:center;}
+.modal-body{font-size:11.5px;color:#4a5568;line-height:1.6;overflow-y:auto;}
+.modal-section-title{font-weight:bold;color:var(--text);margin:10px 0 4px 0;font-size:12px;border-left:3px solid var(--accent);padding-left:6px;}
+.modal-section-title:first-child{margin-top:0;}
+.modal-close-btn{width:100%;height:38px;border:none;border-radius:8px;background:var(--text);color:#fff;font-size:13px;font-weight:bold;cursor:pointer;}
+#mainApp{display:none;flex-direction:column;width:100%;height:100svh;max-width:800px;background:var(--panel);position:relative;}
+#header{background:var(--panel);border-bottom:1px solid var(--border);padding-top:env(safe-area-inset-top);flex-shrink:0;}
+.app-header-top{display:flex;align-items:flex-end;gap:6px;padding:8px 10px;}
+.input-container{display:flex;align-items:center;flex:1;min-width:0;background:#edf2f7;padding:2px 8px;border-radius:18px;}
+textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:2px 4px;background:transparent;font-size:16px;line-height:1.4;color:var(--text);border:none;outline:none;resize:none;overflow-y:auto;-webkit-appearance:none;}
+#clearBtn{width:20px;height:20px;flex-shrink:0;background:#cbd5e0;border:none;color:#fff;font-size:12px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:4px;opacity:0;pointer-events:none;transition:opacity 0.1s;}
+#sendBtn{width:56px;height:32px;flex-shrink:0;border:none;background:var(--primary);color:#fff;font-size:13px;font-weight:bold;cursor:pointer;border-radius:16px;}
+.room-info-bar{display:flex;justify-content:space-between;align-items:center;padding:4px 12px;background:#f7fafc;gap:8px;font-size:11px;border-top:1px solid var(--border);}
+.info-item{color:#718096;font-weight:bold;white-space:nowrap;}
+#presenceList{display:flex;flex-wrap:wrap;gap:4px;flex:1;max-height:36px;overflow-y:auto;}
+.user-chip{color:var(--primary);font-size:10px;font-weight:bold;white-space:nowrap;display:inline-flex;align-items:center;}
+.user-chip::after{content:",";margin-right:4px;color:#a0aec0;}
+.user-chip:last-child::after{content:"";}
+#chatWrap{flex:1;overflow-y:auto;padding:12px;background:var(--bg);display:flex;flex-direction:column;-webkit-overflow-scrolling:touch;}
+#list{display:flex;flex-direction:column-reverse;gap:10px;}
+.msg-wrap{display:flex;flex-direction:column;}
+.msg-text{font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--text);}
+.msg-text a{color:var(--primary);text-decoration:underline;}
+.sys-msg{align-self:center;color:#718096;font-size:11px;font-weight:bold;margin:6px 0;background:#e2e8f0;padding:3px 10px;border-radius:10px;}
+#footer{background:var(--panel);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom));flex-shrink:0;}
+.footer-nav{display:grid;grid-template-columns:1fr 0.8fr 0.8fr 1fr 1fr;gap:4px;align-items:center;}
+.btn{border:1px solid var(--border);background:#fff;color:#4a5568;display:flex;align-items:center;justify-content:center;height:36px;cursor:pointer;font-size:11px;font-weight:bold;border-radius:6px;}
+.btn:active{background:#edf2f7;}
+.setting-row{display:flex;align-items:center;gap:6px;}
+.setting-row label{font-size:11px;font-weight:bold;color:#718096;white-space:nowrap;width:90px;}
 </style>
 </head>
 <body>
 
-<!-- モーダル1：利用規約 -->
 <div id="infoModal" class="modal-overlay">
     <div class="modal-window">
         <h3>利用規約・システム仕様</h3>
@@ -396,7 +70,6 @@ textarea{
     </div>
 </div>
 
-<!-- モーダル2：使い方 -->
 <div id="guideModal" class="modal-overlay">
     <div class="modal-window">
         <h3>使い捨て同時視聴チャットの使い方</h3>
@@ -472,21 +145,19 @@ textarea{
             </select>
         </div>
 
-        <button id="masterGenBtn" style="width:100%;height:34px;border:1px dashed var(--primary);background:#f0f4fe;color:var(--primary);font-size:12px;font-weight:bold;border-radius:6px;cursor:pointer;margin-top:2px;font-family:inherit;">
+        <button id="masterGenBtn" style="width:100%;height:34px;border:1px dashed var(--primary);background:#f0f4fe;color:var(--primary);font-size:12px;font-weight:bold;border-radius:6px;cursor:pointer;margin-top:2px;">
             認証情報の自動生成
         </button>
 
-        <button id="enterBtn" style="width:100%;height:46px;border:none;background:var(--primary);color:#fff;font-size:15px;font-weight:bold;border-radius:8px;margin-top:2px;cursor:pointer;font-family:inherit;">
+        <button id="enterBtn" style="width:100%;height:46px;border:none;background:var(--primary);color:#fff;font-size:15px;font-weight:bold;border-radius:8px;margin-top:2px;cursor:pointer;">
             規約に同意して入室
         </button>
     </div>
 </div>
 
 <div id="mainApp">
-    <!-- YouTubeプレイヤー表示エリア -->
     <div id="ytArea" style="display:none; width:100%; background:#000; flex-shrink:0; position:relative;">
         <div id="ytBadge" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.75); color:#fff; padding:3px 8px; font-size:10px; font-weight:bold; border-radius:4px; z-index:10; border:1px solid rgba(255,255,255,0.2);"></div>
-        
         <div style="position:relative; width:100%; padding-top:56.25%;">
             <div id="ytLockOverlay" style="position:absolute; inset:0; z-index:5; display:none; background:transparent;"></div>
             <div id="ytPlayer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
@@ -501,7 +172,7 @@ textarea{
     <header id="header">
         <div class="app-header-top">
             <div class="input-container">
-                <textarea id="mi" placeholder="" maxlength="500" rows="1"></textarea>
+                <textarea id="mi" maxlength="500" rows="1"></textarea>
                 <button id="clearBtn" type="button">×</button>
             </div>
             <button id="sendBtn" type="button">送信</button>
@@ -537,7 +208,6 @@ import {
 
 const $ = id => document.getElementById(id);
 
-// Firebaseの設定情報（ユーザー提供の情報をそのまま利用）
 const firebaseApp = initializeApp({
     apiKey: "AIzaSyApju_6KuGq8EkXQPI0aTOysFmZ22vL5HQ",
     databaseURL: "https://nezuochat-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -548,45 +218,31 @@ const ytTag = document.createElement('script');
 ytTag.src = "https://www.youtube.com/iframe_api";
 document.head.appendChild(ytTag);
 
-let ytPlayer = null;
-let isYtReady = false;
-
-window.onYouTubeIframeAPIReady = () => {
-    isYtReady = true;
-};
+let ytPlayer = null, isYtReady = false;
+window.onYouTubeIframeAPIReady = () => { isYtReady = true; };
 
 function extractVideoId(url) {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
+    const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-const openModal = () => { $("infoModal").style.display = "flex"; };
 const closeModal = () => { $("infoModal").style.display = "none"; };
-const openGuide = () => { $("guideModal").style.display = "flex"; };
 const closeGuide = () => { $("guideModal").style.display = "none"; };
-
-$("openModalLink").onclick = openModal;
+$("openModalLink").onclick = () => $("infoModal").style.display = "flex";
 $("closeModalBtn").onclick = closeModal;
 $("infoModal").onclick = (e) => { if (e.target === $("infoModal")) closeModal(); };
-$("openGuideLink").onclick = openGuide;
+$("openGuideLink").onclick = () => $("guideModal").style.display = "flex";
 $("closeGuideModalBtn").onclick = closeGuide;
 $("guideModal").onclick = (e) => { if (e.target === $("guideModal")) closeGuide(); };
 
 function updateTimeText() {
-    const romMin = Number($("romTime").value);
-    let roomMin = Number($("roomTime").value);
-    if (roomMin <= romMin) {
-        roomMin = romMin === 15 ? 20 : Math.min(romMin + 5, 60);
-        $("roomTime").value = roomMin;
-    }
-    const romStr = romMin + "分";
-    const roomStr = roomMin === 60 ? "1時間" : roomMin + "分";
+    const romMin = Number($("romTime").value); let roomMin = Number($("roomTime").value);
+    if (roomMin <= romMin) { roomMin = romMin === 15 ? 20 : Math.min(romMin + 5, 60); $("roomTime").value = roomMin; }
+    const romStr = romMin + "分", roomStr = roomMin === 60 ? "1時間" : roomMin + "分";
     document.querySelectorAll(".dyn-rom-text").forEach(el => el.innerText = romStr);
     document.querySelectorAll(".dyn-room-text").forEach(el => el.innerText = roomStr);
 }
-$("romTime").onchange = updateTimeText;
-$("roomTime").onchange = updateTimeText;
+$("romTime").onchange = updateTimeText; $("roomTime").onchange = updateTimeText;
 
 const uid = (() => {
     let id = localStorage.getItem("nez_uid");
@@ -594,54 +250,34 @@ const uid = (() => {
     return id;
 })();
 
-let curR, curP, curN, curT, rawR;
-let lastT = 0;
-let unsubscribeChat = null;
-let unsubscribePres = null;
-let unsubscribeRoomConfig = null;
-let isProcessingExit = false;
-let serverTimeOffset = 0; 
-
-let USER_TIMEOUT = 5 * 60 * 1000;
-let ROOM_LIFETIME = 10 * 60 * 1000;
+let curR, curP, curN, curT, rawR, lastT = 0, serverTimeOffset = 0;
+let unsubscribeChat = null, unsubscribePres = null, unsubscribeRoomConfig = null;
+let isProcessingExit = false, USER_TIMEOUT = 5 * 60 * 1000, ROOM_LIFETIME = 10 * 60 * 1000;
 
 const getServerNow = () => Date.now() + serverTimeOffset;
 
 const clearSubscriptions = () => {
-    if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
-    if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
-    if (unsubscribeRoomConfig) { unsubscribeRoomConfig(); unsubscribeRoomConfig = null; }
+    if (unsubscribeChat) unsubscribeChat(); if (unsubscribePres) unsubscribePres(); if (unsubscribeRoomConfig) unsubscribeRoomConfig();
+    unsubscribeChat = null; unsubscribePres = null; unsubscribeRoomConfig = null;
 };
 
 const showLobby = (msg = "") => {
-    curR = null;
-    clearSubscriptions();
+    curR = null; clearSubscriptions();
     if (msg) { $("errMsg").innerText = msg; $("errMsg").style.display = "block"; }
-    $("mainApp").style.display = "none";
-    $("lobby").style.display = "flex";
-    $("ytArea").style.display = "none";
-    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
-    $("enterBtn").disabled = false;
-    $("enterBtn").innerText = "規約に同意して入室";
+    $("mainApp").style.display = "none"; $("lobby").style.display = "flex"; $("ytArea").style.display = "none";
+    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+    $("enterBtn").disabled = false; $("enterBtn").innerText = "規約に同意して入室";
 };
-
-const scrollUp = () => { $("chatWrap")?.scrollTo({ top: 0, behavior: "smooth" }); };
 
 const hash = t => CryptoJS.SHA256(t).toString();
 const enc = (t, k) => CryptoJS.AES.encrypt(t, k).toString();
-const dec = (c, k) => {
-    try { if (!c) return null; return CryptoJS.AES.decrypt(c, k).toString(CryptoJS.enc.Utf8) || null; }
-    catch { return null; }
-};
-
+const dec = (c, k) => { try { if (!c) return null; return CryptoJS.AES.decrypt(c, k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
 const esc = t => (t || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const linkify = t => esc(t).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 
 const toggleClearBtn = (text) => {
-    const btn = $("clearBtn");
     const hasText = !!(text && text.trim().length > 0);
-    btn.style.opacity = hasText ? "1" : "0";
-    btn.style.pointerEvents = hasText ? "auto" : "none";
+    $("clearBtn").style.opacity = hasText ? "1" : "0"; $("clearBtn").style.pointerEvents = hasText ? "auto" : "none";
 };
 
 async function generateTripString(name, key) {
@@ -649,87 +285,52 @@ async function generateTripString(name, key) {
     const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${name}:${key}`));
     return "◆" + Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 6);
 }
-
-async function updateTripPreview() {
-    const n = $("ni").value.trim(); const tk = $("tk").value.trim();
-    $("tp").innerText = (n && tk) ? await generateTripString(n, tk) : "";
-}
+async function updateTripPreview() { const n = $("ni").value.trim(), tk = $("tk").value.trim(); $("tp").innerText = (n && tk) ? await generateTripString(n, tk) : ""; }
 
 async function deleteRoomData(roomHash) {
-    try {
-        await Promise.all([
-            remove(ref(db, `chat/${roomHash}`)),
-            remove(ref(db, `presence/${roomHash}`)),
-            remove(ref(db, `rooms/${roomHash}`))
-        ]);
-    } catch (e) { console.error(e); }
+    try { await Promise.all([remove(ref(db, `chat/${roomHash}`)), remove(ref(db, `presence/${roomHash}`)), remove(ref(db, `rooms/${roomHash}`))]); } catch (e) {}
 }
 
 async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
-
-    const chatRef = ref(db, `chat/${curR}`);
-    const presRef = ref(db, `presence/${curR}`);
-    const roomRef = ref(db, `rooms/${curR}`);
-    const myRef = ref(db, `presence/${curR}/${uid}`);
+    const chatRef = ref(db, `chat/${curR}`), presRef = ref(db, `presence/${curR}`), roomRef = ref(db, `rooms/${curR}`), myRef = ref(db, `presence/${curR}/${uid}`);
 
     try {
-        const NOW = getServerNow();
-        const roomSnap = await get(roomRef);
-
-        USER_TIMEOUT = selectRomMin * 60 * 1000;
-        ROOM_LIFETIME = selectRoomMin * 60 * 1000;
+        const NOW = getServerNow(), roomSnap = await get(roomRef);
+        USER_TIMEOUT = selectRomMin * 60 * 1000; ROOM_LIFETIME = selectRoomMin * 60 * 1000;
         let finalMax = maxLimit;
 
         if (roomSnap.exists()) {
             const rData = roomSnap.val();
-            USER_TIMEOUT = (rData.romMin || selectRomMin) * 60 * 1000;
-            ROOM_LIFETIME = (rData.roomMin || selectRoomMin) * 60 * 1000;
+            USER_TIMEOUT = (rData.romMin || selectRomMin) * 60 * 1000; ROOM_LIFETIME = (rData.roomMin || selectRoomMin) * 60 * 1000;
             if (rData.max !== undefined) finalMax = Number(rData.max);
         } else {
-            // 初めて部屋が作られる時
-            await set(roomRef, { 
-                max: finalMax, 
-                romMin: selectRomMin, 
-                roomMin: selectRoomMin,
-                lastActivity: NOW
-            });
+            await set(roomRef, { max: finalMax, romMin: selectRomMin, roomMin: selectRoomMin, lastActivity: NOW });
         }
 
         const presSnap = await get(presRef);
         if (presSnap.exists()) {
-            const users = presSnap.val() || {};
-            let currentActiveCount = 0;
-            Object.keys(users).forEach(k => { 
-                if (k !== uid && NOW - (users[k].lastSeen || NOW) <= USER_TIMEOUT) currentActiveCount++; 
-            });
+            const users = presSnap.val() || {}; let currentActiveCount = 0;
+            Object.keys(users).forEach(k => { if (k !== uid && NOW - (users[k].lastSeen || NOW) <= USER_TIMEOUT) currentActiveCount++; });
             if (currentActiveCount >= finalMax) { showLobby(`部屋が満員です（上限 ${finalMax} 名）`); return; }
         }
 
         await onDisconnect(myRef).remove();
-        $("roomDisplay").innerText = rID;
-        $("lobby").style.display = "none";
-        $("mainApp").style.display = "flex";
-
+        $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
         await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
         await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
-
-    } catch (e) { 
-        showLobby("入室エラーが発生しました。"); 
-        return; 
-    }
+    } catch (e) { showLobby("入室エラーが発生しました。"); return; }
 
     unsubscribeRoomConfig = onValue(roomRef, s => {
-        if (!s.exists()) return;
-        const rData = s.val();
+        if (!s.exists()) return; const rData = s.val();
         if (rData.romMin) USER_TIMEOUT = rData.romMin * 60 * 1000;
         if (rData.roomMin) ROOM_LIFETIME = rData.roomMin * 60 * 1000;
     });
 
     unsubscribePres = onValue(presRef, s => {
         if (!curR) return;
-        const users = s.val() || {}; const frag = document.createDocumentFragment();
-        let count = 0; const NOW = getServerNow(); let amIInList = false;
+        const users = s.val() || {}, frag = document.createDocumentFragment(), NOW = getServerNow();
+        let count = 0, amIInList = false;
 
         Object.keys(users).forEach(k => {
             const n = dec(users[k].nEnc, curP); if (!n) return;
@@ -737,245 +338,156 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             if (k === uid) amIInList = true;
             count++;
             const span = document.createElement("span"); span.className = "user-chip";
-            span.innerText = n + (dec(users[k].tEnc, curP) || "");
-            frag.appendChild(span);
+            span.innerText = n + (dec(users[k].tEnc, curP) || ""); frag.appendChild(span);
         });
-
         $("presenceList").innerHTML = ""; $("presenceList").appendChild(frag);
         $("presenceCount").innerText = `[${count}/${finalMax}]`;
-
-        if (count === 0 && !isProcessingExit && amIInList) {
-            deleteRoomData(curR); showLobby("全員が退出したため部屋は消滅しました。");
-        }
+        if (count === 0 && !isProcessingExit && amIInList) { deleteRoomData(curR); showLobby("全員が退出したため部屋は消滅しました。"); }
     });
 
     unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
         const frag = document.createDocumentFragment();
         s.forEach(c => {
-            const m = c.val(); const txt = dec(m.text, curP); if (!txt) return;
+            const m = c.val(), txt = dec(m.text, curP); if (!txt) return;
             const div = document.createElement("div"); div.className = "msg-wrap";
             const time = m.time ? new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
-
             if (m.type === "sys") {
                 div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
             } else {
-                const sN = dec(m.nEnc, curP) || "???"; const sT = dec(m.tEnc, curP) || "";
+                const sN = dec(m.nEnc, curP) || "???", sT = dec(m.tEnc, curP) || "";
                 div.innerHTML = `<div style="font-size:11px;font-weight:bold;color:var(--text);margin-bottom:2px;padding-left:4px;">${esc(sN)}<span style="color:var(--primary);">${esc(sT)}</span> <span style="color:#a0aec0;font-weight:normal;font-size:10px;">${time}</span></div>
-                    <div class="msg" style="background:#ffffff; padding:8px 12px; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.02);"><div class="msg-text">${linkify(txt)}</div></div>`;
+                    <div class="msg" style="background:#fff; padding:8px 12px; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.02);"><div class="msg-text">${linkify(txt)}</div></div>`;
             }
             frag.appendChild(div);
         });
         $("list").innerHTML = ""; $("list").appendChild(frag);
     });
 
-    // YouTube同時視聴システム
+    // YouTube同期システム (極限軽量化版)
     const roomStateRef = ref(db, `rooms/${curR}/videoState`);
-    let lastLoadedVideoId = null;
-    let isLocalAction = false; 
-    let syncIntervalId = null;  
-    let amIOwner = false; 
-    let isUserApprovedSync = false; 
+    let lastLoadedVideoId = null, isLocalAction = false, syncIntervalId = null, amIOwner = false, isUserApprovedSync = false;
+    let lastSavedTime = 0, lastSavedStatus = ""; 
 
     onValue(roomStateRef, (snapshot) => {
         if (!snapshot.exists()) {
             $("ytArea").style.display = "none";
             if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
             if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
-            isUserApprovedSync = false;
-            return;
+            isUserApprovedSync = false; return;
         }
-        const state = snapshot.val();
-        if (!state.videoId) return;
-
+        const state = snapshot.val(); if (!state.videoId) return;
         amIOwner = (state.owner === uid);
 
         if (amIOwner) {
-            isUserApprovedSync = true;
-            $("ytLockOverlay").style.display = "none";
-            $("ytControls").style.display = "flex";
-            $("ytBadge").innerText = "👑 あなたが操作中";
-            $("ytBadge").style.color = "#ffbe0b";
+            isUserApprovedSync = true; $("ytLockOverlay").style.display = "none"; $("ytControls").style.display = "flex";
+            $("ytBadge").innerText = "👑 あなたが操作中"; $("ytBadge").style.color = "#ffbe0b";
         } else {
             if (lastLoadedVideoId !== state.videoId) {
-                isUserApprovedSync = false; 
-                
-                const ownerName = state.ownerName ? dec(state.ownerName, curP) : "誰か";
-                const conf = confirm(`${ownerName} さんから動画の同時視聴リクエスト（URL同期）が届きました。\nプレイヤーを開いて連動しますか？`);
-                
-                if (conf) {
-                    isUserApprovedSync = true;
-                } else {
-                    isUserApprovedSync = false;
-                    $("ytArea").style.display = "none";
+                isUserApprovedSync = false;
+                const conf = confirm(`${state.ownerName ? dec(state.ownerName, curP) : "誰か"} さんから動画の同時視聴リクエストが届きました。\nプレイヤーを開いて連動しますか？`);
+                if (conf) { isUserApprovedSync = true; } else {
+                    isUserApprovedSync = false; $("ytArea").style.display = "none";
                     if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
-                    lastLoadedVideoId = state.videoId;
-                    return;
+                    lastLoadedVideoId = state.videoId; return;
                 }
             }
-            
             if (isUserApprovedSync) {
-                $("ytLockOverlay").style.display = "block"; 
-                $("ytControls").style.display = "none";     
-                $("ytBadge").innerText = "🔒 視聴専用モード（ホスト連動）";
-                $("ytBadge").style.color = "#a0aec0";
-            } else {
-                return; 
-            }
+                $("ytLockOverlay").style.display = "block"; $("ytControls").style.display = "none";
+                $("ytBadge").innerText = "🔒 視聴専用モード（ホスト連動）"; $("ytBadge").style.color = "#a0aec0";
+            } else { return; }
         }
 
-        $("ytArea").style.display = "block";
+        if ($("ytArea").style.display !== "block") $("ytArea").style.display = "block";
+        lastSavedTime = state.currentTime; lastSavedStatus = state.status;
 
+        const pVars = { 'playsinline': 1, 'controls': amIOwner ? 1 : 0, 'disablekb': amIOwner ? 0 : 1, 'rel': 0 };
         if (!ytPlayer && isYtReady) {
-            ytPlayer = new YT.Player('ytPlayer', {
-                videoId: state.videoId,
-                playerVars: { 
-                    'playsinline': 1, 
-                    'controls': amIOwner ? 1 : 0, 
-                    'disablekb': amIOwner ? 0 : 1  
-                },
-                events: {
-                    'onReady': () => { syncPlayer(state); },
-                    'onStateChange': onPlayerStateChange 
-                }
-            });
+            ytPlayer = new YT.Player('ytPlayer', { videoId: state.videoId, playerVars: pVars, events: { 'onReady': () => syncPlayer(state), 'onStateChange': onPlayerStateChange } });
             lastLoadedVideoId = state.videoId;
         } else if (ytPlayer && lastLoadedVideoId !== state.videoId) {
             try { ytPlayer.destroy(); } catch(e){}
-            ytPlayer = new YT.Player('ytPlayer', {
-                videoId: state.videoId,
-                playerVars: { 'playsinline': 1, 'controls': amIOwner ? 1 : 0, 'disablekb': amIOwner ? 0 : 1 },
-                events: {
-                    'onReady': () => { syncPlayer(state); },
-                    'onStateChange': onPlayerStateChange 
-                }
-            });
+            ytPlayer = new YT.Player('ytPlayer', { videoId: state.videoId, playerVars: pVars, events: { 'onReady': () => syncPlayer(state), 'onStateChange': onPlayerStateChange } });
             lastLoadedVideoId = state.videoId;
-        } else if (ytPlayer) {
-            syncPlayer(state);
-        }
+        } else if (ytPlayer) { syncPlayer(state); }
     });
 
     function syncPlayer(state) {
-        if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
-        if (!isUserApprovedSync) return; 
-        if (isLocalAction && amIOwner) return; 
-
+        if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || !isUserApprovedSync || (isLocalAction && amIOwner)) return;
         if (state.status === "playing") {
-            const timePassed = (getServerNow() - state.timestamp) / 1000;
-            const targetTime = state.currentTime + timePassed;
-            
-            if (Math.abs(ytPlayer.getCurrentTime() - targetTime) > 1.5) {
-                ytPlayer.seekTo(targetTime, true);
-            }
-            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
-                ytPlayer.playVideo();
-            }
+            const targetTime = state.currentTime + ((getServerNow() - state.timestamp) / 1000);
+            if (Math.abs(ytPlayer.getCurrentTime() - targetTime) > 1.5) ytPlayer.seekTo(targetTime, true);
+            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
         } else if (state.status === "paused") {
-            if (Math.abs(ytPlayer.getCurrentTime() - state.currentTime) > 0.5) {
-                ytPlayer.seekTo(state.currentTime, true);
-            }
-            if (ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) {
-                ytPlayer.pauseVideo();
-            }
+            if (Math.abs(ytPlayer.getCurrentTime() - state.currentTime) > 0.5) ytPlayer.seekTo(state.currentTime, true);
+            if (ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) ytPlayer.pauseVideo();
         }
     }
 
     function onPlayerStateChange(event) {
-        if (!ytPlayer || !curR) return;
-        if (!amIOwner) return;
-
+        if (!ytPlayer || !curR || !amIOwner) return;
         if (!isLocalAction) {
-            if (event.data === YT.PlayerState.PLAYING) {
-                startPeriodicSync();
-            } else {
+            if (event.data === YT.PlayerState.PLAYING) startPeriodicSync();
+            else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
                 if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
             }
             return;
         }
-
-        const NOW = getServerNow();
-        const currentPos = ytPlayer.getCurrentTime();
-
+        const NOW = getServerNow(), currentPos = ytPlayer.getCurrentTime();
         if (event.data === YT.PlayerState.PLAYING) {
-            update(roomStateRef, {
-                status: "playing",
-                currentTime: currentPos,
-                timestamp: NOW
-            });
+            lastSavedStatus = "playing"; lastSavedTime = currentPos;
+            update(roomStateRef, { status: "playing", currentTime: currentPos, timestamp: NOW });
             startPeriodicSync();
-        } 
-        else if (event.data === YT.PlayerState.PAUSED) {
-            update(roomStateRef, {
-                status: "paused",
-                currentTime: currentPos,
-                timestamp: NOW
-            });
+        } else if (event.data === YT.PlayerState.PAUSED) {
+            lastSavedStatus = "paused"; lastSavedTime = currentPos;
+            update(roomStateRef, { status: "paused", currentTime: currentPos, timestamp: NOW });
             if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
         }
     }
 
     function startPeriodicSync() {
-        if (!amIOwner) return;
-        if (syncIntervalId) clearInterval(syncIntervalId);
+        if (!amIOwner) return; if (syncIntervalId) clearInterval(syncIntervalId);
         syncIntervalId = setInterval(() => {
-            if (ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !isLocalAction && amIOwner) {
+            if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING || isLocalAction || !amIOwner) return;
+            
+            const currentPos = ytPlayer.getCurrentTime();
+            const expectedTime = lastSavedTime + 5; 
+            
+            if (Math.abs(currentPos - expectedTime) > 1.5 || lastSavedStatus !== "playing") {
                 isLocalAction = true;
-                update(roomStateRef, {
-                    status: "playing",
-                    currentTime: ytPlayer.getCurrentTime(),
-                    timestamp: getServerNow()
-                }).then(() => { isLocalAction = false; });
+                lastSavedTime = currentPos; lastSavedStatus = "playing";
+                update(roomStateRef, { status: "playing", currentTime: currentPos, timestamp: getServerNow() }).then(() => { isLocalAction = false; });
+            } else {
+                lastSavedTime = expectedTime; 
             }
         }, 5000);
     }
 
     const iframeWrap = $("ytArea");
     if (iframeWrap) {
-        iframeWrap.addEventListener("mouseenter", () => { if(amIOwner) isLocalAction = true; });
-        iframeWrap.addEventListener("mouseleave", () => { if(amIOwner) isLocalAction = false; });
-        iframeWrap.addEventListener("touchstart", () => { if(amIOwner) isLocalAction = true; }, {passive: true});
-        iframeWrap.addEventListener("touchend", () => { 
-            if(amIOwner) { setTimeout(() => { isLocalAction = false; }, 800); }
-        }, {passive: true});
+        const setLocal = () => { if(amIOwner) isLocalAction = true; };
+        const unsetLocal = () => { if(amIOwner) isLocalAction = false; };
+        iframeWrap.addEventListener("pointerenter", setLocal, {passive:true});
+        iframeWrap.addEventListener("pointerleave", unsetLocal, {passive:true});
+        iframeWrap.addEventListener("pointerdown", setLocal, {passive:true});
+        iframeWrap.addEventListener("pointerup", () => { if(amIOwner) setTimeout(unsetLocal, 800); }, {passive:true});
     }
 
-    $("ytPlayBtn").onclick = () => {
-        if (!ytPlayer || !amIOwner) return;
-        isLocalAction = true;
-        ytPlayer.playVideo();
-        setTimeout(() => { isLocalAction = false; }, 500);
-    };
-
-    $("ytPauseBtn").onclick = () => {
-        if (!ytPlayer || !amIOwner) return;
-        isLocalAction = true;
-        ytPlayer.pauseVideo();
-        setTimeout(() => { isLocalAction = false; }, 500);
-    };
-
-    $("ytCloseBtn").onclick = () => {
-        if (!amIOwner) return;
-        if (!confirm("全員の画面からプレイヤーを閉じますか？")) return;
-        if (syncIntervalId) clearInterval(syncIntervalId);
-        remove(ref(db, `rooms/${curR}/videoState`));
-    };
+    $("ytPlayBtn").onclick = () => { if (!ytPlayer || !amIOwner) return; isLocalAction = true; ytPlayer.playVideo(); setTimeout(() => { isLocalAction = false; }, 400); };
+    $("ytPauseBtn").onclick = () => { if (!ytPlayer || !amIOwner) return; isLocalAction = true; ytPlayer.pauseVideo(); setTimeout(() => { isLocalAction = false; }, 400); };
+    $("ytCloseBtn").onclick = () => { if (!amIOwner || !confirm("全員の画面からプレイヤーを閉じますか？")) return; if (syncIntervalId) clearInterval(syncIntervalId); remove(ref(db, `rooms/${curR}/videoState`)); };
 }
 
-// 20秒定期ポーリング
 setInterval(async () => {
     if (!curR || isProcessingExit) return;
     try {
-        const NOW = getServerNow();
-        await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: NOW });
-
+        const NOW = getServerNow(); await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: NOW });
         const roomSnap = await get(ref(db, `rooms/${curR}`));
         if (roomSnap.exists()) {
             const rData = roomSnap.val();
-            const lastActive = rData.lastActivity || NOW;
-            if (NOW - lastActive > ROOM_LIFETIME) {
-                clearSubscriptions(); 
-                await deleteRoomData(curR);
-                alert("設定された「消滅タイマー（無言時間）」を超過したため、部屋のデータは完全消滅しました。"); 
+            if (NOW - (rData.lastActivity || NOW) > ROOM_LIFETIME) {
+                clearSubscriptions(); await deleteRoomData(curR);
+                alert("設定された「消滅タイマー（無言時間）」を超過したため、部屋のデータは完全消滅しました。");
                 location.href = location.pathname;
             }
         }
@@ -983,74 +495,44 @@ setInterval(async () => {
 }, 20000);
 
 const sendMsg = async () => {
-    const inputEl = $("mi"); const v = inputEl.value.trim();
+    const inputEl = $("mi"), v = inputEl.value.trim();
     if (!v || getServerNow() - lastT < 250) return;
     lastT = getServerNow(); inputEl.value = ""; inputEl.style.height = "24px";
-    toggleClearBtn(""); scrollUp();
-
-    const NOW = getServerNow();
-    const ytId = extractVideoId(v);
-    const hasTriggerKeywords = (ytId !== null) && v.includes("同期");
-
+    toggleClearBtn("");
+    
+    const NOW = getServerNow(), ytId = extractVideoId(v), hasTriggerKeywords = (ytId !== null) && v.includes("同期");
     try {
         const promises = [
             push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: NOW }),
             update(ref(db, `rooms/${curR}`), { lastActivity: NOW })
         ];
-
         if (hasTriggerKeywords) {
             promises.push(update(ref(db, `rooms/${curR}`), {
-                videoState: {
-                    videoId: ytId,
-                    status: "playing",
-                    currentTime: 0,
-                    timestamp: NOW,
-                    owner: uid,
-                    ownerName: enc(curN, curP) 
-                }
+                videoState: { videoId: ytId, status: "playing", currentTime: 0, timestamp: NOW, owner: uid, ownerName: enc(curN, curP) }
             }));
         }
-
         await Promise.all(promises);
+        $("chatWrap").scrollTo({ top: 0, behavior: "smooth" });
     } catch (e) {}
 };
 
 $("sendBtn").onclick = sendMsg;
-
-$("mi").addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        if (e.isComposing || e.keyCode === 229) return;
-        e.preventDefault(); sendMsg();
-    }
-});
-
-$("mi").oninput = e => {
-    const el = e.target; el.style.height = "24px";
-    el.style.height = Math.min(Math.max(el.scrollHeight - 4, 24), 96) + "px";
-    toggleClearBtn(el.value);
-};
-
-$("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
+$("mi").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { if (e.isComposing || e.keyCode === 229) return; e.preventDefault(); sendMsg(); } });
+$("mi").oninput = e => { const el = e.target; el.style.height = "24px"; el.style.height = Math.min(Math.max(el.scrollHeight - 4, 24), 96) + "px"; toggleClearBtn(el.value); };
+$("focusBtn").onclick = () => { $("mi").focus(); $("chatWrap").scrollTo({ top: 0, behavior: "smooth" }); };
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "24px"; toggleClearBtn(""); $("mi").focus(); };
 
 $("exitBtn").onclick = async () => {
     if (isProcessingExit || !confirm("すべてのログを破棄して退出しますか？")) return;
-    isProcessingExit = true; const rTmp = curR; const pTmp = curP; const nTmp = curN; const tTmp = curT;
-    clearSubscriptions();
-
+    isProcessingExit = true; const rTmp = curR, pTmp = curP, nTmp = curN, tTmp = curT; clearSubscriptions();
     try {
-        await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel();
-        await remove(ref(db, `presence/${rTmp}/${uid}`));
+        await onDisconnect(ref(db, `presence/${rTmp}/${uid}`)).cancel(); await remove(ref(db, `presence/${rTmp}/${uid}`));
         const pSnap = await get(ref(db, `presence/${rTmp}`)); let activeCount = 0; const NOW = getServerNow();
-
         if (pSnap.exists()) {
             Object.keys(pSnap.val() || {}).forEach(k => { if (k !== uid && NOW - (pSnap.val()[k].lastSeen || NOW) <= USER_TIMEOUT) activeCount++; });
         }
         if (activeCount > 0) {
-            await Promise.all([
-                push(ref(db, `chat/${rTmp}`), { type: "sys", text: enc(`${nTmp}${tTmp} が退出しました`, pTmp), time: NOW }),
-                update(ref(db, `rooms/${rTmp}`), { lastActivity: NOW })
-            ]);
+            await Promise.all([push(ref(db, `chat/${rTmp}`), { type: "sys", text: enc(`${nTmp}${tTmp} が退出しました`, pTmp), time: NOW }), update(ref(db, `rooms/${rTmp}`), { lastActivity: NOW })]);
         } else { await deleteRoomData(rTmp); }
     } catch (e) {}
     location.href = location.pathname;
@@ -1058,50 +540,32 @@ $("exitBtn").onclick = async () => {
 
 $("enterBtn").onclick = async () => {
     $("errMsg").style.display = "none";
-    const name = $("ni").value.trim();
-    const key = $("tk").value.trim();
-    const rID = $("ri").value.trim();
-    const pass = $("pi").value.trim();
-    const maxLimit = Number($("maxUsers").value);
-    const romMin = Number($("romTime").value);
-    const roomMin = Number($("roomTime").value);
-
+    const name = $("ni").value.trim(), key = $("tk").value.trim(), rID = $("ri").value.trim(), pass = $("pi").value.trim(), maxLimit = Number($("maxUsers").value), romMin = Number($("romTime").value), roomMin = Number($("roomTime").value);
     if (!name) { $("errMsg").innerText = "表示名が必要です"; $("errMsg").style.display = "block"; return; }
     if (!rID || !pass) { $("errMsg").innerText = "ID/パスワードを生成してください"; $("errMsg").style.display = "block"; return; }
-
-    $("enterBtn").disabled = true;
-    $("enterBtn").innerText = "接続中...";
-
-    localStorage.setItem("nez_n", name);
-    localStorage.setItem("nez_t", key);
-
+    $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中...";
+    localStorage.setItem("nez_n", name); localStorage.setItem("nez_t", key);
     const trip = await generateTripString(name, key);
     await join(rID, pass, name, trip, maxLimit, romMin, roomMin);
 };
 
-$("masterGenBtn").onclick = () => {
-    $("ri").value = Math.random().toString(36).slice(2, 10);
-    $("pi").value = Math.random().toString(36).slice(2, 12);
-};
-
+$("masterGenBtn").onclick = () => { $("ri").value = Math.random().toString(36).slice(2, 10); $("pi").value = Math.random().toString(36).slice(2, 12); };
 $("ni").oninput = updateTripPreview; $("tk").oninput = updateTripPreview;
-
 $("copyBtn").onclick = async () => {
     const url = `${location.origin}${location.pathname}?r=${encodeURIComponent(rawR)}&p=${encodeURIComponent(curP)}`;
     try { await navigator.clipboard.writeText(url); alert("コピーしました"); } catch { alert(url); }
 };
-
-$("toTopBtn").onclick = scrollUp;
+$("toTopBtn").onclick = () => $("chatWrap").scrollTo({ top: 0, behavior: "smooth" });
 $("toBottomBtn").onclick = () => { const wrap = $("chatWrap"); if (wrap) wrap.scrollTo({ top: wrap.scrollHeight, behavior: "smooth" }); };
 
-window.onload = async () => {
+window.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem("nez_n")) $("ni").value = localStorage.getItem("nez_n");
     if (localStorage.getItem("nez_t")) $("tk").value = localStorage.getItem("nez_t");
     const u = new URLSearchParams(location.search);
     if (u.get("r")) $("ri").value = u.get("r"); if (u.get("p")) $("pi").value = u.get("p");
-    updateTimeText(); await updateTripPreview();
+    updateTimeText(); updateTripPreview();
     onValue(ref(db, ".info/serverTimeOffset"), (snap) => { serverTimeOffset = snap.val() || 0; });
-};
+});
 </script>
 </body>
 </html>
