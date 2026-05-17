@@ -256,7 +256,7 @@
             <div class="px-4 py-2 border-b border-slate-800/50 flex items-center justify-between gap-2">
                 <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0"></span>
+                        <span id="topLiveIndicator" class="w-2 h-2 bg-green-500 rounded-full animate-pulse shrink-0"></span>
                         <h2 id="roomDisplay" class="font-black text-sm text-slate-200 tracking-tight truncate select-text"></h2>
                         <span id="presenceCount" class="text-xs text-slate-500 font-bold shrink-0">[-]</span>
                     </div>
@@ -309,22 +309,36 @@
             <!-- YouTubeコントロールセンター -->
             <div id="ytControlConsole" class="hidden p-3 bg-slate-950 text-white flex flex-col gap-2 transition-all border-t border-slate-800">
                 <div class="flex items-center justify-between text-xs border-b border-slate-800 pb-1.5">
-                    <div class="flex items-center gap-1.5">
-                        <span id="ytBadge" class="border px-1.5 py-0.5 rounded text-[10px] tracking-wider border-slate-700 font-bold">Loading...</span>
-                        <span id="ytSyncTimeDisplay" class="text-[10px] font-mono text-slate-400 font-bold">00:00 / 00:00</span>
+                    <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span id="ytBadge" class="border px-1.5 py-0.5 rounded text-[10px] tracking-wider border-slate-700 font-bold transition-colors">Loading...</span>
+                            <span id="ytSyncStatusIndicator" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400">同期判定中</span>
+                            <span id="ytSyncTimeDisplay" class="text-[10px] font-mono text-slate-400 font-bold">00:00 / 00:00</span>
+                        </div>
+                        <div id="ytLagMeter" class="text-[9px] text-slate-500 font-mono hidden"></div>
                     </div>
-                    <div class="flex items-center gap-1">
+                    <div class="flex items-center gap-1 shrink-0">
                         <button id="ytGuestModeBtn" class="bg-yellow-500 text-gray-900 px-2 py-0.5 rounded text-[10px] font-bold hover:opacity-90 transition hidden">🔓 マイペース</button>
                         <button id="ytHostPlayBtn" class="bg-green-600 text-white px-2 py-0.5 rounded text-[10px] font-bold hover:bg-green-700 transition hidden">▶ 再生発信</button>
                         <button id="ytHostPauseBtn" class="bg-red-600 text-white px-2 py-0.5 rounded text-[10px] font-bold hover:bg-red-700 transition hidden">⏸ 停止発信</button>
                     </div>
                 </div>
 
+                <!-- 再生位置シークスライダー -->
                 <div class="flex items-center gap-2 w-full">
                     <input type="range" id="ytSyncSlider" min="0" max="100" value="0" step="1" class="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                 </div>
 
-                <div class="grid grid-cols-12 gap-1.5 items-center">
+                <!-- 🔊 新設：音量調整コントロールバー -->
+                <div class="flex items-center gap-2 bg-slate-900/60 px-2 py-1 rounded-lg border border-slate-800/40 w-full">
+                    <button id="ytVolumeMuteBtn" class="text-slate-400 hover:text-white transition text-xs shrink-0 focus:outline-none select-none px-0.5">
+                        <span id="ytVolumeIcon">🔊</span>
+                    </button>
+                    <input type="range" id="ytVolumeSlider" min="0" max="100" value="50" step="1" class="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                    <span id="ytVolumeDisplay" class="text-[10px] font-mono font-bold text-slate-400 w-7 text-right shrink-0">50%</span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-1.5 items-center mt-0.5">
                     <div class="col-span-8 relative">
                         <input type="text" id="ytSearchInput" placeholder="キーワード、URLを検索..." class="w-full px-2 py-1 border border-slate-800 rounded-lg text-xs bg-slate-900 text-white focus:outline-none focus:ring-1 focus:ring-indigo-500">
                         <div id="ytSearchResults" class="shadow-2xl rounded-b-lg text-slate-200"></div>
@@ -346,7 +360,7 @@
     <div id="ytArea" class="transition-shadow duration-300">
         <div id="ytDragBar" class="px-3 py-1.5 bg-slate-950 text-slate-200 flex items-center justify-between text-[11px] font-bold select-none shrink-0 border-b border-slate-900">
             <span class="text-slate-400 tracking-wider flex items-center gap-1">
-                <span class="inline-block w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> SYSTEM SCREEN
+                <span id="ytLiveIndicator" class="inline-block w-2 h-2 rounded-full bg-slate-500"></span> SYSTEM SCREEN
             </span>
             <button id="ytClosePlayerBtn" class="text-slate-500 hover:text-white p-0.5"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
         </div>
@@ -424,6 +438,8 @@
         let isExplicitlyClosedByGuest = false;
         let isGuestFreeMode = false;
         let globalVideoStateCache = null;
+        let savedVolumeLevel = 50;
+        let isMutedLocal = false;
 
         const chatTimeline = $('chatTimeline');
 
@@ -511,7 +527,6 @@
             $("clearBtn").style.opacity = hasText ? "1" : "0"; $("clearBtn").style.pointerEvents = hasText ? "auto" : "none";
         };
 
-        // トリップ処理を完全に待ち受け可能なPromise同期型に変更
         function generateTripString(name, key) {
             return new Promise((resolve) => {
                 if (!name || !key) { resolve(""); return; }
@@ -543,7 +558,6 @@
             setTimeout(() => area.classList.remove("flash-play", "flash-pause"), 400);
         }
 
-        // デバイス間格差を吸収するドラッグ＆ピントランスフォームの最適化（1xリフロー）
         function setupPlayerTransformationController(playerEl, minW = 180, maxW = 1200) {
             if (!playerEl || playerEl.dataset.transformSetup === "true") return;
             playerEl.dataset.transformSetup = "true";
@@ -618,6 +632,40 @@
             });
         }
 
+        // 🔊 音量スライダーの入力変更ハンドラ割り当て
+        function applyLocalVolumeFromUI() {
+            const vol = parseInt($("ytVolumeSlider").value, 10);
+            $("ytVolumeDisplay").innerText = `${vol}%`;
+            savedVolumeLevel = vol;
+            if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
+                if (vol === 0) {
+                    ytPlayer.mute();
+                    $("ytVolumeIcon").innerText = "🔇";
+                    isMutedLocal = true;
+                } else {
+                    if (isMutedLocal) { ytPlayer.unMute(); isMutedLocal = false; }
+                    ytPlayer.setVolume(vol);
+                    $("ytVolumeIcon").innerText = vol < 40 ? "🔈" : vol < 80 ? "🔉" : "🔊";
+                }
+            }
+        }
+
+        $("ytVolumeSlider").oninput = () => { applyLocalVolumeFromUI(); };
+        $("ytVolumeMuteBtn").onclick = (e) => {
+            e.preventDefault();
+            if (!ytPlayer) return;
+            if (isMutedLocal) {
+                isMutedLocal = false;
+                $("ytVolumeSlider").value = savedVolumeLevel === 0 ? 50 : savedVolumeLevel;
+                applyLocalVolumeFromUI();
+            } else {
+                isMutedLocal = true;
+                $("ytVolumeIcon").innerText = "🔇";
+                if (typeof ytPlayer.mute === 'function') ytPlayer.mute();
+                $("ytVolumeDisplay").innerText = "0%";
+            }
+        };
+
         async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
             let waitCounter = 0; 
             while (!isOffsetLoaded && waitCounter < 20) { await new Promise(r => setTimeout(r, 50)); waitCounter++; }
@@ -669,10 +717,57 @@
                         $("ytSyncSlider").max = Math.floor(duration); $("ytSyncSlider").value = Math.floor(curTime);
                         $("ytSyncTimeDisplay").innerText = `${formatTime(curTime)} / ${formatTime(duration)}`;
                     }
+
+                    // 🛰️ リアルタイム同期判定メーターの更新
+                    if (globalVideoStateCache && isUserApprovedSync) {
+                        if (amIOwner) {
+                            $("ytSyncStatusIndicator").innerText = "配信中";
+                            $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-900 text-indigo-200 border border-indigo-500";
+                            $("ytLagMeter").style.display = "none";
+                            $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                            $("topLiveIndicator").className = "w-2 h-2 bg-indigo-500 rounded-full animate-pulse shrink-0";
+                        } else if (isGuestFreeMode) {
+                            $("ytSyncStatusIndicator").innerText = "単独再生";
+                            $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-400 border border-amber-700";
+                            $("ytLagMeter").style.display = "none";
+                            $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-amber-500";
+                            $("topLiveIndicator").className = "w-2 h-2 bg-amber-500 rounded-full shrink-0";
+                        } else {
+                            let hostTargetTime = globalVideoStateCache.currentTime;
+                            if (globalVideoStateCache.status === "playing") {
+                                hostTargetTime += ((getServerNow() - globalVideoStateCache.timestamp) / 1000);
+                            }
+                            const lag = curTime - hostTargetTime;
+                            const absLag = Math.abs(lag);
+
+                            $("ytLagMeter").style.display = "inline-block";
+                            if (absLag <= 1.0) {
+                                $("ytSyncStatusIndicator").innerText = "完全同期";
+                                $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-600";
+                                $("ytLagMeter").innerText = `ホストとのズレ: ${(lag >= 0 ? '+' : '')}${lag.toFixed(2)}秒 (良好)`;
+                                $("ytLagMeter").className = "text-[9px] text-emerald-400 font-mono font-bold";
+                                $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                                $("topLiveIndicator").className = "w-2 h-2 bg-emerald-500 rounded-full animate-pulse shrink-0";
+                            } else if (absLag <= 2.5) {
+                                $("ytSyncStatusIndicator").innerText = "許容範囲";
+                                $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-950 text-yellow-400 border border-yellow-600";
+                                $("ytLagMeter").innerText = `ホストとのズレ: ${(lag >= 0 ? '+' : '')}${lag.toFixed(2)}秒 (微調整中)`;
+                                $("ytLagMeter").className = "text-[9px] text-yellow-400 font-mono";
+                                $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-yellow-500";
+                                $("topLiveIndicator").className = "w-2 h-2 bg-yellow-500 rounded-full shrink-0";
+                            } else {
+                                $("ytSyncStatusIndicator").innerText = "同期ズレ検出";
+                                $("ytSyncStatusIndicator").className = "px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-400 border border-rose-600";
+                                $("ytLagMeter").innerText = `ホストとのズレ: ${(lag >= 0 ? '+' : '')}${lag.toFixed(2)}秒 (自動シーク待機)`;
+                                $("ytLagMeter").className = "text-[9px] text-rose-400 font-mono font-bold animate-pulse";
+                                $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-rose-500 animate-ping";
+                                $("topLiveIndicator").className = "w-2 h-2 bg-rose-500 rounded-full shrink-0";
+                            }
+                        }
+                    }
                 } catch(e){}
             }, 1000);
 
-            // スライダーイベントの最適化
             $("ytSyncSlider").oninput = () => { isUserDraggingSlider = true; };
             $("ytSyncSlider").onchange = async () => {
                 const targetTime = Number($("ytSyncSlider").value);
@@ -687,7 +782,6 @@
                 isUserDraggingSlider = false;
             };
 
-            // 無駄な監視をカットし単発取得に切り替えて通信量を削減
             unsubscribePres = onValue(presRef, s => {
                 if (!curR) return; const users = s.val() || {}, frag = document.createDocumentFragment(), NOW = getServerNow();
                 let count = 0, amIInList = false;
@@ -702,7 +796,7 @@
             });
 
             chatTimeline.innerHTML = ""; 
-            const chatQuery = query(chatRef, orderByChild("time"), limitToLast(40)); // 40件に削減してDOM負荷低減
+            const chatQuery = query(chatRef, orderByChild("time"), limitToLast(40)); 
             unsubscribeChat = onChildAdded(chatQuery, s => {
                 const m = s.val();
                 const txt = textDec(m.text, curP); if (!txt) return;
@@ -747,8 +841,8 @@
                 if (amIOwner) {
                     isUserApprovedSync = true; $("ytGuestModeBtn").style.display = "none"; 
                     $("ytHostPlayBtn").style.display = "block"; $("ytHostPauseBtn").style.display = "block";
-                    $("ytBadge").innerText = `👑 ホスト ${state.status === "playing" ? "同期中" : "停止中"}`;
-                    $("ytBadge").style.borderColor = state.status === "playing" ? "var(--success)" : "var(--danger)";
+                    $("ytBadge").innerText = `👑 ホスト配信中 [${state.status === "playing" ? "再生" : "停止"}]`;
+                    $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-indigo-400 border-indigo-500 bg-indigo-950/50";
                     $("ytSyncSlider").disabled = false;
                     
                     if (isLocalAction || state.status === "playing") {
@@ -767,11 +861,12 @@
 
                     if (isUserApprovedSync) { 
                         if (isGuestFreeMode) {
-                            $("ytBadge").innerText = `🔓 マイペース再生中`; $("ytBadge").style.borderColor = "var(--warning)";
+                            $("ytBadge").innerText = `🔓 マイペース再生中`;
+                            $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-amber-400 border-amber-500 bg-amber-950/50";
                             $("ytSyncSlider").disabled = false;
                         } else {
-                            $("ytBadge").innerText = `🔒 連動中 ${state.status === "playing" ? "同期中" : "停止中"}`;
-                            $("ytBadge").style.borderColor = state.status === "playing" ? "var(--success)" : "var(--danger)"; 
+                            $("ytBadge").innerText = `🔒 ホスト連動中 [${state.status === "playing" ? "再生" : "停止"}]`;
+                            $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-emerald-400 border-emerald-500 bg-emerald-950/50";
                             $("ytSyncSlider").disabled = true; 
                         }
                     } else { return; }
@@ -804,7 +899,11 @@
                                 'rel': 0, 'modestbranding': 1, 'start': Math.floor(startPos), 'mute': amIOwner ? 0 : 1
                             }, 
                             events: { 
-                                'onReady': (e) => { if(!amIOwner) { e.target.unMute(); e.target.playVideo(); } syncPlayer(state); }, 
+                                'onReady': (e) => { 
+                                    if(!amIOwner) { e.target.unMute(); e.target.playVideo(); } 
+                                    applyLocalVolumeFromUI();
+                                    syncPlayer(state); 
+                                }, 
                                 'onStateChange': onPlayerStateChange 
                             } 
                         });
@@ -818,18 +917,22 @@
                 if (amIOwner) {
                     $("ytGuestModeBtn").style.display = "none"; $("ytHostPlayBtn").style.display = "block"; $("ytHostPauseBtn").style.display = "block";
                     $("ytSyncSlider").disabled = false;
+                    $("ytBadge").innerText = `👑 ホスト配信中`;
+                    $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-indigo-400 border-indigo-500 bg-indigo-950/50";
                 } else {
                     $("ytHostPlayBtn").style.display = "none"; $("ytHostPauseBtn").style.display = "none"; $("ytGuestModeBtn").style.display = "block";
                     if (isGuestFreeMode) {
                         $("ytGuestModeBtn").innerText = "🔗 ホストに同期"; $("ytGuestModeBtn").style.background = "var(--success)";
-                        $("ytBadge").innerText = `🔓 マイペース再生中`; $("ytBadge").style.borderColor = "var(--warning)";
+                        $("ytBadge").innerText = `🔓 マイペース再生中`;
+                        $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-amber-400 border-amber-500 bg-amber-950/50";
                         $("ytSyncSlider").disabled = false;
+                        $("ytLiveIndicator").className = "inline-block w-2 h-2 rounded-full bg-amber-500";
                     } else {
                         $("ytGuestModeBtn").innerText = "🔓 マイペース"; $("ytGuestModeBtn").style.background = "var(--warning)";
                         $("ytSyncSlider").disabled = true;
                         if (globalVideoStateCache) {
-                            $("ytBadge").innerText = `🔒 連動中 ${globalVideoStateCache.status === "playing" ? "同期中" : "停止中"}`;
-                            $("ytBadge").style.borderColor = globalVideoStateCache.status === "playing" ? "var(--success)" : "var(--danger)";
+                            $("ytBadge").innerText = `🔒 ホスト連動中 [${globalVideoStateCache.status === "playing" ? "再生" : "停止"}]`;
+                            $("ytBadge").className = "border px-1.5 py-0.5 rounded text-[10px] tracking-wider font-bold text-emerald-400 border-emerald-500 bg-emerald-950/50";
                         }
                     }
                 }
@@ -872,7 +975,10 @@
                 if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
                 ytPlayer = new YT.Player('ytPlayer', { 
                     videoId: vId, playerVars: { 'autoplay': 1, 'playsinline': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1, 'start': Math.floor(startTime) }, 
-                    events: { 'onStateChange': onPlayerStateChange } 
+                    events: { 
+                        'onReady': () => { applyLocalVolumeFromUI(); },
+                        'onStateChange': onPlayerStateChange 
+                    } 
                 });
             }
 
@@ -881,7 +987,7 @@
                 let targetTime = state.currentTime; if (state.status === "playing") { targetTime += ((getServerNow() - state.timestamp) / 1000); }
                 ytPlayer = new YT.Player('ytPlayer', { 
                     videoId: state.videoId, playerVars: { 'autoplay': (state.status === "paused") ? 0 : 1, 'playsinline': 1, 'controls': 0, 'disablekb': 1, 'rel': 0, 'modestbranding': 1, 'start': Math.floor(targetTime) }, 
-                    events: { 'onReady': () => { syncPlayer(state); }, 'onStateChange': onPlayerStateChange } 
+                    events: { 'onReady': () => { applyLocalVolumeFromUI(); syncPlayer(state); }, 'onStateChange': onPlayerStateChange } 
                 });
             }
 
@@ -984,7 +1090,10 @@
                 if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
                 ytPlayer = new YT.Player('ytPlayer', {
                     videoId: video.id, playerVars: { 'autoplay': 1, 'playsinline': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
-                    events: { 'onReady': () => { $("ytBadge").innerText = isGuestFreeMode ? "🔓 マイペース再生中" : "👑 検索プレビュー"; } }
+                    events: { 'onReady': () => { 
+                        applyLocalVolumeFromUI();
+                        $("ytBadge").innerText = isGuestFreeMode ? "🔓 マイペース再生中" : "👑 検索プレビュー"; 
+                    } }
                 });
                 lastLoadedVideoId = "__SEARCH_MODE__";
             }
@@ -1007,7 +1116,10 @@
                         if (!isYtReady || !window.YT?.Player) { setTimeout(buildInitPlayer, 100); return; }
                         ytPlayer = new YT.Player('ytPlayer', {
                             videoId: 'dQw4w9WgXcQ', playerVars: { 'autoplay': 0, 'playsinline': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
-                            events: { 'onReady': () => { $("ytBadge").innerText = amIOwner ? "👑 ホスト待機中" : "🔓 マイペース再生中"; } }
+                            events: { 'onReady': () => { 
+                                applyLocalVolumeFromUI();
+                                $("ytBadge").innerText = amIOwner ? "👑 ホスト待機中" : "🔓 マイペース再生中"; 
+                            } }
                         });
                         lastLoadedVideoId = "__NAV_INIT_MODE__";
                     };
@@ -1035,7 +1147,7 @@
                     }
                 }
             } catch (e) {}
-        }, 25000); // 同期・ハートビート間隔を少し広げて通信パケット数を削減
+        }, 25000); 
 
         const sendMsg = async () => {
             const inputEl = $("mi"), v = inputEl.value.trim(); if (!v || getServerNow() - lastT < 250) return;
@@ -1053,13 +1165,12 @@
 
         $("sendBtn").onclick = sendMsg;
 
-        // キーボード・IME最適化フラグ制御を最高精度に強化
         $("mi").addEventListener('compositionstart', () => { isComposing = true; });
         $("mi").addEventListener('compositionend', () => { isComposing = false; });
 
         $("mi").addEventListener("keydown", e => { 
             if (e.key === "Enter" && !e.shiftKey) { 
-                if (isComposing) return; // 変換中は送信処理を完全にバイパス
+                if (isComposing) return; 
                 e.preventDefault(); 
                 sendMsg(); 
             } 
@@ -1081,7 +1192,6 @@
             location.href = location.pathname;
         };
 
-        // 入室ボタン押下時の非同期同期ズレを完全に束縛・解消
         $("enterBtn").onclick = async (e) => {
             e.preventDefault(); if ($("enterBtn").disabled) return;
             const name = $("ni").value.trim(), key = $("tk").value.trim(), rID = $("ri").value.trim(), pass = $("pi").value.trim();
@@ -1092,7 +1202,6 @@
             
             try {
                 localStorage.setItem("nez_n", name); localStorage.setItem("nez_t", key);
-                // トリップの同期生成を確実に完了させてから次に進む
                 const trip = await generateTripString(name, key);
                 await join(rID, pass, name, trip, Number($("maxUsers").value), Number($("romTime").value), Number($("roomTime").value));
             } catch (err) { 
