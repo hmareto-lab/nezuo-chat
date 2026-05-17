@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT - Fixed Edition</title>
+<title>NEZU ONETIME CHAT</title>
 
-<!-- 暗号化ライブラリの読み込み（defer） -->
+<!-- 暗号化ライブラリの読み込み（deferで通信・描画ブロックを最小化） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
 
 <style>
@@ -17,11 +17,13 @@
 }
 
 :root{
-    --primary:#007aff;
-    --bg:#f2f4f7;
-    --accent:#28a745;
-    --danger:#d9363e;
-    --dark:#2c3e50;
+    --bg:#f4f7f9;       /* 清潔感のある薄い青みがかった背景 */
+    --text:#2c3e50;     /* 視認性の高いダークネイビー */
+    --primary:#3a86ff;  /* 爽やかなブルー */
+    --accent:#4ea8de;   /* 薄い青・水色 */
+    --danger:#ff4d4d;   /* 警告赤 */
+    --panel:#ffffff;    /* 純白のパネル */
+    --border:#e2e8f0;   /* 明るい境界線 */
 }
 
 html,body{
@@ -31,6 +33,7 @@ html,body{
     overflow:hidden;
     background:var(--bg);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);
 }
 
 body{
@@ -39,43 +42,47 @@ body{
     align-items: center;
 }
 
-/* ロビー全体の高さを画面内に完全に収める */
+/* ロビー：白と薄い青を基調としたミニマル設定画面 */
 #lobby{
     position:fixed;
     inset:0;
     justify-content:center;
     align-items:center;
-    background:linear-gradient(135deg,#f5f7fa,#c3cfe2);
+    background:var(--bg);
     z-index:1000;
     display:flex;
-    padding: env(safe-area-inset-top) 10px env(safe-area-inset-bottom) 10px;
+    padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
 }
 
-/* スクロールを発生させず、1画面に収めるためのコンパクト設計 */
 .lobby-content{
     width:100%;
-    max-width:360px;
-    background:#fff;
-    border-radius:20px;
-    padding:16px;
-    box-shadow:0 15px 35px rgba(0,0,0,.15);
+    max-width:340px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px;
     display:flex;
     flex-direction:column;
-    gap:8px; 
+    gap:10px; 
     max-height:98vh;
+    box-shadow: 0 4px 20px rgba(58,134,255,0.05);
 }
 
 .lobby-input{
     width:100%;
     height:38px; 
-    border:1px solid #eee;
-    border-radius:10px;
-    background:#f9fbff;
+    border:1px solid var(--border);
+    background:#ffffff;
     padding:0 12px;
-    font-size:16px; /* iOSフォーカス時のズーム防止 */
+    font-size:16px; /* iOSのズーム防止 */
+    color:var(--text);
     outline:none;
+    font-family:inherit;
+    border-radius:8px;
     -webkit-appearance: none;
 }
+.lobby-input:focus { border-color: var(--primary); }
+.lobby-input::placeholder { color: #a0aec0; }
 
 .error-msg{
     color:var(--danger);
@@ -83,20 +90,19 @@ body{
     font-weight:bold;
     text-align:center;
     display:none;
-    background:#fff0f0;
+    background:#fff5f5;
     padding:6px;
-    border-radius:8px;
-    border:1px solid #ffdada;
+    border:1px solid #fed7d7;
+    border-radius:6px;
 }
 
 .info-box{
-    background:#f8f9fa;
-    border-radius:12px;
+    background:#edf2f7;
     padding:10px;
     font-size:11px;
-    line-height:1.4;
-    color:#495057;
-    border:1px solid #efefef;
+    line-height:1.5;
+    color:#4a5568;
+    border-radius:8px;
 }
 
 .modal-trigger-row {
@@ -107,30 +113,24 @@ body{
 }
 
 .btn-trigger {
-    height: 28px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    height: 26px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     background: #fff;
+    color: #718096;
     font-size: 11px;
     font-weight: bold;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-family:inherit;
 }
-
-.btn-trigger:active {
-    background: #f0f0f0;
-}
-
-#openModalLink { color: var(--primary); border-color: #bcd9ff; background: #f5f9ff; }
-#openGuideLink { color: var(--accent); border-color: #c3e6cb; background: #f4faf6; }
+.btn-trigger:active { background: #edf2f7; }
 
 /* モーダル共通 */
 .modal-overlay {
     position:fixed;
     inset:0;
-    background:rgba(0,0,0,0.5);
+    background:rgba(44,62,80,0.4);
+    backdrop-filter: blur(2px);
     z-index:2000;
     display:none;
     justify-content:center;
@@ -139,61 +139,52 @@ body{
 
 .modal-window {
     width:92%;
-    max-width:360px;
-    background:#fff;
-    border-radius:24px;
+    max-width:340px;
+    background:var(--panel);
+    border-radius:16px;
     padding:20px;
-    box-shadow:0 15px 30px rgba(0,0,0,0.25);
     display:flex;
     flex-direction:column;
-    gap:14px;
-    max-height:85vh;
+    gap:12px;
+    max-height:80vh;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
-.modal-title {
-    font-size:16px;
+.modal-window h3 {
+    font-size:15px;
     font-weight:bold;
-    color:var(--dark);
+    color:var(--primary);
     text-align:center;
-    flex-shrink:0;
 }
 
 .modal-body {
     font-size:11.5px;
-    color:#495057;
+    color:#4a5568;
     line-height:1.6;
     overflow-y:auto;
-    padding-right:4px;
-    -webkit-overflow-scrolling: touch;
 }
-
-.modal-body::-webkit-scrollbar { width:4px; }
-.modal-body::-webkit-scrollbar-thumb { background:#ced4da; border-radius:2px; }
 
 .modal-section-title {
     font-weight:bold;
-    color:var(--dark);
-    margin:12px 0 4px 0;
-    display:flex;
-    align-items:center;
-    gap:4px;
+    color:var(--text);
+    margin:10px 0 4px 0;
     font-size:12px;
-    border-left: 3px solid var(--primary);
+    border-left: 3px solid var(--accent);
     padding-left: 6px;
 }
 .modal-section-title:first-child { margin-top:0; }
 
 .modal-close-btn {
     width:100%;
-    height:44px;
+    height:38px;
     border:none;
-    border-radius:12px;
-    background:var(--dark);
+    border-radius:8px;
+    background:var(--text);
     color:#fff;
-    font-size:14px;
+    font-size:13px;
     font-weight:bold;
     cursor:pointer;
-    flex-shrink:0;
+    font-family:inherit;
 }
 
 #mainApp{
@@ -203,13 +194,13 @@ body{
     height:100%;
     height:100svh;
     max-width:800px;
-    background:#fff;
+    background:var(--panel);
     position:relative;
 }
 
 #header{
-    background:#fff;
-    border-bottom:1px solid #ececec;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
     padding-top:env(safe-area-inset-top);
     flex-shrink: 0;
 }
@@ -217,9 +208,8 @@ body{
 .app-header-top{
     display:flex;
     align-items:flex-end;
-    gap:8px;
-    padding:10px 12px;
-    background:#fff;
+    gap:6px;
+    padding:8px 10px;
 }
 
 .input-container {
@@ -227,9 +217,9 @@ body{
     align-items:center;
     flex:1;
     min-width:0;
-    background:#f1f3f5;
-    border-radius:20px;
-    padding:4px 12px;
+    background:#edf2f7;
+    padding:2px 8px;
+    border-radius:18px;
 }
 
 textarea{
@@ -238,74 +228,66 @@ textarea{
     height:24px;
     min-height:24px;
     max-height:96px;
-    padding:2px 0;
+    padding:2px 4px;
     background:transparent;
     font-size:16px;
     line-height:1.4;
-    color:#212529;
+    color:var(--text);
     border:none;
     outline:none;
     resize:none;
     overflow-y:auto;
+    font-family:inherit;
     -webkit-appearance:none;
 }
 
 #clearBtn{
-    width:24px;
-    height:24px;
+    width:20px;
+    height:20px;
     flex-shrink:0;
-    background:#ced4da;
+    background:#cbd5e0;
     border:none;
     color:#fff;
-    font-size:14px;
-    font-weight:bold;
+    font-size:12px;
     border-radius:50%;
     cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
-    margin-left:6px;
-    transition:opacity 0.15s ease;
+    margin-left:4px;
     opacity:0;
     pointer-events:none;
 }
 
 #sendBtn{
-    width:36px;
-    height:36px;
+    width:56px;
+    height:32px;
     flex-shrink:0;
     border:none;
-    border-radius:50%;
     background:var(--primary);
-    color:#fff;
-    font-size:14px;
+    color:#ffffff;
+    font-size:13px;
     font-weight:bold;
     cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 2px 5px rgba(0,122,255,0.2);
+    font-family:inherit;
+    border-radius:16px;
 }
-
-#sendBtn:active { transform:scale(0.92); }
+#sendBtn:active { opacity:0.8; }
 
 .room-info-bar{
     display:flex;
     justify-content:space-between;
-    align-items:flex-start;
-    padding:6px 12px;
-    border-top:1px solid #f6f6f6;
-    background:#fcfcfc;
+    align-items:center;
+    padding:4px 12px;
+    background:#f7fafc;
     gap:8px;
+    font-size:11px;
+    border-top:1px solid var(--border);
 }
 
 .info-item{
-    background:#f1f1f1;
-    padding:3px 8px;
-    border-radius:5px;
-    font-size:10px;
-    font-weight:700;
-    color:#666;
+    color:#718096;
+    font-weight:bold;
     white-space:nowrap;
 }
 
@@ -314,27 +296,26 @@ textarea{
     flex-wrap:wrap;
     gap:4px;
     flex:1;
-    max-height:56px;
+    max-height:36px;
     overflow-y:auto;
 }
 
 .user-chip{
-    background:var(--primary);
-    color:#fff;
-    padding:2px 8px;
-    border-radius:10px;
+    color:var(--primary);
     font-size:10px;
+    font-weight:bold;
     white-space:nowrap;
-    height:18px;
     display:inline-flex;
     align-items:center;
 }
+.user-chip::after { content: ","; margin-right:4px; color:#a0aec0; }
+.user-chip:last-child::after { content: ""; }
 
 #chatWrap{
     flex:1;
     overflow-y:auto;
-    padding:15px 12px;
-    background:#f7f8fa;
+    padding:12px;
+    background:var(--bg);
     display:flex;
     flex-direction:column;
     -webkit-overflow-scrolling: touch;
@@ -343,56 +324,57 @@ textarea{
 #list{
     display:flex;
     flex-direction:column-reverse;
-    gap:12px;
+    gap:10px;
 }
 
 .msg-wrap{ display:flex; flex-direction:column; }
-.msg{ background:#fff; border-radius:18px; padding:8px 14px; max-width:85%; box-shadow:0 1px 2px rgba(0,0,0,.05); }
-.msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
-.msg-text a{ color:var(--primary); }
-.msg-meta{ font-size:10px; color:#999; margin:4px 0 0 8px; }
-.sys-msg{ align-self:center; color:#555; font-size:11px; font-weight:bold; margin:10px 0; background:#e9ecef; padding:4px 12px; border-radius:12px; }
+.msg{ max-width:100%; }
+.msg-text{ font-size:15px; line-height:1.5; white-space:pre-wrap; word-break:break-word; color:var(--text); }
+.msg-text a{ color:var(--primary); text-decoration:underline; }
+.msg-meta{ font-size:10px; color:#a0aec0; margin-top:2px; }
+.sys-msg{ align-self:center; color:#718096; font-size:11px; font-weight:bold; margin:6px 0; background:#e2e8f0; padding:3px 10px; border-radius:10px; }
 
 #footer{
-    background:#fff;
-    border-top:1px solid #ececec;
-    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    background:var(--panel);
+    border-top:1px solid var(--border);
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
     flex-shrink: 0;
 }
 
-/* フッターナビゲーション：5つ並びの均等・最適化バランス */
 .footer-nav{
     display:grid;
-    grid-template-columns: 1.2fr 1fr 1fr 1.2fr 1.2fr;
-    gap:6px;
+    grid-template-columns: 1fr 0.8fr 0.8fr 1fr 1fr;
+    gap:4px;
     align-items:center;
 }
 
 .btn{
-    border:none;
-    border-radius:12px;
+    border:1px solid var(--border);
+    background:#ffffff;
+    color:#4a5568;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-weight:800;
-    height:40px;
+    height:36px;
     cursor:pointer;
     font-size:11px;
+    font-weight:bold;
+    font-family:inherit;
+    border-radius:6px;
 }
-
-.btn-nav-arrow { font-size: 14px; }
+.btn:active { background:#edf2f7; }
 
 .setting-row {
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:6px;
 }
 .setting-row label {
     font-size:11px;
     font-weight:bold;
-    color:#555;
+    color:#718096;
     white-space:nowrap;
-    width:100px;
+    width:90px;
 }
 </style>
 </head>
@@ -401,119 +383,100 @@ textarea{
 <!-- モーダル1：利用規約 -->
 <div id="infoModal" class="modal-overlay">
     <div class="modal-window">
-        <h3 class="modal-title">利用規約および詳細仕様</h3>
+        <h3>利用規約・システム仕様</h3>
         <div class="modal-body">
-            <div class="modal-section-title">1. 管理者非閲覧・暗号化通信の仕様</div>
-            <div style="padding-left:6px; margin-bottom:10px;">
-                当チャットはブラウザ側でメッセージを完全に暗号化してから送信します。暗号化キーはサーバーに保存されないため、システム管理者であっても解読は不可能です。
-            </div>
-            <div class="modal-section-title">2. データの自動消滅仕様</div>
-            <div style="padding-left:6px; margin-bottom:10px;">
-                通信切断時は設定時間（選択値：<strong class="dyn-rom-text" style="color:var(--danger);">5分後</strong>）で自動退出となります。また、部屋内で発言がない状態が設定時間（選択値：<strong class="dyn-room-text" style="color:var(--accent);">10分無言</strong>）続くか、参加者が0人になった瞬間にログを含む全データが完全消去されます。
-            </div>
-            <div class="modal-section-title">3. 禁止事項</div>
-            <div style="padding-left:6px; margin-bottom:10px;">
-                法令違反、公序良俗に反する行為、他者への誹謗中傷、不正アクセスを禁止します。
-            </div>
-            <div class="modal-section-title">4. 免責事項</div>
-            <div style="padding-left:6px;">
-                プログラムの不具合、通信障害等による損害について運営者は一切の責任を負いません。使い捨て空間として自己責任でご利用ください。
-            </div>
+            <div class="modal-section-title">1. エンドツーエンド暗号化</div>
+            <div>全メッセージは端末間で完全暗号化されます。パスワードはサーバーに送信されないため、運営側であっても解読は不可能です。</div>
+            <div class="modal-section-title">2. データの自動消滅</div>
+            <div>誰も喋らない状態が設定時間（<strong class="dyn-room-text" style="color:var(--primary);">10分</strong>）続くか、全員が退出した瞬間に、すべての暗号化ログがサーバーから完全に削除されます。</div>
+            <div class="modal-section-title">3. 免責事項</div>
+            <div>通信障害等によるログの消失について、一切の責任を負いません。完全に使い捨てのチャットとしてご利用ください。</div>
         </div>
-        <button id="closeModalBtn" class="modal-close-btn">規約を閉じる</button>
+        <button id="closeModalBtn" class="modal-close-btn">閉じる</button>
     </div>
 </div>
 
 <!-- モーダル2：使い方 -->
 <div id="guideModal" class="modal-overlay">
     <div class="modal-window">
-        <h3 class="modal-title">利用方法（使い方）</h3>
+        <h3>使い捨てチャットの始め方</h3>
         <div class="modal-body">
-            <div class="modal-section-title" style="border-left-color: var(--accent); color: var(--accent);">部屋を作成する場合</div>
-            <div style="padding-left:6px; margin-bottom:14px;">
-                1. 表示名と本人確認キーを入力します。<br>
-                2. 「認証情報の自動生成」ボタンで部屋IDとパスワードを生成します。<br>
-                3. 各種制限時間を設定し、「規約に同意して入室」を押します。<br>
-                4. 入室後、画面下の「招待」を押してURLをコピーし、相手に共有してください。
-            </div>
-            <div class="modal-section-title" style="border-left-color: var(--accent); color: var(--accent);">部屋に参加する場合</div>
-            <div style="padding-left:6px; margin-bottom:14px;">
-                1. 招待URLからアクセスすると部屋情報が自動入力されます。<br>
-                2. ご自身の表示名と本人確認キーを入力し、「規約に同意して入室」を押します。
-            </div>
-            <div class="modal-section-title" style="border-left-color: var(--danger); color: var(--danger);">終了する場合</div>
-            <div style="padding-left:6px;">
-                右下の「退出」を押すと即座にデータが切断され、参加者が0人になった部屋の全データはサーバーから永久に完全削除されます。
-            </div>
+            <div class="modal-section-title">部屋を作る</div>
+            <div>1. 名前と合言葉を入力。<br>2. [自動生成] でランダムな部屋情報をセット。<br>3. [入室] 完了後、画面下の [招待] からURLを共有。</div>
+            <div class="modal-section-title">部屋に入る</div>
+            <div>共有されたURLからアクセスし、自分の名前を入力するだけで即座に参加できます。</div>
+            <div class="modal-section-title">終わる（消去）</div>
+            <div>[退出] を押すと即座に切断。全員が退出すると部屋データは地球上から永久に消滅します。</div>
         </div>
-        <button id="closeGuideModalBtn" class="modal-close-btn" style="background:var(--accent);">使い方を閉じる</button>
+        <button id="closeGuideModalBtn" class="modal-close-btn" style="background:var(--accent);">閉じる</button>
     </div>
 </div>
 
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
-        <div style="text-align:center;">
-            <h2 style="color:var(--primary);margin:0;font-size:20px;letter-spacing:-0.5px;">NEZU ONETIME CHAT</h2>
-            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#666;">ログの残らない使い捨て型チャット</p>
+        <div style="text-align:center; margin-bottom: 2px;">
+            <h2 style="color:var(--primary);margin:0;font-size:19px;letter-spacing:-0.5px;">NEZU ONETIME CHAT</h2>
+            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#718096;">用が済んだらすべて消える使い捨てチャット</p>
         </div>
 
         <div class="info-box">
-            <div style="font-size:10px; color:#555; line-height:1.4;">
-                ・通信切断時は（<strong class="dyn-rom-text" style="color:var(--danger);">5分後</strong>）に自動退出扱い。<br>
-                ・（<strong class="dyn-room-text" style="color:var(--accent);">10分無言</strong>）経過、又は人数が0人でデータ完全消滅。
+            <div style="font-size:10.5px; color:#4a5568; font-weight:500;">
+                ・無通信状態が <strong class="dyn-rom-text" style="color:var(--danger);">5分</strong> 続くと自動切断<br>
+                ・全員退出、または <strong class="dyn-room-text" style="color:var(--primary);">10分無言</strong> で完全消滅
             </div>
             <div class="modal-trigger-row">
-                <button type="button" id="openModalLink" class="btn-trigger">利用規約の確認</button>
-                <button type="button" id="openGuideLink" class="btn-trigger">利用方法の確認</button>
+                <button type="button" id="openModalLink" class="btn-trigger">詳細仕様</button>
+                <button type="button" id="openGuideLink" class="btn-trigger">使い方</button>
             </div>
         </div>
 
         <div id="errMsg" class="error-msg"></div>
 
-        <input id="ni" class="lobby-input" maxlength="10" placeholder="表示名">
-        <input id="tk" class="lobby-input" placeholder="本人確認キー（合言葉）">
-        <div id="tp" style="font-size:10px;color:var(--accent);text-align:right;height:12px;font-weight:bold;margin-top:-4px;"></div>
+        <input id="ni" class="lobby-input" maxlength="10" placeholder="表示名（ニックネーム）">
+        <input id="tk" class="lobby-input" placeholder="本人確認用の合言葉">
+        <div id="tp" style="font-size:10px;color:var(--primary);text-align:right;height:12px;margin-top:-6px;font-weight:bold;"></div>
 
         <input id="ri" class="lobby-input" placeholder="部屋ID">
         <input id="pi" class="lobby-input" placeholder="暗号化パスワード">
 
         <div class="setting-row">
-            <label for="maxUsers">入室制限数:</label>
-            <select id="maxUsers" class="lobby-input" style="flex:1; padding:0 10px; height:34px; font-size:14px; cursor:pointer;">
-                <option value="2">2人まで</option><option value="3">3人まで</option>
-                <option value="4" selected>4人まで</option><option value="5">5人まで</option>
-                <option value="10">10人まで</option>
+            <label for="maxUsers">定員制限:</label>
+            <select id="maxUsers" class="lobby-input" style="flex:1; height:34px; font-size:14px; cursor:pointer;">
+                <option value="2">2人</option><option value="3">3人</option>
+                <option value="4" selected>4人</option><option value="5">5人</option>
+                <option value="10">10人</option>
             </select>
         </div>
 
+        <!-- ご指定のバランス（初期値5分・最大15分）に再構築 -->
         <div class="setting-row">
-            <label for="romTime">切断後の自動退出:</label>
-            <select id="romTime" class="lobby-input" style="flex:1; padding:0 10px; height:34px; font-size:14px; cursor:pointer;">
-                <option value="5" selected>5分後 (標準)</option>
-                <option value="10">10分後</option>
-                <option value="20">20分後</option>
-                <option value="30">30分後</option>
-                <option value="45">45分後</option>
-                <option value="60">1時間後 (最高)</option>
+            <label for="romTime">自動退出:</label>
+            <select id="romTime" class="lobby-input" style="flex:1; height:34px; font-size:14px; cursor:pointer;">
+                <option value="3">3分放置で切断</option>
+                <option value="5" selected>5分放置で切断</option>
+                <option value="10">10分放置で切断</option>
+                <option value="15">15分放置で切断</option>
             </select>
         </div>
 
+        <!-- ご指定のバランス（初期値10分・最大1時間/60分）に拡張 -->
         <div class="setting-row">
-            <label for="roomTime">無言での部屋消滅:</label>
-            <select id="roomTime" class="lobby-input" style="flex:1; padding:0 10px; height:34px; font-size:14px; cursor:pointer;">
-                <option value="10" selected>10分無言 (標準)</option>
-                <option value="20">20分無言</option>
-                <option value="30">30分無言</option>
-                <option value="45">45分無言</option>
-                <option value="60">1時間無言 (最高)</option>
+            <label for="roomTime">消滅タイマー:</label>
+            <select id="roomTime" class="lobby-input" style="flex:1; height:34px; font-size:14px; cursor:pointer;">
+                <option value="5">5分無言で消滅</option>
+                <option value="10" selected>10分無言で消滅</option>
+                <option value="20">20分無言で消滅</option>
+                <option value="30">30分無言で消滅</option>
+                <option value="45">45分無言で消滅</option>
+                <option value="60">1時間無言で消滅</option>
             </select>
         </div>
 
-        <button id="masterGenBtn" style="width:100%;height:36px;border:1px dashed var(--primary);background:#f0f7ff;border-radius:10px;color:var(--primary);font-size:13px;font-weight:bold;cursor:pointer;margin-top:2px;">
+        <button id="masterGenBtn" style="width:100%;height:34px;border:1px dashed var(--primary);background:#f0f4fe;color:var(--primary);font-size:12px;font-weight:bold;border-radius:6px;cursor:pointer;margin-top:2px;font-family:inherit;">
             認証情報の自動生成
         </button>
 
-        <button id="enterBtn" style="width:100%;height:50px;border:none;border-radius:14px;background:var(--primary);color:#fff;font-size:16px;font-weight:900;margin-top:2px;cursor:pointer;">
+        <button id="enterBtn" style="width:100%;height:46px;border:none;background:var(--primary);color:#fff;font-size:15px;font-weight:bold;border-radius:8px;margin-top:2px;cursor:pointer;font-family:inherit;">
             規約に同意して入室
         </button>
     </div>
@@ -523,15 +486,15 @@ textarea{
     <header id="header">
         <div class="app-header-top">
             <div class="input-container">
-                <textarea id="mi" placeholder="メッセージを作成..." maxlength="500" rows="1"></textarea>
+                <textarea id="mi" placeholder="メッセージを入力..." maxlength="500" rows="1"></textarea>
                 <button id="clearBtn" type="button">×</button>
             </div>
-            <button id="sendBtn" type="button" title="送信">送信</button>
+            <button id="sendBtn" type="button">送信</button>
         </div>
         <div class="room-info-bar">
-            <div id="roomDisplay" class="info-item"></div>
+            <div id="roomDisplay" class="info-item" style="color:var(--primary);"></div>
             <div id="presenceList"></div>
-            <div id="presenceCount" style="font-size:10px;color:#999;font-weight:bold;padding-top:3px;"></div>
+            <div id="presenceCount" style="color:#a0aec0;font-size:10px;font-weight:bold;"></div>
         </div>
     </header>
 
@@ -541,11 +504,11 @@ textarea{
 
     <footer id="footer">
         <div class="footer-nav">
-            <button id="focusBtn" class="btn" style="background:var(--primary);color:#fff;">入力</button>
-            <button id="toTopBtn" class="btn btn-nav-arrow" style="background:#f0f2f5;">↑</button>
-            <button id="toBottomBtn" class="btn btn-nav-arrow" style="background:#f0f2f5;">↓</button>
-            <button id="copyBtn" class="btn" style="background:var(--dark);color:#fff;">招待</button>
-            <button id="exitBtn" class="btn" style="background:#fff0f0;color:var(--danger);">退出</button>
+            <button id="focusBtn" class="btn" style="border-color:var(--primary);color:var(--primary);background:#f0f4fe;">入力</button>
+            <button id="toTopBtn" class="btn">↑</button>
+            <button id="toBottomBtn" class="btn">↓</button>
+            <button id="copyBtn" class="btn">招待</button>
+            <button id="exitBtn" class="btn" style="border-color:var(--danger);color:var(--danger);background:#fff5f5;">退出</button>
         </div>
     </footer>
 </div>
@@ -582,13 +545,14 @@ function updateTimeText() {
     const romMin = Number($("romTime").value);
     let roomMin = Number($("roomTime").value);
     
+    // 防御的措置：部屋が消える時間は、個人が放置で落とされる時間より必ず長く保持する
     if (roomMin <= romMin) {
-        roomMin = romMin === 60 ? 60 : Math.min(romMin + 5, 60);
+        roomMin = romMin === 15 ? 20 : Math.min(romMin + 5, 60);
         $("roomTime").value = roomMin;
     }
     
-    const romStr = romMin === 60 ? "1時間後" : romMin + "分後";
-    const roomStr = roomMin === 60 ? "1時間無言" : roomMin + "分無言";
+    const romStr = romMin + "分";
+    const roomStr = roomMin === 60 ? "1時間" : roomMin + "分";
     document.querySelectorAll(".dyn-rom-text").forEach(el => el.innerText = romStr);
     document.querySelectorAll(".dyn-room-text").forEach(el => el.innerText = roomStr);
 }
@@ -605,16 +569,20 @@ let curR, curP, curN, curT, rawR;
 let lastT = 0;
 let unsubscribeChat = null;
 let unsubscribePres = null;
+let unsubscribeRoomConfig = null;
 let isProcessingExit = false;
 let serverTimeOffset = 0; 
-let ROOM_LIFETIME = 10 * 60 * 1000;
+
+// ミリ秒変換した動的判定用変数
 let USER_TIMEOUT = 5 * 60 * 1000;
+let ROOM_LIFETIME = 10 * 60 * 1000;
 
 const getServerNow = () => Date.now() + serverTimeOffset;
 
 const clearSubscriptions = () => {
     if (unsubscribeChat) { unsubscribeChat(); unsubscribeChat = null; }
     if (unsubscribePres) { unsubscribePres(); unsubscribePres = null; }
+    if (unsubscribeRoomConfig) { unsubscribeRoomConfig(); unsubscribeRoomConfig = null; }
 };
 
 const showLobby = (msg = "") => {
@@ -678,41 +646,61 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     try {
         const [presSnap, roomSnap] = await Promise.all([get(presRef), get(roomRef)]);
 
+        // 部屋作成者の選択パラメータを適用
         USER_TIMEOUT = selectRomMin * 60 * 1000;
         ROOM_LIFETIME = selectRoomMin * 60 * 1000;
+        let finalMax = maxLimit;
 
+        // 既存の部屋（URL招待入室）であればホストの設定を完全に読み込んで上書き
         if (roomSnap.exists()) {
-            USER_TIMEOUT = (roomSnap.val().romMin || selectRomMin) * 60 * 1000;
-            ROOM_LIFETIME = (roomSnap.val().roomMin || selectRoomMin) * 60 * 1000;
+            const rData = roomSnap.val();
+            USER_TIMEOUT = (rData.romMin || selectRomMin) * 60 * 1000;
+            ROOM_LIFETIME = (rData.roomMin || selectRoomMin) * 60 * 1000;
+            if (rData.max !== undefined) finalMax = Number(rData.max);
         }
-
-        let finalMax = roomSnap.exists() && roomSnap.val().max !== undefined ? Number(roomSnap.val().max) : maxLimit;
 
         if (presSnap.exists()) {
             const users = presSnap.val() || {}; const NOW = getServerNow(); let currentActiveCount = 0;
             Object.keys(users).forEach(k => { 
                 if (k !== uid && NOW - (users[k].lastSeen || NOW) <= USER_TIMEOUT) currentActiveCount++; 
             });
-            if (currentActiveCount >= finalMax) { showLobby(`この部屋は満員です（上限 ${finalMax} 名）`); return; }
+            if (currentActiveCount >= finalMax) { showLobby(`部屋が満員です（上限 ${finalMax} 名）`); return; }
         }
 
         await onDisconnect(myRef).remove();
         $("roomDisplay").innerText = rID;
         $("lobby").style.display = "none";
         $("mainApp").style.display = "flex";
-        window.lastRoomActivity = getServerNow();
 
-        await Promise.all([
-            set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: getServerNow() }),
-            set(roomRef, { deleteAt: getServerNow() + ROOM_LIFETIME, max: finalMax, romMin: USER_TIMEOUT / 60000, roomMin: ROOM_LIFETIME / 60000 })
-        ]);
+        const NOW = getServerNow();
+        
+        // 部屋メタデータの書き込み（新規作成時・入室時のリフレッシュ含む）
+        if (!roomSnap.exists()) {
+            await set(roomRef, { 
+                max: finalMax, 
+                romMin: USER_TIMEOUT / 60000, 
+                roomMin: ROOM_LIFETIME / 60000,
+                lastActivity: NOW
+            });
+        }
+        
+        // ユーザー生存シグナルの配置
+        await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
+        await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
 
-        await push(chatRef, { type: "sys", text: enc(`${name}${trip}さんが入室しました`, pass), time: getServerNow() });
     } catch (e) { 
         console.error(e);
-        showLobby("入室処理に失敗しました。ルール設定や通信環境を確認してください。"); 
+        showLobby("入室エラーが発生しました。"); 
         return; 
     }
+
+    // 招待参加者（子）へホストの設定値を常時リアルタイム同期
+    unsubscribeRoomConfig = onValue(roomRef, s => {
+        if (!s.exists()) return;
+        const rData = s.val();
+        if (rData.romMin) USER_TIMEOUT = rData.romMin * 60 * 1000;
+        if (rData.roomMin) ROOM_LIFETIME = rData.roomMin * 60 * 1000;
+    });
 
     unsubscribePres = onValue(presRef, s => {
         if (!curR) return;
@@ -721,6 +709,7 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
 
         Object.keys(users).forEach(k => {
             const n = dec(users[k].nEnc, curP); if (!n) return;
+            // 設定された「個人自動退出時間」に基づいてアクティブ数を判定
             if (NOW - (users[k].lastSeen || NOW) > USER_TIMEOUT) return;
             if (k === uid) amIInList = true;
             count++;
@@ -730,15 +719,16 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         });
 
         $("presenceList").innerHTML = ""; $("presenceList").appendChild(frag);
-        $("presenceCount").innerText = `(${count}/${finalMax}名)`;
+        $("presenceCount").innerText = `[${count}/${finalMax}]`;
 
+        // 無人検知での即時削除
         if (count === 0 && !isProcessingExit && amIInList) {
             deleteRoomData(curR); showLobby("全員が退出したため部屋は消滅しました。");
         }
     });
 
     unsubscribeChat = onValue(query(chatRef, orderByChild("time")), s => {
-        const frag = document.createDocumentFragment(); window.lastRoomActivity = getServerNow();
+        const frag = document.createDocumentFragment();
         s.forEach(c => {
             const m = c.val(); const txt = dec(m.text, curP); if (!txt) return;
             const div = document.createElement("div"); div.className = "msg-wrap";
@@ -748,8 +738,8 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
                 div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
             } else {
                 const sN = dec(m.nEnc, curP) || "???"; const sT = dec(m.tEnc, curP) || "";
-                div.innerHTML = `<div style="margin-left:8px;font-size:10px;font-weight:bold;">${esc(sN)}${esc(sT)}</div>
-                    <div class="msg"><div class="msg-text">${linkify(txt)}</div></div><div class="msg-meta">${time}</div>`;
+                div.innerHTML = `<div style="font-size:11px;font-weight:bold;color:var(--text);margin-bottom:2px;padding-left:4px;">${esc(sN)}<span style="color:var(--primary);">${esc(sT)}</span> <span style="color:#a0aec0;font-weight:normal;font-size:10px;">${time}</span></div>
+                    <div class="msg" style="background:#ffffff; padding:8px 12px; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.02);"><div class="msg-text">${linkify(txt)}</div></div>`;
             }
             frag.appendChild(div);
         });
@@ -757,13 +747,27 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     });
 }
 
+// 20秒ごとのライフタイム・自動切断シグナル監視タスク
 setInterval(async () => {
     if (!curR || isProcessingExit) return;
     try {
-        await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: getServerNow() });
-        if (window.lastRoomActivity && getServerNow() - window.lastRoomActivity > ROOM_LIFETIME) {
-            clearSubscriptions(); await deleteRoomData(curR);
-            alert("無言タイムアウトのため、部屋が自動消滅しました。"); location.href = location.pathname;
+        const NOW = getServerNow();
+        // 自身の存在を更新
+        await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: NOW });
+
+        // データベースからサーバーサイドの時間を引き、無言消滅判定を実行
+        const roomSnap = await get(ref(db, `rooms/${curR}`));
+        if (roomSnap.exists()) {
+            const rData = roomSnap.val();
+            const lastActive = rData.lastActivity || NOW;
+            
+            // 設定されたルーム消滅時間を超えている場合、すべて完全消去
+            if (NOW - lastActive > ROOM_LIFETIME) {
+                clearSubscriptions(); 
+                await deleteRoomData(curR);
+                alert("設定された「消滅タイマー（無言時間）」を超過したため、部屋のデータは完全消滅しました。"); 
+                location.href = location.pathname;
+            }
         }
     } catch (e) {}
 }, 20000);
@@ -774,10 +778,12 @@ const sendMsg = async () => {
     lastT = getServerNow(); inputEl.value = ""; inputEl.style.height = "24px";
     toggleClearBtn(""); scrollUp();
 
+    const NOW = getServerNow();
     try {
+        // 発言があったタイミングで、部屋全体の無言タイマーの起点（lastActivity）を現在時刻に更新
         await Promise.all([
-            push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: getServerNow() }),
-            update(ref(db, `rooms/${curR}`), { deleteAt: getServerNow() + ROOM_LIFETIME })
+            push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: NOW }),
+            update(ref(db, `rooms/${curR}`), { lastActivity: NOW })
         ]);
     } catch (e) {}
 };
@@ -801,7 +807,7 @@ $("focusBtn").onclick = () => { $("mi").focus(); scrollUp(); };
 $("clearBtn").onclick = () => { $("mi").value = ""; $("mi").style.height = "24px"; toggleClearBtn(""); $("mi").focus(); };
 
 $("exitBtn").onclick = async () => {
-    if (isProcessingExit || !confirm("退出しますか？")) return;
+    if (isProcessingExit || !confirm("すべてのログを破棄して退出しますか？")) return;
     isProcessingExit = true; const rTmp = curR; const pTmp = curP; const nTmp = curN; const tTmp = curT;
     clearSubscriptions();
 
@@ -814,7 +820,10 @@ $("exitBtn").onclick = async () => {
             Object.keys(pSnap.val() || {}).forEach(k => { if (k !== uid && NOW - (pSnap.val()[k].lastSeen || NOW) <= USER_TIMEOUT) activeCount++; });
         }
         if (activeCount > 0) {
-            await push(ref(db, `chat/${rTmp}`), { type: "sys", text: enc(`${nTmp}${tTmp}さんが退出しました`, pTmp), time: getServerNow() });
+            await Promise.all([
+                push(ref(db, `chat/${rTmp}`), { type: "sys", text: enc(`${nTmp}${tTmp} が退出しました`, pTmp), time: NOW }),
+                update(ref(db, `rooms/${rTmp}`), { lastActivity: NOW })
+            ]);
         } else { await deleteRoomData(rTmp); }
     } catch (e) {}
     location.href = location.pathname;
@@ -830,11 +839,11 @@ $("enterBtn").onclick = async () => {
     const romMin = Number($("romTime").value);
     const roomMin = Number($("roomTime").value);
 
-    if (!name) { $("errMsg").innerText = "表示名を入力してください"; $("errMsg").style.display = "block"; return; }
-    if (!rID || !pass) { $("errMsg").innerText = "部屋IDとパスワードを入力するか自動生成してください"; $("errMsg").style.display = "block"; return; }
+    if (!name) { $("errMsg").innerText = "表示名が必要です"; $("errMsg").style.display = "block"; return; }
+    if (!rID || !pass) { $("errMsg").innerText = "ID/パスワードを生成してください"; $("errMsg").style.display = "block"; return; }
 
     $("enterBtn").disabled = true;
-    $("enterBtn").innerText = "入室処理中...";
+    $("enterBtn").innerText = "接続中...";
 
     localStorage.setItem("nez_n", name);
     localStorage.setItem("nez_t", key);
