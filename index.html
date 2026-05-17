@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT</title>
+<title>NEZU ONETIME CHAT & WATCH (Sync Confirmation)</title>
 
-<!-- 暗号化ライブラリの読み込み（deferで通信・描画ブロックを最小化） -->
+<!-- 暗号化ライブラリの読み込み -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
 
 <style>
@@ -17,13 +17,13 @@
 }
 
 :root{
-    --bg:#f4f7f9;       /* 清潔感のある薄い青みがかった背景 */
-    --text:#2c3e50;     /* 視認性の高いダークネイビー */
-    --primary:#3a86ff;  /* 爽やかなブルー */
-    --accent:#4ea8de;   /* 薄い青・水色 */
-    --danger:#ff4d4d;   /* 警告赤 */
-    --panel:#ffffff;    /* 純白のパネル */
-    --border:#e2e8f0;   /* 明るい境界線 */
+    --bg:#f4f7f9;       
+    --text:#2c3e50;     
+    --primary:#3a86ff;  
+    --accent:#4ea8de;   
+    --danger:#ff4d4d;   
+    --panel:#ffffff;    
+    --border:#e2e8f0;   
 }
 
 html,body{
@@ -42,7 +42,7 @@ body{
     align-items: center;
 }
 
-/* ロビー：白と薄い青を基調としたミニマル設定画面 */
+/* ロビー */
 #lobby{
     position:fixed;
     inset:0;
@@ -74,7 +74,7 @@ body{
     border:1px solid var(--border);
     background:#ffffff;
     padding:0 12px;
-    font-size:16px; /* iOSのズーム防止 */
+    font-size:16px; 
     color:var(--text);
     outline:none;
     font-family:inherit;
@@ -399,14 +399,16 @@ textarea{
 <!-- モーダル2：使い方 -->
 <div id="guideModal" class="modal-overlay">
     <div class="modal-window">
-        <h3>使い捨てチャットの始め方</h3>
+        <h3>使い捨て同時視聴チャットの使い方</h3>
         <div class="modal-body">
             <div class="modal-section-title">部屋を作る</div>
             <div>1. 名前と合言葉を入力。<br>2. [自動生成] でランダムな部屋情報をセット。<br>3. [入室] 完了後、画面下の [招待] からURLを共有。</div>
-            <div class="modal-section-title">部屋に入る</div>
-            <div>共有されたURLからアクセスし、自分の名前を入力するだけで即座に参加できます。</div>
-            <div class="modal-section-title">終わる（消去）</div>
-            <div>[退出] を押すと即座に切断。全員が退出すると部屋データは地球上から永久に消滅します。</div>
+            <div class="modal-section-title">YouTubeを同時に再生する条件</div>
+            <div>チャット欄に **「動画URL」と「同期」という文字を同時に含めて送信** してください。<br>（例: `https://... 同期`）</div>
+            <div class="modal-section-title">他の人への確認アラート</div>
+            <div>誰かが「URL 同期」を送信すると、他メンバーの画面に**「同期確認ポップアップ」**が出現します。許可した場合のみ自動連動が始まります。</div>
+            <div class="modal-section-title">操作権限（ホストロック）</div>
+            <div>同期を発言した本人のみがホストとなり、シーク操作・再生停止が可能です。他メンバーは自動的に操作がロックされ、ホストの映像に100%連動します。</div>
         </div>
         <button id="closeGuideModalBtn" class="modal-close-btn" style="background:var(--accent);">閉じる</button>
     </div>
@@ -415,8 +417,8 @@ textarea{
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
         <div style="text-align:center; margin-bottom: 2px;">
-            <h2 style="color:var(--primary);margin:0;font-size:19px;letter-spacing:-0.5px;">NEZU ONETIME CHAT</h2>
-            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#718096;">用が済んだらすべて消える使い捨てチャット</p>
+            <h2 style="color:var(--primary);margin:0;font-size:19px;letter-spacing:-0.5px;">NEZU ONETIME SYNC</h2>
+            <p style="margin:2px 0 0 0;font-size:11px;font-weight:bold;color:#718096;">用が済んだらすべて消える同時視聴チャット</p>
         </div>
 
         <div class="info-box">
@@ -481,10 +483,25 @@ textarea{
 </div>
 
 <div id="mainApp">
+    <!-- YouTubeプレイヤー表示エリア -->
+    <div id="ytArea" style="display:none; width:100%; background:#000; flex-shrink:0; position:relative;">
+        <div id="ytBadge" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.75); color:#fff; padding:3px 8px; font-size:10px; font-weight:bold; border-radius:4px; z-index:10; border:1px solid rgba(255,255,255,0.2);"></div>
+        
+        <div style="position:relative; width:100%; padding-top:56.25%;">
+            <div id="ytLockOverlay" style="position:absolute; inset:0; z-index:5; display:none; background:transparent;"></div>
+            <div id="ytPlayer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+        </div>
+        <div id="ytControls" style="display:flex; gap:10px; padding:6px 10px; background:rgba(0,0,0,0.85); justify-content:center;">
+            <button id="ytPlayBtn" style="padding:4px 12px; background:var(--primary); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">▶ 同期再生</button>
+            <button id="ytPauseBtn" style="padding:4px 12px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">⏸ 同期停止</button>
+            <button id="ytCloseBtn" style="padding:4px 12px; background:#4a5568; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;">プレイヤー終了</button>
+        </div>
+    </div>
+
     <header id="header">
         <div class="app-header-top">
             <div class="input-container">
-                <textarea id="mi" placeholder="メッセージを入力..." maxlength="500" rows="1"></textarea>
+                <textarea id="mi" placeholder="" maxlength="500" rows="1"></textarea>
                 <button id="clearBtn" type="button">×</button>
             </div>
             <button id="sendBtn" type="button">送信</button>
@@ -526,7 +543,23 @@ const firebaseApp = initializeApp({
 });
 const db = getDatabase(firebaseApp);
 
-// モーダル制御
+const ytTag = document.createElement('script');
+ytTag.src = "https://www.youtube.com/iframe_api";
+document.head.appendChild(ytTag);
+
+let ytPlayer = null;
+let isYtReady = false;
+
+window.onYouTubeIframeAPIReady = () => {
+    isYtReady = true;
+};
+
+function extractVideoId(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+}
+
 const openModal = () => { $("infoModal").style.display = "flex"; };
 const closeModal = () => { $("infoModal").style.display = "none"; };
 const openGuide = () => { $("guideModal").style.display = "flex"; };
@@ -542,12 +575,10 @@ $("guideModal").onclick = (e) => { if (e.target === $("guideModal")) closeGuide(
 function updateTimeText() {
     const romMin = Number($("romTime").value);
     let roomMin = Number($("roomTime").value);
-    
     if (roomMin <= romMin) {
         roomMin = romMin === 15 ? 20 : Math.min(romMin + 5, 60);
         $("roomTime").value = roomMin;
     }
-    
     const romStr = romMin + "分";
     const roomStr = roomMin === 60 ? "1時間" : roomMin + "分";
     document.querySelectorAll(".dyn-rom-text").forEach(el => el.innerText = romStr);
@@ -587,6 +618,8 @@ const showLobby = (msg = "") => {
     if (msg) { $("errMsg").innerText = msg; $("errMsg").style.display = "block"; }
     $("mainApp").style.display = "none";
     $("lobby").style.display = "flex";
+    $("ytArea").style.display = "none";
+    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
     $("enterBtn").disabled = false;
     $("enterBtn").innerText = "規約に同意して入室";
 };
@@ -631,7 +664,6 @@ async function deleteRoomData(roomHash) {
     } catch (e) { console.error(e); }
 }
 
-// 【修正箇所】セキュリティルールの競合を完全に回避する安全な入室シークエンス
 async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin) {
     rawR = rID; curR = hash(rID); curP = pass; curN = name; curT = trip;
 
@@ -642,8 +674,6 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
 
     try {
         const NOW = getServerNow();
-
-        // 1. セキュリティルールをパスするために、まず「rooms」のみを単独でチェック（presenceはまだ読まない）
         const roomSnap = await get(roomRef);
 
         USER_TIMEOUT = selectRomMin * 60 * 1000;
@@ -651,13 +681,11 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         let finalMax = maxLimit;
 
         if (roomSnap.exists()) {
-            // 既存の部屋：作成者（ホスト）が指定した時間・人数設定を引き継ぐ
             const rData = roomSnap.val();
             USER_TIMEOUT = (rData.romMin || selectRomMin) * 60 * 1000;
             ROOM_LIFETIME = (rData.roomMin || selectRoomMin) * 60 * 1000;
             if (rData.max !== undefined) finalMax = Number(rData.max);
         } else {
-            // 新規の部屋：何よりも優先して「rooms」のデータを作成する（これでセキュリティエラーを100%回避）
             await set(roomRef, { 
                 max: finalMax, 
                 romMin: selectRomMin, 
@@ -666,7 +694,6 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             });
         }
 
-        // 2. roomsが存在する（または作成された）状態になったので、安全に「presence」を取得して定員チェック
         const presSnap = await get(presRef);
         if (presSnap.exists()) {
             const users = presSnap.val() || {};
@@ -677,23 +704,19 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             if (currentActiveCount >= finalMax) { showLobby(`部屋が満員です（上限 ${finalMax} 名）`); return; }
         }
 
-        // 3. 接続状態の切り替えと切断時イベントの登録
         await onDisconnect(myRef).remove();
         $("roomDisplay").innerText = rID;
         $("lobby").style.display = "none";
         $("mainApp").style.display = "flex";
 
-        // 4. 自身の生存シグナルと入室メッセージを同期
         await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
         await push(chatRef, { type: "sys", text: enc(`${name}${trip} が入室しました`, pass), time: NOW });
 
     } catch (e) { 
-        console.error("入室処理中にエラーが発生しました:", e);
         showLobby("入室エラーが発生しました。"); 
         return; 
     }
 
-    // 招待参加者（子）へホストの設定値を常時リアルタイム同期
     unsubscribeRoomConfig = onValue(roomRef, s => {
         if (!s.exists()) return;
         const rData = s.val();
@@ -742,9 +765,207 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         });
         $("list").innerHTML = ""; $("list").appendChild(frag);
     });
+
+    // =================================================================
+    // YouTube同時視聴・【確認ポップアップ確認機能付き】同期システム
+    // =================================================================
+    const roomStateRef = ref(db, `rooms/${curR}/videoState`);
+    let lastLoadedVideoId = null;
+    let isLocalAction = false; 
+    let syncIntervalId = null;  
+    let amIOwner = false; 
+    let isUserApprovedSync = false; // 他ユーザーが「同期する」を選んだかどうかのフラグ
+
+    onValue(roomStateRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            $("ytArea").style.display = "none";
+            if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
+            if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
+            isUserApprovedSync = false;
+            return;
+        }
+        const state = snapshot.val();
+        if (!state.videoId) return;
+
+        amIOwner = (state.owner === uid);
+
+        // 発言した本人（Owner）は確認なしで即座にプレイヤー展開
+        if (amIOwner) {
+            isUserApprovedSync = true;
+            $("ytLockOverlay").style.display = "none";
+            $("ytControls").style.display = "flex";
+            $("ytBadge").innerText = "👑 あなたが操作中";
+            $("ytBadge").style.color = "#ffbe0b";
+        } else {
+            // 新しい動画IDが飛んできた、またはまだ承認していない場合
+            if (lastLoadedVideoId !== state.videoId) {
+                isUserApprovedSync = false; // フラグをリセットして再確認
+                
+                const ownerName = state.ownerName ? dec(state.ownerName, curP) : "誰か";
+                const conf = confirm(`${ownerName} さんから動画の同時視聴リクエスト（URL同期）が届きました。\nプレイヤーを開いて連動しますか？`);
+                
+                if (conf) {
+                    isUserApprovedSync = true;
+                } else {
+                    // 拒否した場合、他人のプレイヤーは閉じ、内部データ保持用のIDだけ更新しておく
+                    isUserApprovedSync = false;
+                    $("ytArea").style.display = "none";
+                    if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+                    lastLoadedVideoId = state.videoId;
+                    return;
+                }
+            }
+            
+            // 承認されている場合の他ユーザー（レシーバー）画面表示
+            if (isUserApprovedSync) {
+                $("ytLockOverlay").style.display = "block"; 
+                $("ytControls").style.display = "none";     
+                $("ytBadge").innerText = "🔒 視聴専用モード（ホスト連動）";
+                $("ytBadge").style.color = "#a0aec0";
+            } else {
+                return; // 承認していなければこれ以降の処理（プレイヤー描写など）をスキップ
+            }
+        }
+
+        $("ytArea").style.display = "block";
+
+        if (!ytPlayer && isYtReady) {
+            ytPlayer = new YT.Player('ytPlayer', {
+                videoId: state.videoId,
+                playerVars: { 
+                    'playsinline': 1, 
+                    'controls': amIOwner ? 1 : 0, 
+                    'disablekb': amIOwner ? 0 : 1  
+                },
+                events: {
+                    'onReady': () => { syncPlayer(state); },
+                    'onStateChange': onPlayerStateChange 
+                }
+            });
+            lastLoadedVideoId = state.videoId;
+        } else if (ytPlayer && lastLoadedVideoId !== state.videoId) {
+            try { ytPlayer.destroy(); } catch(e){}
+            ytPlayer = new YT.Player('ytPlayer', {
+                videoId: state.videoId,
+                playerVars: { 'playsinline': 1, 'controls': amIOwner ? 1 : 0, 'disablekb': amIOwner ? 0 : 1 },
+                events: {
+                    'onReady': () => { syncPlayer(state); },
+                    'onStateChange': onPlayerStateChange 
+                }
+            });
+            lastLoadedVideoId = state.videoId;
+        } else if (ytPlayer) {
+            syncPlayer(state);
+        }
+    });
+
+    function syncPlayer(state) {
+        if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+        if (!isUserApprovedSync) return; // 承認されていない端末は同期を無視
+        if (isLocalAction && amIOwner) return; 
+
+        if (state.status === "playing") {
+            const timePassed = (getServerNow() - state.timestamp) / 1000;
+            const targetTime = state.currentTime + timePassed;
+            
+            if (Math.abs(ytPlayer.getCurrentTime() - targetTime) > 1.5) {
+                ytPlayer.seekTo(targetTime, true);
+            }
+            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+                ytPlayer.playVideo();
+            }
+        } else if (state.status === "paused") {
+            if (Math.abs(ytPlayer.getCurrentTime() - state.currentTime) > 0.5) {
+                ytPlayer.seekTo(state.currentTime, true);
+            }
+            if (ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) {
+                ytPlayer.pauseVideo();
+            }
+        }
+    }
+
+    function onPlayerStateChange(event) {
+        if (!ytPlayer || !curR) return;
+        if (!amIOwner) return;
+
+        if (!isLocalAction) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                startPeriodicSync();
+            } else {
+                if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
+            }
+            return;
+        }
+
+        const NOW = getServerNow();
+        const currentPos = ytPlayer.getCurrentTime();
+
+        if (event.data === YT.PlayerState.PLAYING) {
+            update(roomStateRef, {
+                status: "playing",
+                currentTime: currentPos,
+                timestamp: NOW
+            });
+            startPeriodicSync();
+        } 
+        else if (event.data === YT.PlayerState.PAUSED) {
+            update(roomStateRef, {
+                status: "paused",
+                currentTime: currentPos,
+                timestamp: NOW
+            });
+            if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
+        }
+    }
+
+    function startPeriodicSync() {
+        if (!amIOwner) return;
+        if (syncIntervalId) clearInterval(syncIntervalId);
+        syncIntervalId = setInterval(() => {
+            if (ytPlayer && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING && !isLocalAction && amIOwner) {
+                isLocalAction = true;
+                update(roomStateRef, {
+                    status: "playing",
+                    currentTime: ytPlayer.getCurrentTime(),
+                    timestamp: getServerNow()
+                }).then(() => { isLocalAction = false; });
+            }
+        }, 5000);
+    }
+
+    const iframeWrap = $("ytArea");
+    if (iframeWrap) {
+        iframeWrap.addEventListener("mouseenter", () => { if(amIOwner) isLocalAction = true; });
+        iframeWrap.addEventListener("mouseleave", () => { if(amIOwner) isLocalAction = false; });
+        iframeWrap.addEventListener("touchstart", () => { if(amIOwner) isLocalAction = true; }, {passive: true});
+        iframeWrap.addEventListener("touchend", () => { 
+            if(amIOwner) { setTimeout(() => { isLocalAction = false; }, 800); }
+        }, {passive: true});
+    }
+
+    $("ytPlayBtn").onclick = () => {
+        if (!ytPlayer || !amIOwner) return;
+        isLocalAction = true;
+        ytPlayer.playVideo();
+        setTimeout(() => { isLocalAction = false; }, 500);
+    };
+
+    $("ytPauseBtn").onclick = () => {
+        if (!ytPlayer || !amIOwner) return;
+        isLocalAction = true;
+        ytPlayer.pauseVideo();
+        setTimeout(() => { isLocalAction = false; }, 500);
+    };
+
+    $("ytCloseBtn").onclick = () => {
+        if (!amIOwner) return;
+        if (!confirm("全員の画面からプレイヤーを閉じますか？")) return;
+        if (syncIntervalId) clearInterval(syncIntervalId);
+        remove(ref(db, `rooms/${curR}/videoState`));
+    };
 }
 
-// 20秒ごとのライフタイム・自動切断シグナル監視タスク
+// 20秒定期ポーリング
 setInterval(async () => {
     if (!curR || isProcessingExit) return;
     try {
@@ -755,7 +976,6 @@ setInterval(async () => {
         if (roomSnap.exists()) {
             const rData = roomSnap.val();
             const lastActive = rData.lastActivity || NOW;
-            
             if (NOW - lastActive > ROOM_LIFETIME) {
                 clearSubscriptions(); 
                 await deleteRoomData(curR);
@@ -773,11 +993,30 @@ const sendMsg = async () => {
     toggleClearBtn(""); scrollUp();
 
     const NOW = getServerNow();
+    
+    const hasTriggerKeywords = v.includes("URL") && v.includes("同期");
+    const ytId = hasTriggerKeywords ? extractVideoId(v) : null;
+
     try {
-        await Promise.all([
+        const promises = [
             push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(v, curP), time: NOW }),
             update(ref(db, `rooms/${curR}`), { lastActivity: NOW })
-        ]);
+        ];
+
+        if (ytId) {
+            promises.push(update(ref(db, `rooms/${curR}`), {
+                videoState: {
+                    videoId: ytId,
+                    status: "playing",
+                    currentTime: 0,
+                    timestamp: NOW,
+                    owner: uid,
+                    ownerName: enc(curN, curP) // 誰が同期をリクエストしたか他人に伝える用
+                }
+            }));
+        }
+
+        await Promise.all(promises);
     } catch (e) {}
 };
 
