@@ -27,7 +27,7 @@ html,body{width:100%;height:100svh;overflow:hidden;background:var(--bg);font-fam
 .setting-row{display:flex;flex-direction:column;gap:2px;}
 .setting-row label{font-size:11px;font-weight:bold;color:#718096;}
 
-/* ＝ 📄 規約・使い方エリア ＝ */
+/* 📄 規約・使い方エリア */
 .lobby-info-links { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
 .info-link-btn { background: none; border: none; color: #a0aec0; font-size: 10.5px; font-weight: bold; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.2s; }
 .info-link-btn:hover { color: var(--primary); }
@@ -61,14 +61,14 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 .msg-text a{color:var(--primary);text-decoration:underline;}
 .sys-msg{align-self:center;color:#718096;font-size:11px;font-weight:bold;margin:6px 0;background:#e2e8f0;padding:3px 10px;border-radius:10px;}
 #footer{background:var(--panel);border-top:1px solid var(--border);padding:6px 8px calc(6px + env(safe-area-inset-bottom));flex-shrink:0;}
-.footer-nav{display:grid;grid-template-columns:1fr 0.8fr 0.8fr 1fr 1fr;gap:4px;align-items:center;}
+.footer-nav{display:grid;grid-template-columns:1fr 1fr 0.8fr 0.8fr 1fr 1fr;gap:4px;align-items:center;}
 .btn{border:1px solid var(--border);background:#fff;color:#4a5568;display:flex;align-items:center;justify-content:center;height:36px;cursor:pointer;font-size:11px;font-weight:bold;border-radius:6px;}
 .btn:active{background:#edf2f7;}
 
-/* ＝ 👑 同期プレイヤー領域 ＝ */
+/* 👑 同期プレイヤー領域 */
 #ytArea {
-    position: fixed; top: 80px; left: 20px; width: 320px; height: 252px;
-    min-width: 180px; min-height: 137px; background: #000; z-index: 3000;
+    position: fixed; top: 80px; left: 20px; width: 320px; height: 335px;
+    min-width: 220px; min-height: 240px; background: #000; z-index: 3000;
     border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden; touch-action: none; display: none;
 }
 #ytDragHandle { width: 100%; height: 36px; background: #1a1a1a; cursor: move; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; user-select: none; position: relative; z-index: 30; }
@@ -83,10 +83,17 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 }
 #ytClosePlayerBtn:hover { background: rgba(255,77,77,0.8); }
 
+/* 🔍 プレイヤー内検索バー */
+#ytSearchBox {
+    display: flex; gap: 4px; padding: 4px 6px; background: #222; border-bottom: 1px solid #333; z-index: 35; position: relative;
+}
+.yt-search-input { flex: 1; height: 24px; background: #333; border: 1px solid #444; border-radius: 4px; color: #fff; font-size: 11px; padding: 0 6px; outline: none; }
+.yt-search-btn { height: 24px; padding: 0 8px; background: var(--primary); border: none; border-radius: 4px; color: #fff; font-size: 11px; font-weight: bold; cursor: pointer; }
+
 .yt-responsive-container { 
     position: relative; 
     width: 100%; 
-    height: calc(100% - 76px);
+    height: calc(100% - 146px);
     background: #000; 
     overflow: hidden;
 }
@@ -104,12 +111,13 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 
 #ytPlayer { width: 100% !important; height: 100% !important; border: none; }
 
-/* ＝ 🕹️ 同期コントロール ＝ */
+/* 🕹️ 同期コントロール */
 #ytControls {
-    display:flex; gap:6px; height:40px; padding:6px; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; z-index:35; position:relative;
+    display:flex; flex-direction: column; gap:4px; padding:6px; background:rgba(0,0,0,0.9); z-index:35; position:relative;
 }
+.yt-control-row { display: flex; gap: 4px; width: 100%; }
 
-/* ＝ 💬 埋め込みプレイヤー領域 ＝ */
+/* 💬 埋め込みプレイヤー領域 */
 .inline-media-box { 
     position: relative; 
     margin-top: 8px; 
@@ -201,6 +209,19 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             </div>
         </div>
 
+        <!-- 🔊 初期音量設定UI -->
+        <div class="setting-row" style="border-top:1px dashed var(--border); padding-top:6px; margin-top:2px;">
+            <label for="initVolume">🔊 入室時の初期音量</label>
+            <select id="initVolume" class="lobby-input" style="height:30px; font-size:12px; padding:0 4px;">
+                <option value="0">ミュート（消音）</option>
+                <option value="10">10%（かなり小さめ）</option>
+                <option value="30" selected>30%（小さめ）</option>
+                <option value="50">50%（普通）</option>
+                <option value="80">80%（大きめ）</option>
+                <option value="100">100%（最大）</option>
+            </select>
+        </div>
+
         <button id="masterGenBtn" style="width:100%;height:28px;border:1px dashed var(--primary);background:#f0f4fe;color:var(--primary);font-size:11px;font-weight:bold;border-radius:6px;cursor:pointer;margin-top:2px;">
             新規作成：部屋ID・暗号パスを自動生成
         </button>
@@ -209,13 +230,11 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             入室する
         </button>
 
-        <!-- 右下配置の規約・使い方リンクボタン -->
         <div class="lobby-info-links">
             <button id="openTermsBtn" class="info-link-btn" type="button">📄 利用規約</button>
             <button id="openGuideBtn" class="info-link-btn" type="button">💡 使い方</button>
         </div>
 
-        <!-- 利用規約案内カード -->
         <div id="termsCard" class="lobby-modal">
             <div class="lobby-modal-header">
                 <div class="lobby-modal-title">📄 利用規約</div>
@@ -231,7 +250,7 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             </div>
         </div>
 
-        <!-- 使い方案内カード -->
+        <!-- 💡 使い方カード（修正箇所） -->
         <div id="guideCard" class="lobby-modal">
             <div class="lobby-modal-header">
                 <div class="lobby-modal-title">💡 使い方</div>
@@ -240,11 +259,13 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             <div class="lobby-modal-body">
                 <p><strong>1. 部屋の作成と入室</strong><br>「新規作成」でランダムな部屋IDとパスを生成するか、招待URLからアクセスし、表示名を入力して入室します。合言葉を入れると偽装防止のトリップ（◆xxxxxx）が付きます。</p>
                 <p><strong>2. 招待方法</strong><br>入室後、下部メニューの「招待」ボタンを押すと専用の暗号化リンクがコピーされます。それを友人に共有してください。</p>
-                <p><strong>3. YouTube同時視聴（同期）</strong><br>チャット欄に動画のURLを貼り、末尾に「<strong>同期</strong>」（または「呼出」）と書いて送信すると、全員の画面に連動プレイヤーが出現します。<br>
-                ・<strong>ホスト操作：</strong>動画を呼び出した人が「▶ 同期開始」「⏸ 同期停止」を押すと、全員の再生・停止・位置が完全にシンクロします。<br>
-                ・<strong>ゲスト操作：</strong>「🔓 マイペース」を押すと連動が解除され、自分の好きな位置から自由に個別再生できます。<br>
-                ・<strong>その他のコマンド：</strong>末尾に「プレイヤー」で自分専用プレイヤー生成、「サムネイル」で高画質画像の貼り付けが可能です。</p>
-                <p><strong>4. 自動消滅ルール</strong><br>定員上限の超過時、または設定された「放置切断時間（無通信）」「無言消滅時間（チャット無稼働）」を超えた場合、部屋はログを含めて即座に完全消滅します。</p>
+                <p><strong>3. YouTube同時視聴（同期）</strong><br>チャット欄に動画のURLを貼り、末尾に「<strong>同期</strong>」と書いて送信するとプレイヤーが自動起動します。<br>
+                また、URLを貼らなくても下部メニューの「<strong>動画</strong>」ボタンを押すことで、いつでもプレイヤーを強制立ち上げできます。</p>
+                <p><strong>4. プレイヤー内での検索と即同期</strong><br>出現したプレイヤーの上部にある検索バーにキーワードを入力して「検索」を押すと、お目当ての動画を探せます。良い動画が見つかり、全員にリアルタイムで共有したいときは、「<strong>📢 これに即同期！</strong>」ボタンを押すことで、部屋にいる全員の画面にその動画を一発強制同期させることができます。</p>
+                <p><strong>5. ホストとゲストの操作</strong><br>
+                ・<strong>ホスト操作：</strong>「▶ 同期開始」「⏸ 同期停止」で全員の再生位置を完全にシンクロさせます。<br>
+                ・<strong>ゲスト操作：</strong>「🔓 マイペース」を押すとシンクロ連動が一時解除され、自由に個別再生や内緒の動画検索を切り替えることができます（「🔗 ホストに同期」でいつでも戻れます）。</p>
+                <p><strong>6. 自動消滅ルール</strong><br>全員が寝落ちなどで10分間チャットを全く動かさなかった場合、部屋はログを含めて自動的に完全消滅（クリーンアップ）します。</p>
             </div>
         </div>
     </div>
@@ -259,6 +280,12 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             <button id="ytClosePlayerBtn" title="プレイヤーを閉じる">×</button>
         </div>
         
+        <!-- 🔍 プレイヤー内動画検索バー -->
+        <div id="ytSearchBox">
+            <input id="ytSearchInput" class="yt-search-input" type="text" placeholder="動画タイトルやキーワードを入力...">
+            <button id="ytSearchBtn" class="yt-search-btn">検索</button>
+        </div>
+        
         <div class="yt-responsive-container" id="ytWorkspace">
             <div id="ytZoomContainer">
                 <div id="ytLockOverlay" style="position:absolute; inset:0; z-index:5; display:none; background:transparent;"></div>
@@ -267,9 +294,16 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
         </div>
 
         <div id="ytControls">
-            <button id="ytHostPlayBtn" style="flex:1; height:28px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; display:none;">▶ 同期開始</button>
-            <button id="ytHostPauseBtn" style="flex:1; height:28px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; display:none;">⏸ 同期停止</button>
-            <button id="ytGuestModeBtn" style="width:100%; height:28px; background:var(--warning); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; display:none;">🔓 マイペース</button>
+            <div class="yt-control-row">
+                <button id="ytHostPlayBtn" style="flex:1; height:28px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; display:none;">▶ 同期開始</button>
+                <button id="ytHostPauseBtn" style="flex:1; height:28px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; display:none;">⏸ 同期停止</button>
+                <button id="ytGuestModeBtn" style="width:100%; height:28px; background:var(--warning); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer; display:none;">🔓 マイペース</button>
+            </div>
+            <div class="yt-control-row">
+                <button id="ytPrevVideoBtn" style="width:45px; height:26px; background:#444; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer;" title="前の動画へ">◀前</button>
+                <button id="ytNextVideoBtn" style="width:45px; height:26px; background:#444; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer;" title="次の動画へ">次▶</button>
+                <button id="ytPushSyncBtn" style="flex:1; height:26px; background:var(--primary); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;" title="現在の動画を全員の画面に強制同期">📢 これに即同期！</button>
+            </div>
         </div>
     </div>
 
@@ -293,6 +327,8 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
     <footer id="footer">
         <div class="footer-nav">
             <button id="focusBtn" class="btn" style="border-color:var(--primary);color:var(--primary);background:#f0f4fe;">入力</button>
+            <!-- 🎬 【追加】独立起動用の「動画」ボタン -->
+            <button id="openPlayerNavBtn" class="btn" style="border-color:var(--success);color:var(--success);background:#f0fdf4;">動画</button>
             <button id="toTopBtn" class="btn">↑</button>
             <button id="toBottomBtn" class="btn">↓</button>
             <button id="copyBtn" class="btn">招待</button>
@@ -318,6 +354,9 @@ const firebaseApp = initializeApp({
 const db = getDatabase(firebaseApp, DB_URL);
 
 let ytPlayer = null, isYtReady = false;
+let currentSearchResults = [];
+let currentSearchIndex = 0;
+let myInitialVolume = 30; // 🔊 初期音量
 
 const loadYtScript = () => {
     if (window.YT && window.YT.Player) { isYtReady = true; return; }
@@ -366,7 +405,6 @@ const showLobby = (msg = "") => {
 
 const hash = t => CryptoJS.SHA256(t).toString();
 
-// 【★超重要修正】暗号化結果を強制的に通常の文字列（Base64）へキャストし、復号時は明示的にUTF-8の文字列へ書き戻して16進数化けを防ぎます
 const enc = (t, k) => {
     if (!t) return "";
     return CryptoJS.AES.encrypt(t, k).toString();
@@ -421,11 +459,11 @@ function setupUniversalTouchController(targetAreaEl, minW = 180, maxW = 1000) {
     targetAreaEl.dataset.gestureSetup = "true";
     
     let isPinching = false; let isDragging = false; let prevDiff = -1; let startW = 0;
-    const HEADER_FOOTER_H = 76;
+    const HEADER_FOOTER_H = 146; 
     let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
 
     const onTouchStart = (e) => {
-        if (e.target.closest("#ytClosePlayerBtn") || e.target.closest("#ytControls")) return;
+        if (e.target.closest("#ytClosePlayerBtn") || e.target.closest("#ytControls") || e.target.closest("#ytSearchBox")) return;
         const touches = e.touches || [];
         if (touches.length === 2) {
             isPinching = true; isDragging = false; startW = targetAreaEl.offsetWidth;
@@ -461,7 +499,7 @@ function setupUniversalTouchController(targetAreaEl, minW = 180, maxW = 1000) {
     targetAreaEl.addEventListener('touchcancel', onTouchEnd);
 
     const onMouseDown = (e) => {
-        if (e.button !== 0 || e.target.closest("#ytClosePlayerBtn") || e.target.closest("#ytControls")) return;
+        if (e.button !== 0 || e.target.closest("#ytClosePlayerBtn") || e.target.closest("#ytControls") || e.target.closest("#ytSearchBox")) return;
         isDragging = true; p3 = e.clientX; p4 = e.clientY;
         const onMouseMove = (ev) => {
             if (!isDragging) return;
@@ -569,6 +607,7 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
 
     onValue(roomStateRef, (snapshot) => {
         if (!snapshot.exists()) {
+            if (lastLoadedVideoId === "__NAV_INIT_MODE__" || lastLoadedVideoId === "__SEARCH_MODE__") return;
             $("ytArea").style.display = "none"; if (syncIntervalId) { clearInterval(syncIntervalId); syncIntervalId = null; }
             if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
             isUserApprovedSync = false; isExplicitlyClosedByGuest = false; isGuestFreeMode = false; return;
@@ -624,7 +663,11 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         lastSavedTime = state.currentTime; lastSavedStatus = state.status; lastResetSeed = incomingResetSeed;
 
         if (needsForcedRebuild || !ytPlayer) {
-            lastLoadedVideoId = state.videoId; if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+            lastLoadedVideoId = state.videoId; 
+            if (ytPlayer) { 
+                ytPlayer.shadowVolumeApplied = false;
+                try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; 
+            }
             $("ytPlayerOuter").innerHTML = '<div id="ytPlayer"></div>';
             const buildPlayer = () => {
                 if (!isYtReady || !window.YT?.Player) { setTimeout(buildPlayer, 100); return; }
@@ -636,6 +679,7 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     });
 
     function updateControlsUI() {
+        if (!curR) return; // ⚠️ 未入室時のエラー防止ガード
         if (amIOwner) {
             $("ytGuestModeBtn").style.display = "none";
             $("ytHostPlayBtn").style.display = "block";
@@ -728,6 +772,14 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     };
 
     function syncPlayer(state) {
+        if (ytPlayer && typeof ytPlayer.setVolume === 'function') {
+            if (!ytPlayer.shadowVolumeApplied) {
+                if (myInitialVolume === 0) { ytPlayer.mute(); } 
+                else { ytPlayer.unMute(); ytPlayer.setVolume(myInitialVolume); }
+                ytPlayer.shadowVolumeApplied = true;
+            }
+        }
+
         if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || !isUserApprovedSync || (isLocalAction && amIOwner) || isGuestFreeMode) return;
         const pState = ytPlayer.getPlayerState();
         if (state.status === "playing") {
@@ -768,6 +820,84 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         }, 5000);
     }
 
+    async function executeEmbedSearch() {
+        const queryStr = $("ytSearchInput").value.trim();
+        if (!queryStr) return;
+        
+        if (!amIOwner && !isGuestFreeMode) {
+            isGuestFreeMode = true;
+            updateControlsUI();
+        }
+
+        if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+        $("ytPlayerOuter").innerHTML = '<div id="ytPlayer"></div>';
+        
+        ytPlayer = new YT.Player('ytPlayer', {
+            playerVars: { 'autoplay': 1, 'playsinline': 1, 'controls': 1, 'listType': 'search', 'list': queryStr, 'rel': 0 },
+            events: {
+                'onReady': (e) => {
+                    if (typeof ytPlayer.getPlaylist === 'function') { currentSearchResults = ytPlayer.getPlaylist() || []; currentSearchIndex = 0; }
+                    if (myInitialVolume === 0) { ytPlayer.mute(); } else { ytPlayer.setVolume(myInitialVolume); }
+                },
+                'onStateChange': (e) => { if (typeof ytPlayer.getPlaylistIndex === 'function') { currentSearchIndex = ytPlayer.getPlaylistIndex(); } }
+            }
+        });
+        lastLoadedVideoId = "__SEARCH_MODE__";
+    }
+
+    $("ytSearchBtn").onclick = (e) => { e.preventDefault(); executeEmbedSearch(); };
+    $("ytSearchInput").onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); executeEmbedSearch(); } };
+
+    $("ytPrevVideoBtn").onclick = (e) => { e.preventDefault(); if (ytPlayer && typeof ytPlayer.previousVideo === 'function') { ytPlayer.previousVideo(); } };
+    $("ytNextVideoBtn").onclick = (e) => { e.preventDefault(); if (ytPlayer && typeof ytPlayer.nextVideo === 'function') { ytPlayer.nextVideo(); } };
+
+    $("ytPushSyncBtn").onclick = async (e) => {
+        e.preventDefault(); if (!ytPlayer || typeof ytPlayer.getVideoUrl !== 'function') return;
+        
+        let currentUrl = ytPlayer.getVideoUrl(); let targetId = extractVideoId(currentUrl);
+        if (!targetId && currentSearchResults.length > 0) { targetId = currentSearchResults[currentSearchIndex]; }
+
+        if (!targetId || targetId.length !== 11) { alert("⚠️ 動画IDを取得できませんでした。動画の読み込みが完了してから再度お試しください。"); return; }
+
+        const NOW = getServerNow();
+        try {
+            await Promise.all([
+                push(ref(db, `chat/${curR}`), { nEnc: enc(curN, curP), tEnc: enc(curT, curP), text: enc(`🎵 プレイヤー内から新しい動画を同期しました！\nhttps://www.youtube.com/watch?v=${targetId}`, curP), time: NOW }),
+                update(ref(db, `rooms/${curR}`), { lastActivity: NOW, videoState: { videoId: targetId, status: "playing", currentTime: 0, timestamp: NOW, owner: uid, ownerName: enc(curN, curP), resetSeed: Date.now() } })
+            ]);
+            isGuestFreeMode = false; amIOwner = true; updateControlsUI();
+        } catch(err) { alert("同期処理に失敗しました。時間をおいて再度お試しください。"); }
+    };
+
+    // 🎬 【追加】「動画」独立起動ボタンの挙動処理
+    $("openPlayerNavBtn").onclick = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if ($("ytArea").style.display === "block") { alert("💡 プレイヤーはすでに開いています！上部の検索窓をご利用ください。"); return; }
+
+        $("ytArea").style.display = "block"; setupUniversalTouchController($("ytArea"), 180, 1000);
+
+        if (!ytPlayer) {
+            if (!amIOwner) { isGuestFreeMode = true; updateControlsUI(); }
+
+            $("ytPlayerOuter").innerHTML = '<div id="ytPlayer"></div>';
+            const buildInitPlayer = () => {
+                if (!isYtReady || !window.YT?.Player) { setTimeout(buildInitPlayer, 100); return; }
+                ytPlayer = new YT.Player('ytPlayer', {
+                    playerVars: { 'autoplay': 0, 'playsinline': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1, 'listType': 'search', 'list': '最新の音楽' },
+                    events: {
+                        'onReady': () => {
+                            if (myInitialVolume === 0) { ytPlayer.mute(); } 
+                            else { ytPlayer.unMute(); ytPlayer.setVolume(myInitialVolume); }
+                            $("ytBadge").innerText = amIOwner ? "👑 ホスト検索モード" : "🔓 マイペース検索中";
+                        }
+                    }
+                });
+                lastLoadedVideoId = "__NAV_INIT_MODE__";
+            };
+            buildInitPlayer();
+        }
+    };
+
     const iframeWrap = $("ytArea");
     if (iframeWrap) {
         const setLocal = () => { if(amIOwner) isLocalAction = true; }; const unsetLocal = () => { if(amIOwner) setTimeout(() => { isLocalAction = false; }, 400); };
@@ -775,13 +905,14 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     }
 }
 
+// 💤 寝落ちタイマー
 setInterval(async () => {
     if (!curR || isProcessingExit) return;
     try {
         const NOW = getServerNow(); await update(ref(db, `presence/${curR}/${uid}`), { lastSeen: NOW });
         const roomSnap = await get(ref(db, `rooms/${curR}`));
         if (roomSnap.exists() && (NOW - (roomSnap.val().lastActivity || NOW) > ROOM_LIFETIME)) {
-            clearSubscriptions(); await deleteRoomData(curR); alert("消滅タイマーを超過したため部屋は完全消滅しました。"); location.href = location.pathname;
+            clearSubscriptions(); await deleteRoomData(curR); alert("全員が一定時間発言しなかったため、部屋は自動的に消滅しました。"); location.href = location.pathname;
         }
     } catch (e) {}
 }, 20000);
@@ -790,8 +921,7 @@ const sendMsg = async () => {
     const inputEl = $("mi"), v = inputEl.value.trim(); if (!v || getServerNow() - lastT < 250) return;
     lastT = getServerNow(); inputEl.value = ""; inputEl.style.height = "24px"; toggleClearBtn("");
     
-    const ytId = extractVideoId(v);
-    const shouldTriggerTopSync = (ytId !== null) && (v.includes("同期") || v.includes("呼出"));
+    const ytId = extractVideoId(v); const shouldTriggerTopSync = (ytId !== null) && (v.includes("同期") || v.includes("呼出"));
     const NOW = getServerNow();
     
     try {
@@ -821,14 +951,14 @@ $("exitBtn").onclick = async () => {
 };
 
 $("enterBtn").onclick = async (e) => {
-    e.preventDefault(); e.stopPropagation();
-    if ($("enterBtn").disabled) return;
+    e.preventDefault(); e.stopPropagation(); if ($("enterBtn").disabled) return;
     const name = $("ni").value.trim(); const key = $("tk").value.trim(); const rID = $("ri").value.trim(); const pass = $("pi").value.trim();
     if (!name) { $("errMsg").innerText = "⚠️ 表示名を入力してください"; $("errMsg").style.display = "block"; return; }
     if (!rID || !pass) { $("errMsg").innerText = "⚠️ 部屋IDと暗号パスが必要です（招待URLからの場合は自動で入力されます）"; $("errMsg").style.display = "block"; return; }
     $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中..."; $("errMsg").style.display = "none";
     try {
         localStorage.setItem("nez_n", name); localStorage.setItem("nez_t", key);
+        myInitialVolume = Number($("initVolume").value); localStorage.setItem("nez_vol", myInitialVolume);
         const trip = await generateTripString(name, key);
         await join(rID, pass, name, trip, Number($("maxUsers").value), Number($("romTime").value), Number($("roomTime").value));
     } catch (err) { showLobby("接続中に予期せぬエラーが発生しました。"); }
@@ -844,7 +974,6 @@ $("copyBtn").onclick = async () => {
 $("toTopBtn").onclick = () => $("chatWrap").scrollTo({ top: 0, behavior: "smooth" });
 $("toBottomBtn").onclick = () => { const w = $("chatWrap"); if (w) w.scrollTo({ top: w.scrollHeight, behavior: "smooth" }); };
 
-/* ロビー案内モーダルの制御イベント設定 */
 $("openTermsBtn").onclick = () => { $("termsCard").style.display = "flex"; };
 $("closeTermsBtn").onclick = () => { $("termsCard").style.display = "none"; };
 $("openGuideBtn").onclick = () => { $("guideCard").style.display = "flex"; };
@@ -853,11 +982,8 @@ $("closeGuideBtn").onclick = () => { $("guideCard").style.display = "none"; };
 window.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem("nez_n")) $("ni").value = localStorage.getItem("nez_n");
     if (localStorage.getItem("nez_t")) $("tk").value = localStorage.getItem("nez_t");
-    
-    const u = new URLSearchParams(location.search);
-    if (u.get("r")) $("ri").value = u.get("r"); 
-    if (u.get("p")) $("pi").value = u.get("p");
-    
+    if (localStorage.getItem("nez_vol") !== null) { $("initVolume").value = localStorage.getItem("nez_vol"); myInitialVolume = Number(localStorage.getItem("nez_vol")); }
+    const u = new URLSearchParams(location.search); if (u.get("r")) $("ri").value = u.get("r"); if (u.get("p")) $("pi").value = u.get("p");
     updateTripPreview();
 });
 </script>
