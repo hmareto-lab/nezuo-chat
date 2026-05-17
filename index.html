@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>NEZU ONETIME CHAT & WATCH (Inline Fix)</title>
+<title>NEZU ONETIME CHAT & WATCH (Compact Sync)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js" defer></script>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
@@ -52,6 +52,15 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 .setting-row{display:flex;align-items:center;gap:6px;}
 .setting-row label{font-size:11px;font-weight:bold;color:#718096;white-space:nowrap;width:90px;}
 
+/* --- 同期プレイヤーの広がり防止対策 --- */
+#ytArea {
+    width: 100%; 
+    background: #000; 
+    flex-shrink: 0; 
+    position: relative;
+    display: none;
+    max-height: 220px;
+}
 #ytArea::after {
     content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 20;
     opacity: 0; transition: opacity 0.4s ease-out; background: transparent;
@@ -59,24 +68,56 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 #ytArea.flash-play::after { background: var(--success); opacity: 0.35; transition: none; }
 #ytArea.flash-pause::after { background: var(--danger); opacity: 0.35; transition: none; }
 
-/* チャット内埋め込みプレイヤー用のスタイル */
-.inline-player-container {
+.yt-responsive-container {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    max-height: 25vh;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#ytPlayerOuter {
+    width: 100%;
+    height: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    background: #000;
+}
+#ytPlayer {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* タイムライン内のインライン要素（動画埋め込み・純粋サムネイル兼用） */
+.inline-media-box {
     margin-top: 8px;
     position: relative;
     width: 100%;
-    max-width: 480px;
-    padding-top: 56.25%;
+    max-width: 320px;
+    padding-top: 56.25%; /* 16:9比率 */
     background: #000;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
-.inline-player-container iframe {
+.inline-media-box iframe, 
+.inline-media-box a, 
+.inline-media-box img {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     border: none;
+    display: block;
+}
+.inline-media-box img {
+    object-fit: cover;
+    transition: opacity 0.15s;
+}
+.inline-media-box a:active img {
+    opacity: 0.8;
 }
 </style>
 </head>
@@ -106,7 +147,7 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             <div class="modal-section-title">YouTubeの同時視聴（上部連動）</div>
             <div>チャット欄に **YouTubeの動画URLと「同期」「呼出」「リセット」のいずれかの文字を含めて送信** すると、全員の画面上部でプレイヤーが開き、再生位置が100%同期されます。</div>
             <div class="modal-section-title">メッセージ欄への動画埋め込み</div>
-            <div>チャット欄に **YouTubeURLと「サムネイル」または「プレイヤー」を含めて送信** すると、上部同期は行われず、その発言ブロックの中にだけ再生可能なプレイヤーが埋め込まれます。</div>
+            <div>チャット欄に **YouTubeURLと「サムネイル」または「プレイヤー」を含めて送信** すると、上部同期は行われず、その発言ブロックの中にだけ再生可能なプレイヤーや、直リンクのサムネイルが配置されます。</div>
         </div>
         <button id="closeGuideModalBtn" class="modal-close-btn" style="background:var(--accent);">閉じる</button>
     </div>
@@ -181,18 +222,18 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 </div>
 
 <div id="mainApp">
-    <div id="ytArea" style="display:none; width:100%; background:#000; flex-shrink:0; position:relative;">
-        <div id="ytBadge" style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.85); color:#fff; padding:4px 8px; font-size:11px; font-weight:bold; border-radius:4px; z-index:10; border:1px solid rgba(255,255,255,0.25);"></div>
-        <div style="position:relative; width:100%; padding-top:56.25%;">
+    <div id="ytArea">
+        <div id="ytBadge" style="position:absolute; top:4px; left:4px; background:rgba(0,0,0,0.85); color:#fff; padding:2px 6px; font-size:10px; font-weight:bold; border-radius:4px; z-index:10; border:1px solid rgba(255,255,255,0.25);"></div>
+        <div class="yt-responsive-container">
             <div id="ytLockOverlay" style="position:absolute; inset:0; z-index:5; display:none; background:transparent;"></div>
-            <div id="ytPlayerOuter" style="position:absolute; inset:0; background:#000;">
+            <div id="ytPlayerOuter">
                 <div id="ytPlayer"></div>
             </div>
         </div>
-        <div id="ytControls" style="display:flex; gap:10px; padding:6px 10px; background:rgba(0,0,0,0.85); justify-content:center;">
-            <button id="ytPlayBtn" style="padding:4px 14px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">▶ 同期スタート</button>
-            <button id="ytPauseBtn" style="padding:4px 14px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:11px; font-weight:bold; cursor:pointer;">⏸ 同期ストップ</button>
-            <button id="ytCloseBtn" style="padding:4px 12px; background:#4a5568; color:#fff; border:none; border-radius:4px; font-size:11px; cursor:pointer;">終了</button>
+        <div id="ytControls" style="display:flex; gap:8px; padding:4px 10px; background:rgba(0,0,0,0.9); justify-content:center; align-items:center;">
+            <button id="ytPlayBtn" style="padding:4px 12px; background:var(--success); color:#fff; border:none; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">▶ 再生</button>
+            <button id="ytPauseBtn" style="padding:4px 12px; background:var(--danger); color:#fff; border:none; border-radius:4px; font-size:10px; font-weight:bold; cursor:pointer;">⏸ 一時停止</button>
+            <button id="ytCloseBtn" style="padding:4px 10px; background:#4a5568; color:#fff; border:none; border-radius:4px; font-size:10px; cursor:pointer;">閉じる</button>
         </div>
     </div>
 
@@ -252,6 +293,7 @@ const loadYtScript = () => {
 loadYtScript();
 
 function extractVideoId(url) {
+    if(!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]{11}).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
@@ -395,23 +437,29 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
                 div.innerHTML = `<div class="sys-msg">${linkify(txt)}</div>`;
             } else {
                 const sN = dec(m.nEnc, curP) || "???", sT = dec(m.tEnc, curP) || "";
-                
                 const inlineYtId = extractVideoId(txt);
-                const hasInlineKeyword = txt.includes("サムネイル") || txt.includes("プレイヤー");
-                let inlinePlayerHtml = "";
+                let inlineEmbedHtml = "";
                 
-                // API競合と干渉を防ぐため enablejsapi=1 を適用
-                if (inlineYtId && hasInlineKeyword) {
-                    inlinePlayerHtml = `
-                    <div class="inline-player-container">
-                        <iframe src="https://www.youtube.com/embed/${inlineYtId}?rel=0&enablejsapi=1" allowfullscreen></iframe>
-                    </div>`;
+                if (inlineYtId) {
+                    if (txt.includes("プレイヤー")) {
+                        inlineEmbedHtml = `
+                        <div class="inline-media-box">
+                            <iframe src="https://www.youtube.com/embed/${inlineYtId}?rel=0" allowfullscreen loading="lazy"></iframe>
+                        </div>`;
+                    } else if (txt.includes("サムネイル")) {
+                        inlineEmbedHtml = `
+                        <div class="inline-media-box">
+                            <a href="https://www.youtube.com/watch?v=${inlineYtId}" target="_blank" rel="noopener noreferrer">
+                                <img src="https://img.youtube.com/vi/${inlineYtId}/hqdefault.jpg" alt="Thumbnail" loading="lazy">
+                            </a>
+                        </div>`;
+                    }
                 }
 
                 div.innerHTML = `<div style="font-size:11px;font-weight:bold;color:var(--text);margin-bottom:2px;padding-left:4px;">${esc(sN)}<span style="color:var(--primary);">${esc(sT)}</span> <span style="color:#a0aec0;font-weight:normal;font-size:10px;">${time}</span></div>
                     <div class="msg" style="background:#fff; padding:8px 12px; border-radius:12px; border:1px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,0.02);">
                         <div class="msg-text">${linkify(txt)}</div>
-                        ${inlinePlayerHtml}
+                        ${inlineEmbedHtml}
                     </div>`;
             }
             frag.appendChild(div);
@@ -430,19 +478,19 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = null; }
             isUserApprovedSync = false; return;
         }
-        const state = snapshot.val(); if (!state.videoId) return;
+        const state = snapshot.val(); if (!state?.videoId) return;
         amIOwner = (state.owner === uid);
 
-        const statusText = state.status === "playing" ? "▶ 同期再生中" : "⏸ 同期一時停止中";
+        const statusText = state.status === "playing" ? "▶" : "⏸";
         const badgeColor = state.status === "playing" ? "var(--success)" : "var(--danger)";
 
         if (amIOwner) {
             isUserApprovedSync = true; $("ytLockOverlay").style.display = "none"; $("ytControls").style.display = "flex";
-            $("ytBadge").innerText = `👑 ホスト操作中 (${statusText})`; $("ytBadge").style.borderColor = badgeColor;
+            $("ytBadge").innerText = `👑 ホスト ${statusText}`; $("ytBadge").style.borderColor = badgeColor;
         } else {
             if (lastLoadedVideoId !== state.videoId) {
                 isUserApprovedSync = false;
-                const conf = confirm(`${state.ownerName ? dec(state.ownerName, curP) : "誰か"} さんから動画の同時視聴リクエストが届きました。\nプレイヤーを開いて同期連動しますか？`);
+                const conf = confirm(`${state.ownerName ? dec(state.ownerName, curP) : "誰か"} さんから同時視聴リクエストがあります。\n連動プレイヤーを開きますか？`);
                 if (conf) { isUserApprovedSync = true; } else {
                     isUserApprovedSync = false; $("ytArea").style.display = "none";
                     if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; lastLoadedVideoId = state.videoId; }
@@ -451,12 +499,11 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
             }
             if (isUserApprovedSync) {
                 $("ytLockOverlay").style.display = "block"; $("ytControls").style.display = "none";
-                $("ytBadge").innerText = `🔒 ホストに連動中 (${statusText})`; $("ytBadge").style.borderColor = badgeColor;
+                $("ytBadge").innerText = `🔒 連動中 ${statusText}`; $("ytBadge").style.borderColor = badgeColor;
             } else { return; }
         }
 
         if ($("ytArea").style.display !== "block") $("ytArea").style.display = "block";
-        
         if (lastSavedStatus !== state.status) { triggerFlashEffect(state.status); }
 
         const incomingResetSeed = state.resetSeed || 0;
@@ -465,16 +512,24 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
         lastSavedTime = state.currentTime; lastSavedStatus = state.status;
         lastResetSeed = incomingResetSeed;
 
-        const pVars = { 'autoplay': 1, 'playsinline': 1, 'controls': amIOwner ? 1 : 0, 'disablekb': amIOwner ? 0 : 1, 'rel': 0, 'modestbranding': 1 };
+        // ★ 初期状態(paused)の時は自動再生(autoplay)をオフにする
+        const isInitialLoad = (state.currentTime === 0 && state.status === "paused");
+        const pVars = { 
+            'autoplay': isInitialLoad ? 0 : 1, 
+            'playsinline': 1, 
+            'controls': amIOwner ? 1 : 0, 
+            'disablekb': amIOwner ? 0 : 1, 
+            'rel': 0, 
+            'modestbranding': 1 
+        };
         
         if (needsForcedRebuild || !ytPlayer) {
             lastLoadedVideoId = state.videoId;
             if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
-            
             $("ytPlayerOuter").innerHTML = '<div id="ytPlayer"></div>';
             
             const buildPlayer = () => {
-                if (!isYtReady || !window.YT || !window.YT.Player) { setTimeout(buildPlayer, 100); return; }
+                if (!isYtReady || !window.YT?.Player) { setTimeout(buildPlayer, 100); return; }
                 ytPlayer = new YT.Player('ytPlayer', { 
                     videoId: state.videoId, 
                     playerVars: pVars, 
@@ -492,13 +547,14 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
 
     function syncPlayer(state) {
         if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || !isUserApprovedSync || (isLocalAction && amIOwner)) return;
+        const pState = ytPlayer.getPlayerState();
         if (state.status === "playing") {
             const targetTime = state.currentTime + ((getServerNow() - state.timestamp) / 1000);
-            if (Math.abs(ytPlayer.getCurrentTime() - targetTime) > 1.5) ytPlayer.seekTo(targetTime, true);
-            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
+            if (Math.abs(ytPlayer.getCurrentTime() - targetTime) > 1.8) ytPlayer.seekTo(targetTime, true);
+            if (pState !== YT.PlayerState.PLAYING) ytPlayer.playVideo();
         } else if (state.status === "paused") {
             if (Math.abs(ytPlayer.getCurrentTime() - state.currentTime) > 0.5) ytPlayer.seekTo(state.currentTime, true);
-            if (ytPlayer.getPlayerState() !== YT.PlayerState.PAUSED) ytPlayer.pauseVideo();
+            if (pState !== YT.PlayerState.PAUSED) ytPlayer.pauseVideo();
         }
     }
 
@@ -526,16 +582,18 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     function startPeriodicSync() {
         if (!amIOwner) return; if (syncIntervalId) clearInterval(syncIntervalId);
         syncIntervalId = setInterval(() => {
-            if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
-            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING || isLocalAction || !amIOwner) return;
+            if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function' || !amIOwner || isLocalAction) return;
+            if (ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) return;
             
             const currentPos = ytPlayer.getCurrentTime();
             const expectedTime = lastSavedTime + 5; 
             
-            if (Math.abs(currentPos - expectedTime) > 1.5 || lastSavedStatus !== "playing") {
+            if (Math.abs(currentPos - expectedTime) > 1.8 || lastSavedStatus !== "playing") {
                 isLocalAction = true;
                 lastSavedTime = currentPos; lastSavedStatus = "playing";
-                update(roomStateRef, { status: "playing", currentTime: currentPos, timestamp: getServerNow() }).then(() => { isLocalAction = false; });
+                update(roomStateRef, { status: "playing", currentTime: currentPos, timestamp: getServerNow() }).then(() => { 
+                    setTimeout(() => { isLocalAction = false; }, 300);
+                });
             } else {
                 lastSavedTime = expectedTime; 
             }
@@ -545,15 +603,15 @@ async function join(rID, pass, name, trip, maxLimit, selectRomMin, selectRoomMin
     const iframeWrap = $("ytArea");
     if (iframeWrap) {
         const setLocal = () => { if(amIOwner) isLocalAction = true; };
-        const unsetLocal = () => { if(amIOwner) isLocalAction = false; };
+        const unsetLocal = () => { if(amIOwner) setTimeout(() => { isLocalAction = false; }, 400); };
         iframeWrap.addEventListener("pointerenter", setLocal, {passive:true});
         iframeWrap.addEventListener("pointerleave", unsetLocal, {passive:true});
         iframeWrap.addEventListener("pointerdown", setLocal, {passive:true});
-        iframeWrap.addEventListener("pointerup", () => { if(amIOwner) setTimeout(unsetLocal, 800); }, {passive:true});
+        iframeWrap.addEventListener("pointerup", unsetLocal, {passive:true});
     }
 
-    $("ytPlayBtn").onclick = () => { if (!ytPlayer || !amIOwner) return; isLocalAction = true; ytPlayer.playVideo(); setTimeout(() => { isLocalAction = false; }, 400); };
-    $("ytPauseBtn").onclick = () => { if (!ytPlayer || !amIOwner) return; isLocalAction = true; ytPlayer.pauseVideo(); setTimeout(() => { isLocalAction = false; }, 400); };
+    $("ytPlayBtn").onclick = () => { if (!ytPlayer || !amIOwner) return; isLocalAction = true; ytPlayer.playVideo(); setTimeout(() => { isLocalAction = false; }, 500); };
+    $("ytPauseBtn").onclick = () => { if (!ytPlayer || !amIOwner) return; isLocalAction = true; ytPlayer.pauseVideo(); setTimeout(() => { isLocalAction = false; }, 500); };
     $("ytCloseBtn").onclick = () => { if (!amIOwner || !confirm("全員の画面からプレイヤーを閉じますか？")) return; if (syncIntervalId) clearInterval(syncIntervalId); remove(ref(db, `rooms/${curR}/videoState`)); };
 }
 
@@ -580,7 +638,6 @@ const sendMsg = async () => {
     toggleClearBtn("");
     
     const NOW = getServerNow(), ytId = extractVideoId(v);
-    
     const hasSyncTrigger = v.includes("同期") || v.includes("呼出") || v.includes("リセット");
     const shouldTriggerTopSync = (ytId !== null) && hasSyncTrigger;
 
@@ -591,10 +648,11 @@ const sendMsg = async () => {
         ];
         if (shouldTriggerTopSync) {
             forcedResetCounter++;
+            // ★ 最初は自動再生させないため、ステータスを "paused" で初期登録
             promises.push(update(ref(db, `rooms/${curR}`), {
                 videoState: { 
                     videoId: ytId, 
-                    status: "playing", 
+                    status: "paused", 
                     currentTime: 0, 
                     timestamp: NOW, 
                     owner: uid, 
