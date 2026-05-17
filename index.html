@@ -12,7 +12,7 @@ html,body{width:100%;height:100svh;overflow:hidden;background:var(--bg);font-fam
 
 /* ロビー：レイアウト */
 #lobby{position:fixed;inset:0;justify-content:center;align-items:center;background:var(--bg);z-index:1000;display:flex;padding:10px;overflow:hidden;}
-.lobby-content{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(58,134,255,0.08);overflow:hidden;}
+.lobby-content{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(58,134,255,0.08);overflow:hidden;position:relative;}
 
 .lobby-row{display:flex;flex-direction:column;gap:4px;}
 .lobby-label{font-size:11px;font-weight:bold;color:#718096;display:flex;justify-content:space-between;align-items:center;}
@@ -24,24 +24,21 @@ html,body{width:100%;height:100svh;overflow:hidden;background:var(--bg);font-fam
 .lobby-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .error-msg{color:var(--danger);font-size:11px;font-weight:bold;text-align:center;display:none;background:#fff5f5;padding:6px;border:1px solid #fed7d7;border-radius:6px;margin:2px 0;}
 
-.info-card{background:#edf2f7;padding:8px 10px;border-radius:8px;font-size:11.5px;color:#4a5568;display:flex;flex-direction:column;gap:4px;}
-.modal-trigger-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.btn-trigger{height:26px;border:1px solid var(--border);border-radius:5px;background:#fff;color:#4a5568;font-size:11px;font-weight:bold;cursor:pointer;}
-.btn-trigger:active{background:#edf2f7;}
-.lobby-alert-info { background: #f0f4fe; border: 1px solid #d2e3fc; border-radius: 8px; padding: 8px; font-size: 11px; color: #1a73e8; line-height: 1.4; text-align: left; margin-top: 2px; }
+.setting-row{display:flex;flex-direction:column;gap:2px;}
+.setting-row label{font-size:11px;font-weight:bold;color:#718096;}
 
-/* モーダル表示 */
-.modal-overlay{position:fixed;inset:0;background:rgba(44,62,80,0.4);backdrop-filter:blur(3px);z-index:4000;display:none;justify-content:center;align-items:center;padding:16px;}
-.modal-window{width:100%;max-width:340px;background:var(--panel);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;max-height:85vh;box-shadow:0 15px 35px rgba(0,0,0,0.15);}
-.modal-window h3{font-size:14px;font-weight:bold;color:var(--text);text-align:center;border-bottom:2px solid var(--border);padding-bottom:8px;}
-.modal-body{font-size:12px;color:#4a5568;line-height:1.6;overflow-y:auto;display:flex;flex-direction:column;gap:12px;word-break:break-all;}
-.modal-body strong{color:var(--primary);display:inline;font-weight:bold;}
-.modal-body p{margin-top:2px;font-size:11.5px;}
-.modal-close-btn{width:100%;height:38px;border:none;border-radius:8px;background:var(--text);color:#fff;font-size:13px;font-weight:bold;cursor:pointer;flex-shrink:0;}
+/* ＝ 📄 規約・使い方エリア ＝ */
+.lobby-info-links { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+.info-link-btn { background: none; border: none; color: #a0aec0; font-size: 10.5px; font-weight: bold; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 0.2s; }
+.info-link-btn:hover { color: var(--primary); }
 
-.guide-section { background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
-.guide-section h4 { font-size: 12px; font-weight: bold; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; border-bottom: 1px dashed var(--border); padding-bottom: 4px; }
-.guide-inner-card { background:#fff; border:1px solid #e2e8f0; border-radius:6px; padding:8px; font-size:11.5px; color:#4a5568; }
+.lobby-modal { position: absolute; inset: 0; background: rgba(255,255,255,0.98); z-index: 1010; display: none; flex-direction: column; padding: 14px; overflow: hidden; }
+.lobby-modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 8px; }
+.lobby-modal-title { font-size: 13px; font-weight: bold; color: var(--text); }
+.lobby-modal-close { background: #cbd5e0; border: none; color: #fff; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.lobby-modal-body { flex: 1; overflow-y: auto; font-size: 11.5px; line-height: 1.6; color: #4a5568; padding-right: 2px; }
+.lobby-modal-body p { margin-bottom: 8px; }
+.lobby-modal-body ul, .lobby-modal-body ol { margin-left: 16px; margin-bottom: 8px; }
 
 /* メインチャット画面 */
 #mainApp{display:none;flex-direction:column;width:100%;height:100svh;max-width:800px;background:var(--panel);position:relative;}
@@ -67,8 +64,6 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 .footer-nav{display:grid;grid-template-columns:1fr 0.8fr 0.8fr 1fr 1fr;gap:4px;align-items:center;}
 .btn{border:1px solid var(--border);background:#fff;color:#4a5568;display:flex;align-items:center;justify-content:center;height:36px;cursor:pointer;font-size:11px;font-weight:bold;border-radius:6px;}
 .btn:active{background:#edf2f7;}
-.setting-row{display:flex;flex-direction:column;gap:2px;}
-.setting-row label{font-size:11px;font-weight:bold;color:#718096;}
 
 /* ＝ 👑 同期プレイヤー領域 ＝ */
 #ytArea {
@@ -148,84 +143,12 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
 </head>
 <body>
 
-<!-- モーダル1：利用規約 -->
-<div id="infoModal" class="modal-overlay">
-    <div class="modal-window">
-        <h3>📜 利用規約とルール</h3>
-        <div class="modal-body">
-            <div class="guide-inner-card" style="border-left: 3px solid var(--primary);">
-                <strong>1. 端末内での完全暗号化</strong>
-                <p>発言やユーザー情報は端末内でAES-256暗号化されてから送信されます。サーバー側には暗号文しか到達しません。</p>
-            </div>
-            <div class="guide-inner-card" style="border-left: 3px solid var(--primary);">
-                <strong>2. パスワードの不保持と消滅</strong>
-                <p>暗号パスはサーバーに保存されません。参加者が0人になるか設定時間が経過すると、データは物理的に自動消滅します。</p>
-            </div>
-            <div class="guide-inner-card" style="background:#fff5f5; border:1px solid #fed7d7; border-left:3px solid var(--danger);">
-                <strong style="color:var(--danger);">⚠️ 禁止行為</strong>
-                <p style="font-size:11px; color:#c53030; margin-top:2px; line-height:1.5;">
-                    ・個人情報（SNSの鍵垢など）の掲載<br>
-                    ・他者への誹謗中傷や迷惑、荒らし行為<br>
-                    ・サーバーへ過度な負荷をかける行為
-                </p>
-            </div>
-        </div>
-        <button id="closeModalBtn" class="modal-close-btn">規約に同意する</button>
-    </div>
-</div>
-
-<!-- モーダル2：使い方のガイドライン -->
-<div id="guideModal" class="modal-overlay">
-    <div class="modal-window">
-        <h3>💡 使い方ガイド</h3>
-        <div class="modal-body">
-            
-            <div class="guide-section">
-                <h4>👑 部屋の作り方（ホスト）</h4>
-                <div class="guide-inner-card">
-                    1. <strong>表示名</strong>を入力します。<br>
-                    2. 本人証明をしたい場合は<strong>合言葉</strong>も入力。<br>
-                    3. <strong>部屋ID・暗号パスを自動生成</strong>を押す。<br>
-                    4. 定員や時間を選び、<strong>規約に同意して入室</strong>。
-                </div>
-            </div>
-
-            <div class="guide-section">
-                <h4>✉️ 友達の招待と合流</h4>
-                <div class="guide-inner-card">
-                    入室後、画面最下部にある<strong>「招待」</strong>ボタンから招待用URLを取得できます。<br>
-                    <span style="color:var(--danger); font-weight:bold;">⚠️ 注意:</span> URLには暗号キーが含まれるため、無関係な第三者への流出にご注意ください。<br>
-                    <span style="display:block; margin-top:4px; color:#718096;">※部屋IDと暗号パスを直接伝えて手入力合流も可能です。</span>
-                </div>
-            </div>
-
-            <div class="guide-section" style="border: 1px solid var(--accent); background: #f0f8ff;">
-                <h4 style="color: var(--accent); border-bottom-color: var(--accent);">📺 YouTubeをチャットで共有する</h4>
-                <div class="guide-inner-card" style="line-height: 1.7;">
-                    🔹 URLの後に「<strong>同期</strong>」で全員の画面が同時連動<br>
-                    🔹 URLの後に「<strong>プレイヤー</strong>」で各々開く埋め込み<br>
-                    🔹 URLの後に「<strong>サムネイル</strong>」で静止画を個別表示
-                </div>
-            </div>
-        </div>
-        <button id="closeGuideModalBtn" class="modal-close-btn" style="background:var(--accent);">確認しました</button>
-    </div>
-</div>
-
 <!-- ロビー画面 -->
 <div id="lobby" style="display:flex;">
     <div class="lobby-content">
-        <div style="text-align:center;">
+        <div style="text-align:center; margin-bottom:4px;">
             <h2 style="color:var(--primary);margin:0;font-size:18px;letter-spacing:-0.5px;">NEZU ONETIME CHAT</h2>
             <p style="margin:2px 0 0 0;font-size:10.5px;font-weight:bold;color:#718096;">用が済んだらすべて消えるチャット空間</p>
-        </div>
-
-        <div class="info-card">
-            <span style="font-weight:bold; color:var(--primary); text-align:center; font-size:11px;">⚠️ 部屋は参加者0人、または無言タイマーで消滅します</span>
-            <div class="modal-trigger-row">
-                <button type="button" id="openModalLink" class="btn-trigger">📜 利用規約</button>
-                <button type="button" id="openGuideLink" class="btn-trigger">💡 使い方</button>
-            </div>
         </div>
 
         <div id="errMsg" class="error-msg"></div>
@@ -282,9 +205,48 @@ textarea{flex:1;min-width:0;height:24px;min-height:24px;max-height:96px;padding:
             新規作成：部屋ID・暗号パスを自動生成
         </button>
 
-        <button id="enterBtn" style="width:100%;height:42px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:bold;border-radius:8px;margin-top:2px;cursor:pointer;">
-            規約に同意して入室
+        <button id="enterBtn" style="width:100%;height:42px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:bold;border-radius:8px;margin-top:4px;cursor:pointer;">
+            入室する
         </button>
+
+        <!-- 右下配置の規約・使い方リンクボタン -->
+        <div class="lobby-info-links">
+            <button id="openTermsBtn" class="info-link-btn" type="button">📄 利用規約</button>
+            <button id="openGuideBtn" class="info-link-btn" type="button">💡 使い方</button>
+        </div>
+
+        <!-- 利用規約案内カード -->
+        <div id="termsCard" class="lobby-modal">
+            <div class="lobby-modal-header">
+                <div class="lobby-modal-title">📄 利用規約</div>
+                <button id="closeTermsBtn" class="lobby-modal-close" type="button">×</button>
+            </div>
+            <div class="lobby-modal-body">
+                <p>当チャットは完全使い捨ての暗号化一時空間です。快適な運用のために以下を遵守してください。</p>
+                <ul>
+                    <li><strong>データの一時性：</strong>全メンバーの退出、または無言タイマーの超過により、データベース上の暗号化ログ、設定、プレイヤー状態を含む全データが完全に削除されます。復元は一切できません。</li>
+                    <li><strong>エンドツーエンド暗号化：</strong>メッセージやユーザー情報は、入力された「暗号パス」を用いてブラウザ側で暗号化・復号化されます。サーバー側での平文の閲覧・保持は構造上不可能です。パスワードの紛失にご注意ください。</li>
+                    <li><strong>自己責任原則：</strong>当サービス上のやり取りで生じたトラブルやデータ消失について、開発者は一切の責任を負いません。法令に違反する行為、他者への誹謗中傷や迷惑行為を固く禁じます。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 使い方案内カード -->
+        <div id="guideCard" class="lobby-modal">
+            <div class="lobby-modal-header">
+                <div class="lobby-modal-title">💡 使い方</div>
+                <button id="closeGuideBtn" class="lobby-modal-close" type="button">×</button>
+            </div>
+            <div class="lobby-modal-body">
+                <p><strong>1. 部屋の作成と入室</strong><br>「新規作成」でランダムな部屋IDとパスを生成するか、招待URLからアクセスし、表示名を入力して入室します。合言葉を入れると偽装防止のトリップ（◆xxxxxx）が付きます。</p>
+                <p><strong>2. 招待方法</strong><br>入室後、下部メニューの「招待」ボタンを押すと専用の暗号化リンクがコピーされます。それを友人に共有してください。</p>
+                <p><strong>3. YouTube同時視聴（同期）</strong><br>チャット欄に動画のURLを貼り、末尾に「<strong>同期</strong>」（または「呼出」）と書いて送信すると、全員の画面に連動プレイヤーが出現します。<br>
+                ・<strong>ホスト操作：</strong>動画を呼び出した人が「▶ 同期開始」「⏸ 同期停止」を押すと、全員の再生・停止・位置が完全にシンクロします。<br>
+                ・<strong>ゲスト操作：</strong>「🔓 マイペース」を押すと連動が解除され、自分の好きな位置から自由に個別再生できます。<br>
+                ・<strong>その他のコマンド：</strong>末尾に「プレイヤー」で自分専用プレイヤー生成、「サムネイル」で高画質画像の貼り付けが可能です。</p>
+                <p><strong>4. 自動消滅ルール</strong><br>定員上限の超過時、または設定された「放置切断時間（無通信）」「無言消滅時間（チャット無稼働）」を超えた場合、部屋はログを含めて即座に完全消滅します。</p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -372,18 +334,6 @@ function extractVideoId(url) {
     return (match && match[2].length === 11) ? match[2] : null;
 }
 
-const closeModal = () => { $("infoModal").style.display = "none"; };
-const closeGuide = () => { $("guideModal").style.display = "none"; };
-
-function setupModals() {
-    $("openModalLink").onclick = (e) => { e.preventDefault(); $("infoModal").style.display = "flex"; };
-    $("closeModalBtn").onclick = () => closeModal();
-    $("infoModal").onclick = (e) => { if (e.target === $("infoModal")) closeModal(); };
-    $("openGuideLink").onclick = (e) => { e.preventDefault(); $("guideModal").style.display = "flex"; };
-    $("closeGuideModalBtn").onclick = () => closeGuide();
-    $("guideModal").onclick = (e) => { if (e.target === $("guideModal")) closeGuide(); };
-}
-
 const uid = (() => {
     let id = localStorage.getItem("nez_uid");
     if (!id) { id = crypto.randomUUID(); localStorage.setItem("nez_uid", id); }
@@ -411,12 +361,26 @@ const showLobby = (msg = "") => {
     if (msg) { $("errMsg").innerText = msg; $("errMsg").style.display = "block"; }
     $("mainApp").style.display = "none"; $("lobby").style.display = "flex"; $("ytArea").style.display = "none";
     if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
-    $("enterBtn").disabled = false; $("enterBtn").innerText = "規約に同意して入室";
+    $("enterBtn").disabled = false; $("enterBtn").innerText = "入室する";
 };
 
 const hash = t => CryptoJS.SHA256(t).toString();
-const enc = (t, k) => CryptoJS.AES.encrypt(t, k).toString();
-const dec = (c, k) => { try { if (!c) return null; return CryptoJS.AES.decrypt(c, k).toString(CryptoJS.enc.Utf8) || null; } catch { return null; } };
+
+// 【★超重要修正】暗号化結果を強制的に通常の文字列（Base64）へキャストし、復号時は明示的にUTF-8の文字列へ書き戻して16進数化けを防ぎます
+const enc = (t, k) => {
+    if (!t) return "";
+    return CryptoJS.AES.encrypt(t, k).toString();
+};
+const dec = (c, k) => {
+    try {
+        if (!c) return null;
+        const bytes = CryptoJS.AES.decrypt(c, k);
+        return bytes.toString(CryptoJS.enc.Utf8) || null;
+    } catch {
+        return null;
+    }
+};
+
 const esc = t => (t || "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const linkify = t => esc(t).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 
@@ -880,9 +844,13 @@ $("copyBtn").onclick = async () => {
 $("toTopBtn").onclick = () => $("chatWrap").scrollTo({ top: 0, behavior: "smooth" });
 $("toBottomBtn").onclick = () => { const w = $("chatWrap"); if (w) w.scrollTo({ top: w.scrollHeight, behavior: "smooth" }); };
 
-// DOM読込完了時にモーダルセットアップとパラメータ取得を確実に行う
+/* ロビー案内モーダルの制御イベント設定 */
+$("openTermsBtn").onclick = () => { $("termsCard").style.display = "flex"; };
+$("closeTermsBtn").onclick = () => { $("termsCard").style.display = "none"; };
+$("openGuideBtn").onclick = () => { $("guideCard").style.display = "flex"; };
+$("closeGuideBtn").onclick = () => { $("guideCard").style.display = "none"; };
+
 window.addEventListener('DOMContentLoaded', () => {
-    setupModals();
     if (localStorage.getItem("nez_n")) $("ni").value = localStorage.getItem("nez_n");
     if (localStorage.getItem("nez_t")) $("tk").value = localStorage.getItem("nez_t");
     
