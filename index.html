@@ -241,14 +241,14 @@
             <div>
                 <label class="block text-[11px] font-bold text-slate-400 mb-0.5">トリップ暗号（秘密のキー） <span class="text-red-500">*必須</span></label>
                 <div class="flex gap-1.5 items-center">
-                    <input type="text" id="tk" placeholder="本人証明用のキーワード（必須）" autocomplete="on" spellcheck="true" class="flex-1 px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="text" id="tk" placeholder="本人証明用のキーワード（日本語可・必須）" autocomplete="on" spellcheck="true" class="flex-1 px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <span id="tp" class="text-[10px] font-mono text-green-400 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 hidden shrink-0"></span>
                 </div>
             </div>
             <!-- 3段目 -->
             <div>
-                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID（半角英数） <span class="text-red-500">*</span></label>
-                <input type="text" id="ri" placeholder="room-abc" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-[11px] font-bold text-slate-400 mb-0.5">部屋ID（日本語・記号も可） <span class="text-red-500">*</span></label>
+                <input type="text" id="ri" placeholder="例: 秘密の裏部屋、room-abc" class="w-full px-2.5 py-1.5 border border-slate-700 bg-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <!-- 4段目 -->
             <div>
@@ -455,7 +455,7 @@
                         チャット内にYouTubeのURLが投稿されると、メッセージの下に「同期起動パネル」が出現します。また、画面右上の「プレイヤー」ボタンから直接シネマコンソールを開くことも可能です。
                     </p>
                     <ul class="list-disc pl-4 space-y-1 text-slate-400 text-[11px]">
-                        <li><strong class="text-red-300">📺 同期起動：</strong> 部屋のメンバー全員の画面に同じ動画プレイヤーを強制起動し、再生位置をリアルタイムにシンクロさせます。動画を最初に再生・検索した人が「👑ホスト」となり、再生・停止・シークの全権限を持ちます。</li>
+                        <li><strong class="text-red-300">📺 同期起動：</strong> 部屋のメンバー全員 of 画面に同じ動画プレイヤーを強制起動し、再生位置をリアルタイムにシンクロさせます。動画を最初に再生・検索した人が「👑ホスト」となり、再生・停止・シークの全権限を持ちます。</li>
                         <li><strong class="text-emerald-300">▶ 内部再生：</strong> シアタープレイヤー窓を開かず、そのメッセージのタイムライン枠内だけで個別にこっそり再生します。</li>
                         <li><strong class="text-amber-300">🔓 マイペース再生（ゲスト用）：</strong> ホストとの強制連動を一時的に解除し、自分自身のタイムラインでシークや一時停止を自由に行えます。「ホストに同期する」を押せば、いつでもホストの再生位置へリシークして戻れます。</li>
                         <li><strong class="text-slate-200">プレイヤーの操作：</strong> ビデオプレイヤー上部のバーをドラッグすると画面上の好きな位置へ移動でき、マウスホイール（スマホは右下のつまみをドラッグ）で自由にプレイヤーの大きさを拡大・縮小できます。</li>
@@ -671,7 +671,8 @@
         function generateTripString(name, key) {
             if (!name || !key) return "";
             try {
-                const hashVal = CryptoJS.SHA256(`${name}:${key}`).toString();
+                const targetStr = CryptoJS.enc.Utf8.parse(`${name}:${key}`);
+                const hashVal = CryptoJS.SHA256(targetStr).toString();
                 return "◆" + hashVal.slice(0, 6);
             } catch(e) { 
                 return ""; 
@@ -801,6 +802,7 @@
             let waitCounter = 0; 
             while (!isOffsetLoaded && waitCounter < 20) { await new Promise(r => setTimeout(r, 50)); waitCounter++; }
             
+            // 💡 部屋IDをSHA-256ハッシュに落とし込むことで、日本語や記号が含まれていてもFirebaseの安全なパスに変換可能にします
             const hashId = CryptoJS.SHA256(rID).toString();
             curR = hashId; rawR = rID; curP = pass; curN = name; curT = trip;
 
@@ -836,9 +838,10 @@
 
                 await set(myRef, { nEnc: enc(name, pass), tEnc: enc(trip, pass), lastSeen: NOW });
                 
-                // 🚪 入室成功が確定した段階で、名前とトリップ暗号キーをブラウザに記憶
+                // 🚪 入室成功が確定した段階で、名前、トリップ暗号キー、そしてカスタム部屋IDを記憶
                 localStorage.setItem("nez_ni", name);
                 localStorage.setItem("nez_tk", $("tk").value.trim());
+                localStorage.setItem("nez_ri", rID);
 
                 $("roomDisplay").innerText = rID; $("lobby").style.display = "none"; $("mainApp").style.display = "flex";
                 $("errMsg").style.display = "none";
@@ -1311,10 +1314,7 @@
                 return; 
             }
             
-            if (!/^[a-zA-Z0-9_-]+$/.test(r)) { 
-                alert("部屋IDは半角英数字、ハイフン、アンダースコアのみ使用可能です。"); 
-                return; 
-            }
+            // 💡 部屋IDの英数字バリデーション(正規表現)を撤廃し、どんな文字でも通るように変更。
 
             $("enterBtn").disabled = true; $("enterBtn").innerText = "接続中...";
             
@@ -1456,17 +1456,18 @@
         $("focusBtn").onclick = () => $("mi").focus();
 
         window.addEventListener("DOMContentLoaded", () => {
-            // 💾 ローカルストレージに記憶された「名前」と「トリップ暗号」を復元
+            // 💾 ローカルストレージに記憶された「名前」と「トリップ暗号」、そして「部屋ID」を復元
             const savedName = localStorage.getItem("nez_ni");
             const savedTripKey = localStorage.getItem("nez_tk");
+            const savedRoomId = localStorage.getItem("nez_ri");
             if (savedName) $("ni").value = savedName;
             if (savedTripKey) $("tk").value = savedTripKey;
+            if (savedRoomId) $("ri").value = savedRoomId;
 
             const params = new URLSearchParams(window.location.search);
             const r = params.get("r"), p = params.get("p"), n = params.get("n");
             if (r) $("ri").value = r; if (p) $("pi").value = p; if (n) $("ni").value = n;
             
-            // 復元した値に基づいてトリップのプレビュー状態を更新
             updateTripPreview();
         });
     </script>
